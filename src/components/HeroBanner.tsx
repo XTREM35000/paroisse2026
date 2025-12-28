@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Calendar, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Calendar, ChevronRight, ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 interface HeroBannerProps {
@@ -9,6 +9,8 @@ interface HeroBannerProps {
   eventTitle?: string;
   eventDate?: string;
   backgroundImage?: string;
+  showBackButton?: boolean;
+  description?: string;
 }
 
 const HeroBanner = ({
@@ -17,9 +19,13 @@ const HeroBanner = ({
   eventTitle,
   eventDate,
   backgroundImage,
+  showBackButton = true,
+  description,
 }: HeroBannerProps) => {
+  const navigate = useNavigate();
+
   return (
-    <section className="relative min-h-[60vh] lg:min-h-[70vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[50vh] lg:min-h-[60vh] flex items-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
         {backgroundImage ? (
@@ -37,7 +43,21 @@ const HeroBanner = ({
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-2xl">
+        <div className="max-w-3xl">
+          {/* Back Button */}
+          {showBackButton && (
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              onClick={() => navigate(-1)}
+              className="mb-6 inline-flex items-center gap-2 text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour
+            </motion.button>
+          )}
+
           {/* Event Badge */}
           {eventTitle && eventDate && (
             <motion.div
@@ -65,42 +85,44 @@ const HeroBanner = ({
             {title}
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Subtitle/Description */}
           <motion.p
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="text-lg md:text-xl text-primary-foreground/80 mb-8 leading-relaxed"
           >
-            {subtitle}
+            {description || subtitle}
           </motion.p>
 
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="flex flex-wrap gap-4"
-          >
-            <Button
-              asChild
-              size="lg"
-              className="bg-gold hover:bg-gold-light text-secondary-foreground font-semibold shadow-glow"
+          {/* CTA Buttons - Only show on homepage */}
+          {subtitle.includes("Découvrez") && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-wrap gap-4"
             >
-              <Link to="/videos">
-                Découvrir nos vidéos
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 backdrop-blur-sm"
-            >
-              <Link to="/evenements">Voir les événements</Link>
-            </Button>
-          </motion.div>
+              <Button
+                asChild
+                size="lg"
+                className="bg-gold hover:bg-gold-light text-secondary-foreground font-semibold shadow-glow"
+              >
+                <Link to="/videos">
+                  Découvrir nos vidéos
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 backdrop-blur-sm"
+              >
+                <Link to="/evenements">Voir les événements</Link>
+              </Button>
+            </motion.div>
+          )}
         </div>
       </div>
 

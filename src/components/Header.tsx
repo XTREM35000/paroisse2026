@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Menu, X, User, Moon, Sun } from "lucide-react";
+import { Search, Menu, X, User, Moon, Sun, LogOut } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useUser";
 
 interface HeaderProps {
   darkMode: boolean;
@@ -22,7 +24,11 @@ const navItems = [
 const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { profile } = useUser();
 
   return (
     <header className="sticky top-0 z-50 glass-effect border-b border-border/50">
@@ -137,12 +143,97 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
               </AnimatePresence>
             </Button>
 
-            {/* User */}
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/connexion" className="text-muted-foreground hover:text-foreground">
-                <User className="h-5 w-5" />
-              </Link>
-            </Button>
+            {/* User Menu */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="text-muted-foreground hover:text-foreground overflow-hidden rounded-full"
+              >
+                {user && profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.full_name || user.email}
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
+              </Button>
+
+              <AnimatePresence>
+                {isUserMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg p-2 z-50"
+                  >
+                    {user ? (
+                      <>
+                        <div className="px-4 py-3 border-b border-border/50">
+                          <p className="text-sm font-medium text-foreground">
+                            {user.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Connecté
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-muted-foreground hover:text-foreground mt-1"
+                          onClick={() => {
+                            navigate("/profil");
+                            setIsUserMenuOpen(false);
+                          }}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Mon profil
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={async () => {
+                            await signOut();
+                            setIsUserMenuOpen(false);
+                            navigate("/");
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Déconnexion
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            navigate("/connexion");
+                            setIsUserMenuOpen(false);
+                          }}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Connexion
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            navigate("/inscription");
+                            setIsUserMenuOpen(false);
+                          }}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Inscription
+                        </Button>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Mobile Menu Toggle */}
             <Button
@@ -196,3 +287,5 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
 };
 
 export default Header;
+
+

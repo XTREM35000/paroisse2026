@@ -5,6 +5,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import VideoDetail from "./pages/VideoDetail";
+import VideosPage from "./pages/VideosPage";
+import GalleryPage from "./pages/GalleryPage";
+import EventsPage from "./pages/EventsPage";
+import AboutPage from "./pages/AboutPage";
+import ProfilePage from "./pages/ProfilePage";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminHomepageEditor from "./pages/AdminHomepageEditor";
 
 const queryClient = new QueryClient();
 
@@ -13,17 +24,46 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/videos" element={<Index />} />
-          <Route path="/galerie" element={<Index />} />
-          <Route path="/evenements" element={<Index />} />
-          <Route path="/a-propos" element={<Index />} />
-          <Route path="/connexion" element={<Index />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/videos" element={<VideosPage />} />
+            <Route path="/videos/:id" element={<VideoDetail />} />
+            <Route path="/galerie" element={<GalleryPage />} />
+            <Route path="/evenements" element={<EventsPage />} />
+            <Route path="/a-propos" element={<AboutPage />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/connexion" element={<Auth initialMode="login" />} />
+            <Route path="/inscription" element={<Auth initialMode="register" />} />
+            <Route
+              path="/profil"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute admin>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/homepage"
+              element={
+                <ProtectedRoute admin>
+                  <AdminHomepageEditor />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

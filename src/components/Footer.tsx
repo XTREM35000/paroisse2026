@@ -120,13 +120,13 @@ const Footer = () => {
                 <MapPin className="h-4 w-4 text-gold mt-0.5 shrink-0" />
                 <span className="text-muted-foreground">
                   Boulevard de la Réconciliation<br />
-                  Cocody, Abidjan, Côte d'Ivoire
+                  Abidjan, Côte d'Ivoire
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-gold shrink-0" />
                 <a href="tel:+22527223344" className="text-muted-foreground hover:text-primary">
-                  +225 27 22 33 44 55
+                  +225 07 58 96 61 56
                 </a>
               </li>
               <li className="flex items-center gap-3">

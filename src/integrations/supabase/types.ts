@@ -6,28 +6,163 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
+export interface Database {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          id: string
+          email?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          role: "admin" | "user"
+          is_admin?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: "admin" | "user"
+          is_admin?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: "admin" | "user"
+          is_admin?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      videos: {
+        Row: {
+          id: string
+          title: string
+          description?: string | null
+          thumbnail_url?: string | null
+          video_url?: string | null
+          duration?: number | null
+          views: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          thumbnail_url?: string | null
+          video_url?: string | null
+          duration?: number | null
+          views?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          thumbnail_url?: string | null
+          video_url?: string | null
+          duration?: number | null
+          views?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+      }
+      homepage_sections: {
+        Row: {
+          id: string
+          key: string
+          title: string | null
+          subtitle: string | null
+          content: string | null
+          button_text: string | null
+          button_link: string | null
+          image_url: string | null
+          is_active: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          title?: string | null
+          subtitle?: string | null
+          content?: string | null
+          button_text?: string | null
+          button_link?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          title?: string | null
+          subtitle?: string | null
+          content?: string | null
+          button_text?: string | null
+          button_link?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+      }
+      events: {
+        Row: {
+          id: string
+          title: string
+          description?: string | null
+          date: string
+          time?: string | null
+          location?: string | null
+          image_url?: string | null
+          attendees?: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          date: string
+          time?: string | null
+          location?: string | null
+          image_url?: string | null
+          attendees?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          date?: string
+          time?: string | null
+          location?: string | null
+          image_url?: string | null
+          attendees?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 
