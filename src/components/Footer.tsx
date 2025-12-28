@@ -32,12 +32,12 @@ const Footer = () => {
             <div className="flex items-center gap-3">
               <AnimatedLogo size="md" />
               <div>
-                <h3 className="font-display text-lg font-semibold">Paroisse St-Michel</h3>
-                <p className="text-xs text-muted-foreground">Communauté de foi</p>
+                <h3 className="font-display text-lg font-semibold leading-tight">Paroisse Notre Dame</h3>
+                <p className="text-xs text-muted-foreground">de la Réconciliation</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Une communauté accueillante au service de la foi, de l'espérance et de la charité.
+              Une communauté accueillante au cœur d'Abidjan, au service de la foi, de l'espérance et de la charité.
             </p>
             <div className="flex gap-3">
               <a
@@ -119,20 +119,20 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-gold mt-0.5 shrink-0" />
                 <span className="text-muted-foreground">
-                  12 Rue de la Paroisse<br />
-                  75001 Paris, France
+                  Boulevard de la Réconciliation<br />
+                  Cocody, Abidjan, Côte d'Ivoire
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-gold shrink-0" />
-                <a href="tel:+33123456789" className="text-muted-foreground hover:text-primary">
-                  +33 1 23 45 67 89
+                <a href="tel:+22527223344" className="text-muted-foreground hover:text-primary">
+                  +225 27 22 33 44 55
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-gold shrink-0" />
-                <a href="mailto:contact@paroisse-stmichel.fr" className="text-muted-foreground hover:text-primary">
-                  contact@paroisse-stmichel.fr
+                <a href="mailto:contact@paroisse-ndreconciliation.ci" className="text-muted-foreground hover:text-primary">
+                  contact@paroisse-ndreconciliation.ci
                 </a>
               </li>
             </ul>
@@ -142,7 +142,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="liturgical-divider mt-10 mb-6" />
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© 2024 Paroisse Saint-Michel. Tous droits réservés.</p>
+          <p>© 2024 Paroisse Notre Dame de la Réconciliation. Tous droits réservés.</p>
           <div className="flex gap-6">
             <Link to="/mentions-legales" className="hover:text-primary transition-colors">
               Mentions légales

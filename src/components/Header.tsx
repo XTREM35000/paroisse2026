@@ -37,11 +37,11 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
               transition={{ delay: 0.3 }}
               className="hidden sm:block"
             >
-              <h1 className="font-display text-xl lg:text-2xl font-semibold text-foreground">
-                Paroisse St-Michel
+              <h1 className="font-display text-lg lg:text-xl font-semibold text-foreground leading-tight">
+                Paroisse Notre Dame
               </h1>
               <p className="text-xs text-muted-foreground -mt-0.5">
-                Communauté de foi
+                de la Réconciliation
               </p>
             </motion.div>
           </Link>
