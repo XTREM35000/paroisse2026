@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Play, Clock, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface VideoCardProps {
   id: string;
   title: string;
+  description?: string;
   thumbnail: string;
   duration: string;
   views: number;
@@ -12,7 +15,7 @@ interface VideoCardProps {
   date: string;
 }
 
-const VideoCard = ({ id, title, thumbnail, duration, views, category, date }: VideoCardProps) => {
+const VideoCard = ({ id, title, description, thumbnail, duration, views, category, date }: VideoCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -22,12 +25,13 @@ const VideoCard = ({ id, title, thumbnail, duration, views, category, date }: Vi
       transition={{ duration: 0.3 }}
     >
       <Link to={`/videos/${id}`} className="block group">
-        <div className="card-liturgical overflow-hidden">
+        <div className="card-liturgical overflow-hidden h-full flex flex-col">
           {/* Thumbnail */}
           <div className="relative aspect-video overflow-hidden">
             <img
               src={thumbnail}
               alt={title}
+              loading="lazy"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* Overlay */}
@@ -46,17 +50,22 @@ const VideoCard = ({ id, title, thumbnail, duration, views, category, date }: Vi
               {duration}
             </span>
             {/* Category Badge */}
-            <span className="absolute top-2 left-2 px-2 py-1 rounded-full bg-gold/90 text-secondary-foreground text-xs font-medium">
+            <Badge className="absolute top-2 left-2 bg-gold/90 hover:bg-gold/80">
               {category}
-            </span>
+            </Badge>
           </div>
 
           {/* Info */}
-          <div className="p-4 space-y-2">
+          <div className="p-4 space-y-2 flex-1 flex flex-col">
             <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
               {title}
             </h3>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            {description && (
+              <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
+                {description}
+              </p>
+            )}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5" />
                 {views.toLocaleString()} vues
@@ -65,6 +74,11 @@ const VideoCard = ({ id, title, thumbnail, duration, views, category, date }: Vi
                 <Clock className="w-3.5 h-3.5" />
                 {date}
               </span>
+            </div>
+            <div className="mt-3">
+              <Button size="sm" className="w-full" variant="default">
+                Regarder
+              </Button>
             </div>
           </div>
         </div>

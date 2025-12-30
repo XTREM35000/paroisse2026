@@ -1,0 +1,38 @@
+Structure du projet (exclusions : node_modules, dist, public, nhost, .vscode, .nuxt, .output, .git, .bolt, .next)
+========================================
+
+📄 favicon.ico
+📁 images
+  📄 bapteme.png
+  📄 celebration.png
+  📄 ceremonie.png
+  📁 events
+    📄 bapteme.png
+    📄 celebration.png
+    📄 ceremonie.png
+    📄 messe.png
+    📄 noel.png
+    📄 prieres.png
+  📁 gallery
+    📄 ceremonie.png
+    📄 gallery-1.png
+    📄 gallery-2.png
+    📄 gallery-3.png
+    📄 gallery-4.png
+    📄 prieres.png
+  📄 messe.png
+  📄 noel.png
+  📄 prieres.png
+  📁 videos
+    📄 bapteme.png
+    📄 celebration.png
+    📄 ceremonie.png
+    📄 messe.png
+    📄 noel.png
+    📄 prieres.png
+📄 liste.mjs
+📄 logo.png
+📄 logo1.png
+📄 placeholder.svg
+📄 project_structure.txt
+📄 robots.txt

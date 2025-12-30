@@ -11,6 +11,7 @@ import { useUser } from "@/hooks/useUser";
 interface HeaderProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
+  onOpenAuthModal?: (mode: 'login' | 'register') => void;
 }
 
 const navItems = [
@@ -21,7 +22,7 @@ const navItems = [
   { name: "À propos", path: "/a-propos" },
 ];
 
-const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
+const Header = ({ darkMode, toggleDarkMode, onOpenAuthModal }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -210,7 +211,7 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
                           variant="ghost"
                           className="w-full justify-start text-muted-foreground hover:text-foreground"
                           onClick={() => {
-                            navigate("/connexion");
+                            onOpenAuthModal?.('login');
                             setIsUserMenuOpen(false);
                           }}
                         >
@@ -221,7 +222,7 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
                           variant="ghost"
                           className="w-full justify-start text-muted-foreground hover:text-foreground"
                           onClick={() => {
-                            navigate("/inscription");
+                            onOpenAuthModal?.('register');
                             setIsUserMenuOpen(false);
                           }}
                         >

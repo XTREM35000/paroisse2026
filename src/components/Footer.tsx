@@ -124,16 +124,24 @@ const Footer = () => {
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-gold shrink-0" />
-                <a href="tel:+22527223344" className="text-muted-foreground hover:text-primary">
-                  +225 07 58 96 61 56
+                <Mail className="h-4 w-4 text-gold shrink-0" />
+                <a href="mailto:compassionotredame5@gmail.com" className="text-muted-foreground hover:text-primary">
+                  compassionotredame5@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-gold shrink-0" />
-                <a href="mailto:contact@paroisse-ndreconciliation.ci" className="text-muted-foreground hover:text-primary">
-                  contact@paroisse-ndreconciliation.ci
+                <span className="text-xs text-muted-foreground">Modérateur: 0720035585</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-gold shrink-0" />
+                <a href="mailto:basilediane71@gmail.com" className="text-muted-foreground hover:text-primary">
+                  Super Admin: basilediane71@gmail.com
                 </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="h-4 w-4 text-gold shrink-0" />
+                <span className="text-xs text-muted-foreground">Super Admin: 0505263030</span>
               </li>
             </ul>
           </motion.div>

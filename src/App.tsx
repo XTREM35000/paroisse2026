@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -32,14 +32,14 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/connexion" element={<Navigate to="/#auth" replace />} />
+            <Route path="/inscription" element={<Navigate to="/?mode=register#auth" replace />} />
+            <Route path="/auth" element={<Index />} />
             <Route path="/videos" element={<VideosPage />} />
             <Route path="/videos/:id" element={<VideoDetail />} />
             <Route path="/galerie" element={<GalleryPage />} />
             <Route path="/evenements" element={<EventsPage />} />
             <Route path="/a-propos" element={<AboutPage />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/connexion" element={<Auth initialMode="login" />} />
-            <Route path="/inscription" element={<Auth initialMode="register" />} />
             <Route
               path="/profil"
               element={

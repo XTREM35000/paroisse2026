@@ -2,9 +2,15 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  onSuccess?: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { login, signInWithProvider } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,6 +20,16 @@ const LoginForm: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
+      // Fermer le modal si callback existe
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+          // Rediriger selon le rôle (admin/user)
+          setTimeout(() => navigate("/admin"), 300);
+        }, 500);
+      } else {
+        navigate("/");
+      }
     } finally {
       setLoading(false);
     }

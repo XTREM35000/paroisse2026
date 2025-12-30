@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Calendar, MapPin, Users, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface EventCardProps {
   id: string;
@@ -43,12 +44,18 @@ const EventCard = ({
     >
       {/* Image */}
       {imageUrl && (
-        <div className={`${featured ? "lg:w-2/5" : ""} aspect-video lg:aspect-auto overflow-hidden`}>
+        <div className={`${featured ? "lg:w-2/5" : ""} aspect-video lg:aspect-auto overflow-hidden relative`}>
           <img
             src={imageUrl}
             alt={title}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
+          {featured && (
+            <Badge className="absolute top-4 left-4 bg-primary hover:bg-primary">
+              Événement à venir
+            </Badge>
+          )}
         </div>
       )}
 

@@ -10,7 +10,8 @@ const VideoUpload: React.FC = () => {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const uploadMut = useMutation(async (file: File) => {
+  const uploadMut = useMutation<unknown, Error, File>({
+    mutationFn: async (file: File) => {
     const uploaded = await uploadVideoFile(file);
 
     // generate thumbnail for direct video files
@@ -34,17 +35,17 @@ const VideoUpload: React.FC = () => {
     });
 
     return record;
-  }, {
+    },
     onMutate: () => {
       toast.loading("Début de l'upload...");
     },
     onSuccess: () => {
-      qc.invalidateQueries(["admin:videos"]);
+      qc.invalidateQueries({ queryKey: ["admin:videos"] });
       toast.dismiss();
       toast.success("Upload terminé");
     },
-    onError: (e: any) => {
-      setError(e?.message ?? String(e));
+    onError: (error: Error) => {
+      setError(error?.message ?? String(error));
       toast.dismiss();
       toast.error("Erreur lors de l'upload");
     },
@@ -74,7 +75,7 @@ const VideoUpload: React.FC = () => {
       </div>
 
       {error && <div className="text-destructive mt-2">{error}</div>}
-      {uploadMut.isLoading && <div className="mt-2">Upload en cours...</div>}
+      {uploadMut.isPending && <div className="mt-2">Upload en cours...</div>}
       {uploadMut.isSuccess && <div className="mt-2 text-success">Upload terminé</div>}
 
       <div className="mt-3">

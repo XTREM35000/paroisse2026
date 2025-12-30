@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import HeroBanner from "@/components/HeroBanner";
+import Footer from "@/components/Footer";
 import { useGalleryImages } from "@/hooks/useGalleryImages";
 import GalleryCard from "@/components/GalleryCard";
 
@@ -19,8 +20,17 @@ interface GalleryImage {
 
 const GalleryPage = () => {
   const { images, loading } = useGalleryImages(100);
+  const [darkMode, setDarkMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
 
   const categories = useMemo(
     () =>
@@ -51,7 +61,7 @@ const GalleryPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header darkMode={false} toggleDarkMode={() => {}} />
+      <Header darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)} />
       
       <HeroBanner
         title="Galerie"
@@ -154,6 +164,8 @@ const GalleryPage = () => {
           </motion.div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 };
