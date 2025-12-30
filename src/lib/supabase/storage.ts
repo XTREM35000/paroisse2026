@@ -11,7 +11,16 @@ export async function uploadVideoFile(file: File, path?: string) {
   return { key: data.path, publicUrl: publicData.publicUrl };
 }
 
-export async function createVideoRecord(record: any) {
+export async function createVideoRecord(record: {
+  title: string;
+  description?: string;
+  video_url?: string;
+  thumbnail_url?: string;
+  duration?: number;
+  author_id?: string;
+  category_id?: string;
+  status?: string;
+}) {
   const { data, error } = await supabase.from("videos").insert([record]).select().maybeSingle();
   if (error) throw error;
   return data;
@@ -19,7 +28,6 @@ export async function createVideoRecord(record: any) {
 
 export async function uploadThumbnailFile(blob: Blob, filename?: string) {
   const name = filename ?? `thumbnails/${Date.now()}.jpg`;
-  // Supabase storage requires a File or Blob; convert blob to File for better metadata
   const file = new File([blob], name.split('/').pop() ?? name, { type: 'image/jpeg' });
   const { data, error } = await supabase.storage.from("videos").upload(name, file, { upsert: true });
   if (error) throw error;
@@ -42,7 +50,6 @@ export async function generateThumbnailFromFile(file: File, seekTo = 0.5): Promi
       };
 
       video.addEventListener('loadeddata', () => {
-        // seekTo as fraction of duration
         const duration = video.duration || 0;
         const time = Math.min(Math.max(0, seekTo), 0.99) * duration;
         const seekHandler = () => {
@@ -68,7 +75,6 @@ export async function generateThumbnailFromFile(file: File, seekTo = 0.5): Promi
           }
         };
 
-        // If already seeked, call handler, otherwise seek
         if (video.readyState >= 2) {
           video.currentTime = time;
         }
@@ -79,7 +85,7 @@ export async function generateThumbnailFromFile(file: File, seekTo = 0.5): Promi
         video.addEventListener('seeked', onSeeked);
       });
 
-      video.addEventListener('error', (e) => {
+      video.addEventListener('error', () => {
         reject(new Error('Erreur lors du chargement de la vidéo pour la miniature'));
         cleanup();
       });
