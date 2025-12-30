@@ -89,7 +89,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             email: createdUser.email,
             full_name: fullName || null,
             phone: fullPhone || null,
-            role: 'member',
+            role: 'membre',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -99,7 +99,26 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
           }
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from('profiles').insert(insertData);
+          const { data: profileData, error: profileInsertErr } = await (supabase as any)
+            .from('profiles')
+            .insert(insertData);
+
+          if (profileInsertErr) {
+            console.error('Profile insert error (attempting fallback via auth metadata):', profileInsertErr);
+            // Fallback: update auth.user metadata so profile info is available
+            try {
+              const { error: metaErr } = await supabase.auth.updateUser({
+                data: {
+                  full_name: fullName || null,
+                  phone: fullPhone || null,
+                  avatar_url: avatar_url || null,
+                },
+              });
+              if (metaErr) console.error('Failed to update auth user metadata as fallback:', metaErr);
+            } catch (metaEx) {
+              console.error('Exception while updating auth metadata fallback:', metaEx);
+            }
+          }
 
           // Fermer le modal si callback existe
           if (onSuccess) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, GripVertical } from 'lucide-react';
 import DraggableModal from './DraggableModal';
 import LoginForm from '@/components/LoginForm';
 import RegisterForm from '@/components/RegisterForm';
@@ -29,7 +29,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
   }, [isOpen]);
 
   return (
-    <DraggableModal open={isOpen} onClose={onClose} initialY={80} draggableOnMobile={true}>
+    <DraggableModal open={isOpen} onClose={onClose} initialY={260} draggableOnMobile={true} dragHandleOnly={false}>
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -37,6 +37,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
         transition={{ duration: 0.18 }}
         className="relative w-full max-w-md md:max-w-2xl max-h-[90vh] bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border border-border/50 flex flex-col overflow-hidden"
       >
+        {/* Drag handle (visible) */}
+        <div data-drag-handle className="w-full flex items-center justify-center p-2 border-b border-border/30 cursor-move">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <GripVertical className="h-4 w-4" />
+            <span className="text-xs">Glisser pour déplacer</span>
+          </div>
+        </div>
+
         {/* Close Button */}
         <motion.button
           whileHover={{ rotate: 90 }}

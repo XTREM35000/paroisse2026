@@ -27,7 +27,7 @@ export function useUser() {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Erreur lors de la récupération du profil:', error);
