@@ -87,13 +87,14 @@ const ProfilePage = () => {
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
 
+        const bucket = import.meta.env.VITE_BUCKET_AVATAR || 'avatars';
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
+          .from(bucket)
           .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        const { data } = await supabase.storage.from(bucket).getPublicUrl(filePath);
         updatedAvatarUrl = data?.publicUrl || userData.avatar_url;
       }
 

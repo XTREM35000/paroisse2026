@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import DraggableModal from './DraggableModal';
+import BaseModal from './base-modal';
 import LoginForm from '@/components/LoginForm';
 import RegisterForm from '@/components/RegisterForm';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
     setMode(defaultMode);
   }, [defaultMode, isOpen]);
 
+  // Empêcher le scroll de la page quand le modal est ouvert
+  useEffect(() => {
+    if (isOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'auto';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
+
   return (
-    <DraggableModal open={isOpen} onClose={onClose}>
+    <BaseModal open={isOpen} onClose={onClose}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.2 }}
-        className="relative w-full max-w-2xl max-h-[85vh] bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border border-border/50 flex flex-col overflow-hidden"
+        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        transition={{ duration: 0.18 }}
+        className="relative w-full max-w-md md:max-w-2xl max-h-[90vh] bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border border-border/50 flex flex-col overflow-hidden"
       >
         {/* Close Button */}
         <motion.button
@@ -39,7 +48,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
           <X className="h-6 w-6 text-muted-foreground hover:text-foreground" />
         </motion.button>
 
-        <div className="overflow-y-auto flex-1 px-6 py-6">
+        <div className="overflow-y-auto flex-1 px-4 py-4 md:px-6 md:py-6">
           <div className="flex gap-6 items-stretch">
             {/* Branding Section */}
             <div className="hidden md:flex flex-col items-center justify-center w-1/3">
@@ -69,7 +78,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
             </div>
 
             {/* Form Section */}
-            <div className="w-full md:w-2/3 flex flex-col">
+            <div className="w-full md:w-2/3 flex flex-col min-h-[300px]" style={{ minWidth: 280 }}>
               {/* Tabs */}
               <div className="flex items-center justify-between mb-4">
                 <h1 className="text-xl font-semibold">{mode === 'login' ? 'Connexion' : 'Inscription'}</h1>
@@ -122,7 +131,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
           </div>
         </div>
       </motion.div>
-    </DraggableModal>
+    </BaseModal>
   );
 };
 

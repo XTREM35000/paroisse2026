@@ -67,13 +67,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         const fileExt = avatarFile.name.split('.').pop();
         const fileName = `${createdUser.id}/${Date.now()}_avatar.${fileExt}`;
         try {
+          const bucket = import.meta.env.VITE_BUCKET_AVATAR || 'avatars';
           const { error: uploadError } = await supabase.storage
-            .from('avatars')
+            .from(bucket)
             .upload(fileName, avatarFile, { upsert: true });
           if (uploadError) throw uploadError;
 
-          const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-          avatar_url = publicData.publicUrl;
+          const { data: publicData } = await supabase.storage.from(bucket).getPublicUrl(fileName);
+          avatar_url = publicData?.publicUrl;
         } catch (err) {
           console.error('Upload avatar failed:', err);
         }

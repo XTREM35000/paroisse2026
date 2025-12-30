@@ -6,10 +6,18 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error('Supabase env:', {
+    VITE_SUPABASE_URL: !!SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: !!SUPABASE_PUBLISHABLE_KEY,
+    VITE_BUCKET_AVATAR: import.meta.env.VITE_BUCKET_AVATAR || null,
+  });
   throw new Error(
     'Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.'
   );
 }
+
+// Log bucket info to help debugging deployments
+console.info('Supabase client initializing. Avatar bucket:', import.meta.env.VITE_BUCKET_AVATAR || 'avatars');
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
