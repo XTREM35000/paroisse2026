@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import BaseModal from './base-modal';
+import DraggableModal from './DraggableModal';
 import LoginForm from '@/components/LoginForm';
 import RegisterForm from '@/components/RegisterForm';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
   }, [isOpen]);
 
   return (
-    <BaseModal open={isOpen} onClose={onClose}>
+    <DraggableModal open={isOpen} onClose={onClose} initialY={80} draggableOnMobile={true}>
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -131,7 +131,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
           </div>
         </div>
       </motion.div>
-    </BaseModal>
+    </DraggableModal>
   );
 };
 
