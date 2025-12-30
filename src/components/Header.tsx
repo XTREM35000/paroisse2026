@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, User, LogOut, HelpCircle, Menu, X, Home, Info } from "lucide-react";
+import { Search, User, LogOut, HelpCircle, Menu, X, Home, Info, Users } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
 import AuthModal from "./AuthModal";
 import MobileSidebar from "./MobileSidebar";
@@ -174,7 +174,19 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                       variant="ghost"
                       className="w-full justify-start text-xs mt-1"
                       onClick={() => {
-                        navigate("/profile");
+                        navigate("/membres");
+                        setIsUserMenuOpen(false);
+                      }}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Membre
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-xs mt-1"
+                      onClick={() => {
+                        navigate("/profil");
                         setIsUserMenuOpen(false);
                       }}
                     >

@@ -37,6 +37,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import HelpPage from './pages/HelpPage';
 import NotificationProvider from '@/components/ui/notification-system';
+import MembersPage from './pages/MembersPage';
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,12 @@ const App = () => (
             <Route path="/receipts" element={<Layout><Receipts /></Layout>} />
             <Route path="/admin/users" element={<ProtectedRoute admin><Layout><AdminUsers /></Layout></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute admin><Layout><AdminSettings /></Layout></ProtectedRoute>} />
+            <Route path="/admin/members" element={
+              <ProtectedRoute admin>
+                <Layout><MembersPage /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/membres" element={<Layout><MembersPage /></Layout>} />
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
         </BrowserRouter>

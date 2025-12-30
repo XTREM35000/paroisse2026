@@ -104,8 +104,7 @@ const ProfilePage = () => {
         avatar_url: updatedAvatarUrl,
       };
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await supabase
         .from('profiles')
         .update(profileUpdates)
         .eq('id', user.id);

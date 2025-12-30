@@ -5,14 +5,17 @@ import { useAuth } from './useAuth';
 interface UserProfile {
   id: string;
   email: string;
-  display_name?: string;
-  avatar_url?: string;
+  full_name?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  role?: string | null;
+  created_at?: string | null;
 }
 
 export function useUser() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -21,7 +24,7 @@ export function useUser() {
     }
 
     const fetchProfile = async () => {
-      setLoading(true);
+      setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -36,7 +39,7 @@ export function useUser() {
             email: user.email || '',
           });
         } else {
-          setProfile(data || {
+          setProfile((data as UserProfile) || {
             id: user.id,
             email: user.email || '',
           });
@@ -48,12 +51,14 @@ export function useUser() {
           email: user.email || '',
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchProfile();
   }, [user]);
 
-  return { profile, loading };
+  const isAdmin = !!(profile && typeof profile.role === 'string' && ['admin', 'administrateur', 'superadmin'].includes(profile.role.toLowerCase()));
+
+  return { profile, isLoading, isAdmin };
 }
