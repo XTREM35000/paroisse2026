@@ -28,7 +28,7 @@ const MembersPage: React.FC = () => {
         .select('id, email, full_name, avatar_url, role, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setMembers((data as Member[]) || []);
+      setMembers(((data as unknown) as Member[]) || []);
     } catch (err) {
       console.error('Erreur fetch members', err);
     } finally {
@@ -71,7 +71,7 @@ const MembersPage: React.FC = () => {
   const createMember = async () => {
     try {
       const payload: Partial<Member> = { email: form.email || null, full_name: form.full_name || null, role: form.role || 'membre' };
-        const { data, error } = await supabase.from('profiles').insert(payload as unknown as Record<string, unknown>);
+      const { data, error } = await supabase.from('profiles').insert([payload as unknown as any]);
       if (error) throw error;
       void data;
       await fetchMembers();

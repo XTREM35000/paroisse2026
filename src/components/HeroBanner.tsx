@@ -32,13 +32,13 @@ const HeroBanner = ({
           <img
             src={backgroundImage}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
           />
         ) : (
           <div className="w-full h-full gradient-hero" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/90 via-foreground/70 to-foreground/40" />
-        <div className="absolute inset-0 cross-pattern opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/40 via-foreground/30 to-foreground/10" />
+        <div className="absolute inset-0 cross-pattern opacity-10" />
       </div>
 
       {/* Content */}

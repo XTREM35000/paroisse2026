@@ -29,7 +29,7 @@ const mockVideosDefault = [
     id: "1", 
     title: "Sermon du Dimanche - La Miséricorde Divine", 
     description: "Message inspirant sur le pardon et la grâce divine",
-    thumbnail_url: "/images/videos/noel.png", 
+    thumbnail_url: "/images/videos/messe.png", 
     duration: 1800, 
     views: 1245, 
     category: "Sermon",
@@ -39,7 +39,7 @@ const mockVideosDefault = [
     id: "2", 
     title: "Chants liturgiques de Noël", 
     description: "Célébration musicale de la Nativité",
-    thumbnail_url: "/images/videos/celebration.png", 
+    thumbnail_url: "/images/videos/noel.png", 
     duration: 2400, 
     views: 876, 
     category: "Musique",
@@ -49,7 +49,7 @@ const mockVideosDefault = [
     id: "3", 
     title: "Messe solennelle de Pâques", 
     description: "Cérémonie traditionnelle de résurrection",
-    thumbnail_url: "/images/videos/ceremonie.png", 
+    thumbnail_url: "/images/videos/celebration.png", 
     duration: 3600, 
     views: 2103, 
     category: "Célébration",
@@ -76,7 +76,7 @@ const mockEventsDefault = [
     time: "22h00", 
     location: "Église Notre Dame, Cocody", 
     attendees: 350, 
-    imageUrl: "/images/events/noel.png" 
+    imageUrl: "/images/events/messe.png" 
   },
   { 
     id: "2", 
@@ -86,7 +86,7 @@ const mockEventsDefault = [
     time: "9h00 - 17h00", 
     location: "Centre paroissial, Cocody", 
     attendees: 75,
-    imageUrl: "/images/events/celebration.png"
+    imageUrl: "/images/events/bapteme.png"
   },
 ];
 
@@ -100,14 +100,25 @@ const Index = () => {
   const { images: galleryImages, loading: galleryLoading } = useGalleryImages(4);
   const { events: upcomingEvents, loading: eventsLoading } = useUpcomingEvents(2);
   const [events, setEvents] = useState(mockEventsDefault);
-  const [displayVideos, setDisplayVideos] = useState<typeof mockVideosDefault>([]);
+  type VideoItem = {
+    id: string;
+    title: string;
+    description?: string;
+    thumbnail_url?: string | null;
+    duration?: number | null;
+    views?: number;
+    category?: string;
+    created_at?: string;
+  };
+
+  const [displayVideos, setDisplayVideos] = useState<VideoItem[]>([]);
   
   // Initialiser avec des vidéos mockées si aucune API
   useEffect(() => {
     if (videos && videos.length > 0) {
-      setDisplayVideos(videos as any);
+      setDisplayVideos(videos);
     } else {
-      setDisplayVideos(mockVideosDefault);
+      setDisplayVideos(mockVideosDefault as unknown as VideoItem[]);
     }
   }, [videos]);
 
@@ -142,7 +153,7 @@ const Index = () => {
     subtitle: "Une communauté vivante au cœur d'Abidjan, au service de la foi, de l'espérance et de la charité. Rejoignez-nous pour célébrer ensemble la Parole de Dieu.",
     button_text: "Voir les horaires",
     button_link: "/evenements",
-    image_url: "/images/noel.png"
+    image_url: "/images/messe.png"
   };
 
   // Utiliser les images de la galerie ou le fallback
@@ -164,16 +175,16 @@ const Index = () => {
           title={heroSection.title || "Bienvenue à Notre Dame de la Compassion"}
           subtitle={heroSection.subtitle || "Une communauté vivante..."}
           eventTitle="Messe de Noël"
-          eventDate="25 décembre à 22h"
-          backgroundImage={heroSection.image_url || "/images/celebration.png"} />
+          eventDate="31 décembre à 22h"
+          backgroundImage={heroSection.image_url || "/images/bapteme.png"} />
 
         {/* Galerie photos (remplacé à la place de "Événement à venir") */}
         <section className="py-12 lg:py-16">
           <div className="container mx-auto px-4">
             <SectionTitle
-              title={pageContent?.gallery_title?.title || "Galerie photos"}
-              subtitle={pageContent?.gallery_title?.subtitle || "Les moments forts de notre communauté"}
-              viewAllLink={pageContent?.gallery_title?.button_link || "/galerie"}
+              title="Galerie photos"
+              subtitle="Les moments forts de notre communauté"
+              viewAllLink="/galerie"
             />
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {displayImages.map((image, i) => (

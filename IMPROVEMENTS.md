@@ -152,8 +152,8 @@ interface Video {
 
 ### Vidéos (`/images/videos/`)
 
-- `noel.png` - Chants liturgiques de Noël
-- `celebration.png` - Célébrations
+- `bapteme.png` - Chants liturgiques de Noël
+- `bapteme.png` - Célébrations
 - `ceremonie.png` - Cérémonies
 - `bapteme.png` - Baptêmes
 - `messe.png` - Messes

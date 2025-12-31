@@ -142,7 +142,7 @@ const VideosPage = () => {
       title="Vidéos"
       subtitle="Parcourez tous nos enregistrements de célébrations, enseignements et moments de partage"
       showBackButton={true}
-      backgroundImage="/images/messe.png"
+      backgroundImage="/images/prieres.png"
     />
 
       <main className="flex-1">

@@ -59,7 +59,7 @@ const GalleryPage = () => {
         title="Galerie"
         subtitle="Découvrez nos plus beaux moments et événements"
         showBackButton={true}
-        backgroundImage="/images/celebration.png"
+        backgroundImage="/images/ceremonie.png"
       />
 
       <div className="container mx-auto px-4 py-12">

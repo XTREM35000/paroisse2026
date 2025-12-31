@@ -166,7 +166,7 @@ const ProfilePage = () => {
         title="Mon profil"
         subtitle="Gérez vos informations personnelles"
         showBackButton={true}
-        backgroundImage="/images/noel.png"
+        backgroundImage="/images/bapteme.png"
       />
 
       <main className="flex-1 py-12 lg:py-16">

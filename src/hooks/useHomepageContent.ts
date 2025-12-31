@@ -1,15 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface HeroSection {
+  title?: string;
+  subtitle?: string;
+  button_text?: string;
+  button_link?: string;
+  image_url?: string;
+}
+
+interface SectionTitleBlock {
+  title?: string;
+  subtitle?: string;
+  button_link?: string;
+}
+
 interface HomepageContent {
-  id: string;
+  id?: string;
   title?: string;
   subtitle?: string;
   description?: string;
-  hero_image?: string;
-  featured_video_id?: string;
-  cta_text?: string;
-  cta_link?: string;
+  hero?: HeroSection;
+  videos_title?: SectionTitleBlock;
+  events_title?: SectionTitleBlock;
+  [key: string]: any;
 }
 
 export function useHomepageContent() {
@@ -31,7 +45,23 @@ export function useHomepageContent() {
       }
 
       if (data) {
-        setContent(data);
+        // `data.content` in the DB is stored as JSON; normalize to the HomepageContent shape
+        let parsed: HomepageContent | null = null;
+        try {
+          const raw = (data as any).content ?? null;
+          if (raw) {
+            parsed = typeof raw === 'string' ? JSON.parse(raw) : (raw as HomepageContent);
+          }
+        } catch (e) {
+          console.warn('Impossible de parser homepage_content.content', e);
+        }
+
+        setContent(parsed || {
+          id: data.id || 'default',
+          title: data.title || 'Bienvenue',
+          subtitle: data.subtitle || 'Paroisse Notre Dame',
+          description: data.title || 'Découvrez nos vidéos, galeries et événements',
+        });
       } else {
         // Provide default content if none exists
         setContent({

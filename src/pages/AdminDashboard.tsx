@@ -14,7 +14,7 @@ const AdminDashboard: React.FC = () => {
         title="Tableau de bord"
         subtitle="Gérez les vidéos, les publications et modérez les commentaires"
         showBackButton={true}
-        backgroundImage="/images/noel.png"
+        backgroundImage="/images/bapteme.png"
       />
 
       <main className="flex-1 py-12 lg:py-16">

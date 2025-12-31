@@ -4,14 +4,14 @@ Structure du projet (exclusions : node_modules, dist, public, nhost, .vscode, .n
 📄 favicon.ico
 📁 images
   📄 bapteme.png
-  📄 celebration.png
+  📄 bapteme.png
   📄 ceremonie.png
   📁 events
     📄 bapteme.png
-    📄 celebration.png
+    📄 bapteme.png
     📄 ceremonie.png
     📄 messe.png
-    📄 noel.png
+    📄 bapteme.png
     📄 prieres.png
   📁 gallery
     📄 ceremonie.png
@@ -21,14 +21,14 @@ Structure du projet (exclusions : node_modules, dist, public, nhost, .vscode, .n
     📄 gallery-4.png
     📄 prieres.png
   📄 messe.png
-  📄 noel.png
+  📄 bapteme.png
   📄 prieres.png
   📁 videos
     📄 bapteme.png
-    📄 celebration.png
+    📄 bapteme.png
     📄 ceremonie.png
     📄 messe.png
-    📄 noel.png
+    📄 bapteme.png
     📄 prieres.png
 📄 liste.mjs
 📄 logo.png
