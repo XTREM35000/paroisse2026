@@ -70,11 +70,11 @@ const mockVideosDefault = [
 const mockEventsDefault = [
   { 
     id: "1", 
-    title: "Messe de Noël", 
+    title: "Messe de noël", 
     description: "Célébration solennelle de la Nativité du Seigneur avec la chorale Espoir d'Afrique.", 
     date: "2024-12-25", 
     time: "22h00", 
-    location: "Église Notre Dame, Cocody", 
+    location: "Paroisse", 
     attendees: 350, 
     imageUrl: "/images/events/messe.png" 
   },
@@ -84,7 +84,7 @@ const mockEventsDefault = [
     description: "Week-end de recueillement et de préparation spirituelle au Centre Jean-Paul II.", 
     date: "2024-12-21", 
     time: "9h00 - 17h00", 
-    location: "Centre paroissial, Cocody", 
+    location: "Paroisse", 
     attendees: 75,
     imageUrl: "/images/events/bapteme.png"
   },
@@ -174,8 +174,8 @@ const Index = () => {
         <HeroBanner
           title={heroSection.title || "Bienvenue à Notre Dame de la Compassion"}
           subtitle={heroSection.subtitle || "Une communauté vivante..."}
-          eventTitle="Messe de Noël"
-          eventDate="31 décembre à 22h"
+          eventTitle="Réveillon de la paroisse"
+          eventDate="31 décembre à partir de 22h"
           backgroundImage={heroSection.image_url || "/images/bapteme.png"} />
 
         {/* Galerie photos (remplacé à la place de "Événement à venir") */}
