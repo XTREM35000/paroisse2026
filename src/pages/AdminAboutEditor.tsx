@@ -65,7 +65,7 @@ interface MetadataEditorProps {
 
 // Composant pour éditer les métadonnées selon le type de contenu
 const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) => {
-  const metadata = section.metadata as MetadataType;
+  const metadata = section.metadata as unknown as MetadataType;
 
   switch (section.content_type) {
     case 'hero': {
