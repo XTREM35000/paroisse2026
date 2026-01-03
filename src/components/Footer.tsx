@@ -12,6 +12,7 @@ const Footer = () => {
     { name: "Vidéos", path: "/videos" },
     { name: "Galerie", path: "/galerie" },
     { name: "Événements", path: "/evenements" },
+    { name: "Annuaire", path: "/directory" },
     { name: "À propos", path: "/a-propos" },
   ];
 

@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminHomepageEditor from "./pages/AdminHomepageEditor";
 import AdminEvents from "./pages/AdminEvents";
 import AdminAboutEditor from './pages/AdminAboutEditor';
+import AdminDirectoryEditor from './pages/AdminDirectoryEditor';
 import AddMemberForm from '@/components/AddMemberForm';
 import ChatPage from './pages/ChatPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
@@ -121,6 +122,7 @@ const App = () => (
             <Route path="/receipts" element={<Layout><Receipts /></Layout>} />
             <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><Layout><AdminUsers /></Layout></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><Layout><AdminSettings /></Layout></ProtectedRoute>} />
+            <Route path="/admin/directory" element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>} />
             <Route path="/admin/members" element={
               <ProtectedRoute requiredRole="admin">
                 <Layout><MembersPage /></Layout>

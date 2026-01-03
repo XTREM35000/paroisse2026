@@ -9,9 +9,12 @@ const AdminSettings: React.FC = () => (
 
     <div className="mt-6">
       <h2 className="text-lg font-medium mb-2">Pages dynamiques</h2>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <Button asChild>
           <Link to="/admin/about">Éditeur: Page À propos</Link>
+        </Button>
+        <Button asChild>
+          <Link to="/admin/directory">Éditeur: Annuaire</Link>
         </Button>
       </div>
     </div>

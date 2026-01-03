@@ -7,10 +7,12 @@ import AuthModal from "./AuthModal";
 import MobileSidebar from "./MobileSidebar";
 import { MENU_GROUPS } from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
+import HeaderSkeleton from "./HeaderSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
+import { useHeaderConfig } from "@/hooks/useHeaderConfig";
 
 interface HeaderProps {
   darkMode?: boolean;
@@ -26,15 +28,12 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile } = useUser();
+  const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
 
-  // nav items for mobile sidebar
-  const navigationItems = [
-    { label: 'Accueil', href: '/', icon: <Home className="h-5 w-5" /> },
-    { label: 'Vidéos', href: '/videos', icon: <User className="h-5 w-5" /> },
-    { label: 'Galerie', href: '/galerie', icon: <User className="h-5 w-5" /> },
-    { label: 'Événements', href: '/evenements', icon: <User className="h-5 w-5" /> },
-    { label: 'À propos', href: '/a-propos', icon: <Info className="h-5 w-5" /> },
-  ];
+  // Afficher le skeleton pendant le chargement
+  if (headerLoading || !headerConfig) {
+    return <HeaderSkeleton />;
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50">
@@ -43,7 +42,22 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
           {/* Logo + Title + Navigation Menu */}
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-              <AnimatedLogo size="sm" />
+              {/* Logo dynamique */}
+              {headerConfig.logo_url ? (
+                <img
+                  src={headerConfig.logo_url}
+                  alt={headerConfig.logo_alt_text}
+                  className={`h-${
+                    headerConfig.logo_size === 'sm' ? '8' :
+                    headerConfig.logo_size === 'md' ? '10' :
+                    '12'
+                  } w-auto object-contain`}
+                />
+              ) : (
+                <AnimatedLogo size={headerConfig.logo_size} />
+              )}
+              
+              {/* Titres dynamiques */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -51,32 +65,30 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 className="hidden sm:block"
               >
                 <h1 className="text-sm lg:text-base font-semibold text-foreground leading-tight">
-                  Paroisse Notre Dame
+                  {headerConfig.main_title}
                 </h1>
                 <p className="text-xs text-muted-foreground -mt-0.5">
-                  de la Compassion
+                  {headerConfig.subtitle}
                 </p>
               </motion.div>
             </Link>
 
             {/* Navigation Menu - Desktop */}
             <nav className="hidden md:flex items-center gap-2">
-              <Link 
-                to="/"
-                className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                title="Accueil"
-              >
-                <Home className="h-4 w-4" />
-                <span>Accueil</span>
-              </Link>
-              <Link 
-                to="/a-propos"
-                className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                title="À propos"
-              >
-                <Info className="h-4 w-4" />
-                <span>À propos</span>
-              </Link>
+              {headerConfig.navigation_items.map((item, index) => (
+                <Link 
+                  key={index}
+                  to={item.href}
+                  className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  title={item.label}
+                >
+                  {item.icon === 'home' && <Home className="h-4 w-4" />}
+                  {item.icon === 'info' && <Info className="h-4 w-4" />}
+                  {item.icon === 'play-circle' && <User className="h-4 w-4" />}
+                  {item.icon === 'calendar' && <User className="h-4 w-4" />}
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </nav>
           </div>
 
@@ -228,6 +240,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
         <MobileSidebar
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
+          // @ts-expect-error - MENU_GROUPS icons are valid React.ReactNode
           navigationGroups={MENU_GROUPS}
           user={user}
         />

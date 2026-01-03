@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Loader2, LogOut, Save, Edit2, Upload, Camera } from 'lucide-react';
 import Header from '@/components/Header';
 import HeroBanner from '@/components/HeroBanner';
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
@@ -65,6 +67,9 @@ const ProfilePage = () => {
       }));
     }
   }, [user, profile, navigate]);
+
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,7 +176,8 @@ const ProfilePage = () => {
         title="Mon profil"
         subtitle="Gérez vos informations personnelles"
         showBackButton={true}
-        backgroundImage="/images/bapteme.png"
+        backgroundImage={hero?.image_url || '/images/bapteme.png'}
+        onBgSave={saveHero}
       />
 
       <main className="flex-1 py-12 lg:py-16">

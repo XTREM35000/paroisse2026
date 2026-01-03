@@ -54,6 +54,7 @@ export const MENU_GROUPS = [
     items: [
       { label: 'Utilisateurs', href: '/admin/users', icon: Users },
       { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },
+      { label: 'Annuaire', href: '/admin/directory', icon: Users },
       { label: 'Page d\'accueil', href: '/admin/homepage', icon: Settings },
       { label: 'Événements', href: '/admin/events', icon: Calendar },
     ],

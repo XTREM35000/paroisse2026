@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import HeroBanner from "@/components/HeroBanner";
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import VideoPlayer from "@/components/VideoPlayer";
 import { getVideoById, incrementViewCount } from "@/lib/supabase/queries";
 
@@ -36,6 +38,9 @@ const VideoDetail: React.FC = () => {
     }
   }, [id]);
 
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
+
   if (isLoading)
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -63,11 +68,13 @@ const VideoDetail: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header provided by Layout */}
 
-      <HeroBanner
-        title={video.title ?? "Vidéo"}
-        subtitle={video.category || "Vidéo paroissiale"}
-        showBackButton={true}
-      />
+        <HeroBanner
+          title={video.title ?? "Vidéo"}
+          subtitle={video.category || "Vidéo paroissiale"}
+          showBackButton={true}
+          backgroundImage={hero?.image_url || video.poster_url || undefined}
+          onBgSave={saveHero}
+        />
 
       <main className="flex-1 py-12 lg:py-16">
         <div className="max-w-4xl mx-auto px-4">

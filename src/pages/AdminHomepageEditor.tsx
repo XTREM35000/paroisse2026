@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Save, X, AlertCircle } from "lucide-react";
+import { Loader2, Save, X, AlertCircle, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
+import { useHeaderConfig, useUpdateHeaderConfig } from "@/hooks/useHeaderConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { uploadFile } from "@/lib/supabase/storage";
+import type { NavigationItem } from "@/hooks/useHeaderConfig";
 
 // use shared `supabase` client from integrations
 const AdminHomepageEditor = () => {
@@ -54,8 +57,32 @@ const AdminHomepageEditor = () => {
   
   const [activeTab, setActiveTab] = useState("hero");
 
+  // Header config state
+  const { data: headerConfig, isLoading: headerConfigLoading } = useHeaderConfig();
+  const { mutate: updateHeaderConfig, isPending: isSavingHeader } = useUpdateHeaderConfig();
+  
+  const [headerData, setHeaderData] = useState({
+    logo_url: "",
+    logo_alt_text: "Logo Paroisse",
+    logo_size: "sm" as "sm" | "md" | "lg",
+    main_title: "Paroisse Notre Dame",
+    subtitle: "de la Compassion",
+    navigation_items: [] as NavigationItem[],
+  });
+
   // Load sections data on mount
   useEffect(() => {
+    if (headerConfig) {
+      setHeaderData({
+        logo_url: headerConfig.logo_url || "",
+        logo_alt_text: headerConfig.logo_alt_text,
+        logo_size: headerConfig.logo_size,
+        main_title: headerConfig.main_title,
+        subtitle: headerConfig.subtitle,
+        navigation_items: headerConfig.navigation_items || [],
+      });
+    }
+
     if (sections && sections.length > 0) {
       const heroSection = sections.find((s) => s.section_key === "hero");
       const gallerySection = sections.find((s) => s.section_key === "gallery_section");
@@ -286,6 +313,70 @@ const AdminHomepageEditor = () => {
     }
   };
 
+  // Header handlers
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const fileName = `header-logo-${Date.now()}`;
+      const url = await uploadFile(file, 'logos', fileName);
+      setHeaderData({ ...headerData, logo_url: url });
+      toast({ title: "Succès", description: "Logo téléchargé" });
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible de télécharger le logo",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addNavigationItem = () => {
+    setHeaderData({
+      ...headerData,
+      navigation_items: [
+        ...headerData.navigation_items,
+        { label: "", href: "", icon: "home" },
+      ],
+    });
+  };
+
+  const updateNavigationItem = (index: number, field: keyof NavigationItem, value: string) => {
+    const newItems = [...headerData.navigation_items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setHeaderData({ ...headerData, navigation_items: newItems });
+  };
+
+  const removeNavigationItem = (index: number) => {
+    const newItems = headerData.navigation_items.filter((_, i) => i !== index);
+    setHeaderData({ ...headerData, navigation_items: newItems });
+  };
+
+  const handleSaveHeader = async () => {
+    try {
+      updateHeaderConfig({
+        logo_url: headerData.logo_url || null,
+        logo_alt_text: headerData.logo_alt_text,
+        logo_size: headerData.logo_size,
+        main_title: headerData.main_title,
+        subtitle: headerData.subtitle,
+        navigation_items: headerData.navigation_items,
+      });
+    } catch (error) {
+      console.error("Error saving header:", error);
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible de sauvegarder la configuration du header",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveContact = async () => {
     setLoading(true);
     try {
@@ -337,6 +428,7 @@ const AdminHomepageEditor = () => {
           {/* Tabs */}
           <div className="flex gap-2 border-b border-border overflow-x-auto pb-4">
             {[
+              { id: "header", label: "Header" },
               { id: "hero", label: "Section héro" },
               { id: "gallery", label: "Galerie" },
               { id: "videos", label: "Vidéos" },
@@ -360,6 +452,163 @@ const AdminHomepageEditor = () => {
 
           {/* Content */}
           <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+            {/* Header Tab */}
+            {activeTab === "header" && (
+              <div className="space-y-6">
+                {/* Logo Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Logo</h3>
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-1 space-y-2">
+                      <label className="block text-sm font-medium">Logo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={loading}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    {headerData.logo_url && (
+                      <img
+                        src={headerData.logo_url}
+                        alt="Logo preview"
+                        className="h-16 w-auto object-contain rounded border border-border p-2"
+                      />
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Texte alternatif</label>
+                      <input
+                        type="text"
+                        value={headerData.logo_alt_text}
+                        onChange={(e) => setHeaderData({ ...headerData, logo_alt_text: e.target.value })}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Taille du logo</label>
+                      <select
+                        value={headerData.logo_size}
+                        onChange={(e) => setHeaderData({ ...headerData, logo_size: e.target.value as "sm" | "md" | "lg" })}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="sm">Petit</option>
+                        <option value="md">Moyen</option>
+                        <option value="lg">Grand</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Titles Section */}
+                <div className="space-y-4 border-t border-border pt-6">
+                  <h3 className="text-lg font-semibold">Titres</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Titre principal</label>
+                      <input
+                        type="text"
+                        value={headerData.main_title}
+                        onChange={(e) => setHeaderData({ ...headerData, main_title: e.target.value })}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Sous-titre</label>
+                      <input
+                        type="text"
+                        value={headerData.subtitle}
+                        onChange={(e) => setHeaderData({ ...headerData, subtitle: e.target.value })}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigation Section */}
+                <div className="space-y-4 border-t border-border pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Navigation</h3>
+                    <button
+                      onClick={addNavigationItem}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter un lien
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {headerData.navigation_items.map((item, index) => (
+                      <div key={index} className="flex gap-2 items-center p-3 border border-border rounded">
+                        <input
+                          type="text"
+                          placeholder="Label (ex: Accueil)"
+                          value={item.label}
+                          onChange={(e) => updateNavigationItem(index, "label", e.target.value)}
+                          className="flex-1 px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Lien (ex: /)"
+                          value={item.href}
+                          onChange={(e) => updateNavigationItem(index, "href", e.target.value)}
+                          className="flex-1 px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Icône (ex: home)"
+                          value={item.icon}
+                          onChange={(e) => updateNavigationItem(index, "icon", e.target.value)}
+                          className="flex-1 px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <button
+                          onClick={() => removeNavigationItem(index)}
+                          disabled={loading}
+                          className="flex items-center justify-center h-10 w-10 bg-destructive/10 text-destructive rounded hover:bg-destructive/20 transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Save Buttons */}
+                <div className="flex justify-end gap-2 pt-6 border-t border-border">
+                  <button
+                    onClick={() => {
+                      if (headerConfig) {
+                        setHeaderData({
+                          logo_url: headerConfig.logo_url || "",
+                          logo_alt_text: headerConfig.logo_alt_text,
+                          logo_size: headerConfig.logo_size,
+                          main_title: headerConfig.main_title,
+                          subtitle: headerConfig.subtitle,
+                          navigation_items: headerConfig.navigation_items || [],
+                        });
+                      }
+                    }}
+                    disabled={loading || isSavingHeader}
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleSaveHeader}
+                    disabled={loading || isSavingHeader}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {isSavingHeader && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {isSavingHeader ? "Sauvegarde..." : "Sauvegarder"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Hero Tab */}
             {activeTab === "hero" && (
               <div className="space-y-4">

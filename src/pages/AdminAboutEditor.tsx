@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAboutPage, AboutSection } from '@/hooks/useAboutPage';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadFile } from '@/lib/supabase/storage';
+import type { Json } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -82,7 +83,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={btn.text || ''}
                 onChange={(e) => {
                   const newButtons = [...buttons];
-                  newButtons[index].text = e.target.value;
+                  newButtons[index] = { ...newButtons[index], text: e.target.value };
                   onChange({ buttons: newButtons });
                 }}
               />
@@ -91,7 +92,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={btn.link || ''}
                 onChange={(e) => {
                   const newButtons = [...buttons];
-                  newButtons[index].link = e.target.value;
+                  newButtons[index] = { ...newButtons[index], link: e.target.value };
                   onChange({ buttons: newButtons });
                 }}
               />
@@ -100,8 +101,8 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={btn.variant || 'primary'}
                 onChange={(e) => {
                   const newButtons = [...buttons];
-                  newButtons[index].variant = e.target.value as 'primary' | 'secondary' | 'outline';
-                  onChange({ buttons: newButtons });
+                  newButtons[index] = { ...newButtons[index], variant: e.target.value as 'primary' | 'secondary' | 'outline' };
+                  onChange({ buttons: newButtons as ButtonMetadata[] });
                 }}
               >
                 <option value="primary">Primary</option>
@@ -123,8 +124,8 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
           <Button
             variant="outline"
             onClick={() => {
-              const newButtons = [...buttons, { text: '', link: '/', variant: 'primary' }];
-              onChange({ buttons: newButtons });
+              const newButtons = [...buttons, { text: '', link: '/', variant: 'primary' as const }];
+              onChange({ buttons: newButtons } as unknown as MetadataType);
             }}
           >
             <Plus className="h-4 w-4 mr-2" /> Ajouter un bouton
@@ -756,6 +757,7 @@ const AdminAboutEditor: React.FC = () => {
                       section={editingSection}
                       onChange={(metadata) => setEditingSection({
                         ...editingSection,
+                        // @ts-expect-error - MetadataType is compatible at runtime with Json
                         metadata
                       })}
                     />
@@ -763,7 +765,16 @@ const AdminAboutEditor: React.FC = () => {
 
                   <TabsContent value="image" className="space-y-4">
                     <div>
-                      <Label>Image de la section</Label>
+                      <Label>
+                        {editingSection.section_key === 'about_hero' 
+                          ? 'Image de fond du Hero Banner' 
+                          : 'Image de la section'}
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {editingSection.section_key === 'about_hero' 
+                          ? 'Définissez l\'image de fond du banner principal de la page à propos. Cette image sera affichée avec un overlay semi-transparent.'
+                          : 'Téléchargez ou collez l\'URL d\'une image pour cette section.'}
+                      </p>
                       <div className="mt-2">
                         <Input
                           type="file"

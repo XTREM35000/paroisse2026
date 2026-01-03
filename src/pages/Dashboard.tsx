@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import HeroBanner from '@/components/HeroBanner';
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Users, Video, Calendar, BarChart2 } from 'lucide-react';
@@ -27,6 +29,8 @@ const activityMock = [
 
 const Dashboard: React.FC = () => {
   const { videos: recentVideos = [], loading: videosLoading } = useVideos(4);
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
   const statCards = useMemo(() => [
     { id: 'users', label: 'Membres', value: statsData.users, icon: Users, color: 'bg-primary/10 text-primary' },
@@ -37,7 +41,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeroBanner title="Tableau de bord" subtitle="Vue d'ensemble et statistiques" backgroundImage="/images/videos/celebration.png" showBackButton={false} />
+      <HeroBanner title="Tableau de bord" subtitle="Vue d'ensemble et statistiques" backgroundImage={hero?.image_url || '/images/videos/celebration.png'} showBackButton={false} onBgSave={saveHero} />
 
       <main className="py-12 lg:py-16 container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

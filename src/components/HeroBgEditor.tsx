@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit3, Image as ImageIcon, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { uploadFile } from '@/lib/supabase/storage';
+import { uploadDirectoryImage } from '@/lib/supabase/storage';
 
 interface Props {
   current?: string | undefined;
   onSave: (url: string) => Promise<void> | void;
+  bucket?: string; // Optionnel, défaut: 'gallery'
 }
 
-const HeroBgEditor: React.FC<Props> = ({ current, onSave }) => {
+const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(current || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Synchroniser le state avec les changements de 'current' (pour les navigations)
+  useEffect(() => {
+    setValue(current || '');
+  }, [current]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -30,7 +37,9 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave }) => {
     if (!file) return;
     setUploading(true);
     try {
-      const res = await uploadFile(file);
+      const res = bucket 
+        ? await uploadDirectoryImage(file, bucket)
+        : await uploadFile(file);
       if (res?.publicUrl) {
         setValue(res.publicUrl);
       } else {

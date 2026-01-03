@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Search, Plus, Trash2, Edit2 } from 'lucide-react';
 import HeroBanner from '@/components/HeroBanner';
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import VideoCard from '@/components/VideoCard';
 import VideoModalForm from '@/components/VideoModalForm';
 import { useVideos } from '@/hooks/useVideos';
@@ -38,6 +40,9 @@ const VideosPage = () => {
     100,
     selectedCategory === 'all' ? undefined : selectedCategory
   );
+
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
   const isAdmin = profile?.role === 'admin' || (user as any)?.user_metadata?.role === 'admin';
   console.debug('📹 VideosPage rendered:', { userId: user?.id, profileRole: profile?.role, authRole: (user as any)?.user_metadata?.role, isAdmin });
@@ -98,7 +103,8 @@ const VideosPage = () => {
         title="Vidéos"
         subtitle="Parcourez tous nos enregistrements de célébrations, enseignements et moments de partage"
         showBackButton={true}
-        backgroundImage="/images/prieres.png"
+        backgroundImage={hero?.image_url || '/images/prieres.png'}
+        onBgSave={saveHero}
       />
 
       <main className="flex-1">

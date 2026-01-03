@@ -1,9 +1,11 @@
+// src\components\HeroBanner.tsx
+
 import { motion } from "framer-motion";
 import { Calendar, ChevronRight, ArrowLeft } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import HeroBgEditor from "@/components/HeroBgEditor";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface HeroBannerProps {
   title: string;
@@ -13,6 +15,8 @@ interface HeroBannerProps {
   backgroundImage?: string;
   showBackButton?: boolean;
   description?: string;
+  bucket?: string; // Optionnel: bucket pour l'upload d'images
+  onBgSave?: (url: string) => Promise<void> | void; // Optionnel: callback pour persister l'image
 }
 
 const HeroBanner = ({
@@ -23,10 +27,17 @@ const HeroBanner = ({
   backgroundImage,
   showBackButton = true,
   description,
+  bucket,
+  onBgSave,
 }: HeroBannerProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [bg, setBg] = useState<string | undefined>(backgroundImage);
+
+  // Synchroniser quand backgroundImage change (navigation)
+  useEffect(() => {
+    setBg(backgroundImage);
+  }, [backgroundImage]);
 
   const handleBgSave = async (url: string) => {
     // Mettre à jour localement pour un rendu immédiat
@@ -38,8 +49,12 @@ const HeroBanner = ({
     } catch (e) {
       // noop
     }
-  };
 
+    // Appeler le callback si fourni pour persister la donnée
+    if (onBgSave) {
+      await onBgSave(url);
+    }
+  };
   return (
     <section className="relative min-h-[50vh] lg:min-h-[60vh] flex items-center overflow-hidden">
       {/* Background */}
@@ -59,7 +74,7 @@ const HeroBanner = ({
 
       {/* Editor button for non-index pages */}
       {location.pathname !== '/' && (
-        <HeroBgEditor current={bg} onSave={handleBgSave} />
+        <HeroBgEditor current={bg} onSave={handleBgSave} bucket={bucket} />
       )}
 
       {/* Content */}

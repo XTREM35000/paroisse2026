@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, Users, Heart, Share2, MoreVertical, Send } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -65,12 +67,16 @@ const Live: React.FC = () => {
   const viewerCount = 2847;
   const duration = "1:23:45";
 
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
+
   return (
     <div className="min-h-screen bg-background">
       <HeroBanner
         title="Messe en direct"
         subtitle="Rejoignez notre communauté pour ce moment de prière"
-        backgroundImage="/images/gallery/prieres.png"
+        backgroundImage={hero?.image_url || '/images/gallery/prieres.png'}
+        onBgSave={saveHero}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 import type { AboutSection } from '@/hooks/useAboutPage';
 
 const AboutHero: React.FC<{ section: AboutSection }> = ({ section }) => {
+  // Guard clause - retourner null si section est undefined
+  if (!section) {
+    return null;
+  }
+
   const buttons = section.metadata?.buttons || [];
 
   return (

@@ -370,6 +370,112 @@ export type Database = {
           },
         ]
       }
+      header_config: {
+        Row: {
+          id: string
+          logo_url: string | null
+          logo_alt_text: string
+          logo_size: string
+          main_title: string
+          subtitle: string
+          navigation_items: Json
+          is_active: boolean
+          updated_at: string
+          updated_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          logo_url?: string | null
+          logo_alt_text?: string
+          logo_size?: string
+          main_title?: string
+          subtitle?: string
+          navigation_items?: Json
+          is_active?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          logo_url?: string | null
+          logo_alt_text?: string
+          logo_size?: string
+          main_title?: string
+          subtitle?: string
+          navigation_items?: Json
+          is_active?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "header_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      directory: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category: string
+          email: string | null
+          phone: string | null
+          website: string | null
+          image_url: string | null
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category: string
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: string
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "directory_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

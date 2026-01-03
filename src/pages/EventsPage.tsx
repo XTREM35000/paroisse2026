@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import HeroBanner from "@/components/HeroBanner";
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 import { ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +28,9 @@ interface Event {
 
 const EventsPage = () => {
   const { events, loading } = useUpcomingEvents(100);
+
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -65,7 +70,8 @@ const EventsPage = () => {
         title="Événements"
         subtitle="Retrouvez tous nos événements et activités paroissiales"
         showBackButton={true}
-        backgroundImage="/images/messe.png"
+        backgroundImage={hero?.image_url || '/images/messe.png'}
+        onBgSave={saveHero}
       />
 
       <div className="container mx-auto px-4 py-12">

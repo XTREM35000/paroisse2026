@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import HeroBanner from '@/components/HeroBanner';
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -37,6 +39,9 @@ const MembersPage: React.FC = () => {
   };
 
   useEffect(() => { fetchMembers(); }, []);
+
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
   const openEdit = (m: Member) => {
     setSelected(m);
@@ -81,7 +86,7 @@ const MembersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeroBanner title="Membres" subtitle="Gérez les membres" backgroundImage="/images/prieres.png" />
+      <HeroBanner title="Membres" subtitle="Gérez les membres" backgroundImage={hero?.image_url || '/images/prieres.png'} onBgSave={saveHero} />
 
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="mb-6 flex items-center justify-between">

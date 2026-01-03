@@ -146,3 +146,23 @@ export async function testStorageConnection() {
     return { ok: false, message: String(e) };
   }
 }
+// Directory & About storage helpers
+export async function uploadDirectoryImage(file: File, bucketName: string = 'directory-images') {
+  const fileName = (file.name || '').replace(/\s+/g, '-');
+  const key = `public/${Date.now()}_${fileName}`;
+  try {
+    const { data, error } = await supabase.storage.from(bucketName).upload(key, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (error) {
+      console.error('uploadDirectoryImage error', error);
+      return null;
+    }
+    const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(data.path);
+    return { key: data.path, publicUrl: publicData.publicUrl };
+  } catch (e) {
+    console.error('uploadDirectoryImage unexpected error', e);
+    return null;
+  }
+}

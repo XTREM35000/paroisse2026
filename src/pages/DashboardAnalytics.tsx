@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import HeroBanner from '@/components/HeroBanner';
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { ChartContainer } from '@/components/ui/chart';
@@ -29,6 +31,8 @@ const COLORS = ['#f97316', '#f59e0b', '#60a5fa', '#34d399'];
 
 const DashboardAnalytics: React.FC = () => {
   const { videos: recentVideos = [], loading: videosLoading } = useVideos(6);
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
   const summary = useMemo(() => ({
     totalViews: weeklyViews.reduce((s, d) => s + d.views, 0),
@@ -37,7 +41,7 @@ const DashboardAnalytics: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeroBanner title="Analytics" subtitle="Rapports et graphiques" backgroundImage="/images/events/bapteme.png" showBackButton={false} />
+      <HeroBanner title="Analytics" subtitle="Rapports et graphiques" backgroundImage={hero?.image_url || '/images/events/bapteme.png'} showBackButton={false} onBgSave={saveHero} />
 
       <main className="py-12 lg:py-16 container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import HeroBanner from "@/components/HeroBanner";
+import { useLocation } from 'react-router-dom';
+import usePageHero from '@/hooks/usePageHero';
 import { useGalleryImages } from "@/hooks/useGalleryImages";
 import GalleryCard from "@/components/GalleryCard";
 import GalleryGrid from "@/components/GalleryGrid";
@@ -43,6 +45,9 @@ const GalleryPage = () => {
     });
   }, [images, searchTerm, selectedCategory]);
 
+  const location = useLocation();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header provided by Layout */}
@@ -51,7 +56,8 @@ const GalleryPage = () => {
         title="Galerie"
         subtitle="Découvrez nos plus beaux moments et événements"
         showBackButton={true}
-        backgroundImage="/images/ceremonie.png"
+        backgroundImage={hero?.image_url || '/images/ceremonie.png'}
+        onBgSave={saveHero}
       />
 
       <div className="container mx-auto px-4 py-12">
