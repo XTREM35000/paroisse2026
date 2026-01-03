@@ -1,3 +1,4 @@
+// src/hooks/useAboutPage.ts
 import { supabase } from '../integrations/supabase/client';
 import type { Json } from '../integrations/supabase/types';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +14,7 @@ export interface AboutSection {
   image_url: string | null;
   icon: string | null;
   display_order: number;
-  is_active: boolean;
+  is_active: boolean; // Ajouté ici
   updated_at: string;
 }
 

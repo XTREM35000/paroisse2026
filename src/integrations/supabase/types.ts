@@ -176,6 +176,54 @@ export type Database = {
         }
         Relationships: []
       }
+      about_page_sections: {
+        Row: {
+          id: string
+          section_key: string
+          title: string | null
+          subtitle: string | null
+          content: string | null
+          content_type: string | null
+          metadata: Json | null
+          image_url: string | null
+          icon: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          section_key: string
+          title?: string | null
+          subtitle?: string | null
+          content?: string | null
+          content_type?: string | null
+          metadata?: Json | null
+          image_url?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          section_key?: string
+          title?: string | null
+          subtitle?: string | null
+          content?: string | null
+          content_type?: string | null
+          metadata?: Json | null
+          image_url?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           id: string

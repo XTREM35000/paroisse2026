@@ -19,6 +19,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminHomepageEditor from "./pages/AdminHomepageEditor";
 import AdminEvents from "./pages/AdminEvents";
+import AdminAboutEditor from './pages/AdminAboutEditor';
 import AddMemberForm from '@/components/AddMemberForm';
 import ChatPage from './pages/ChatPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="admin">
                   <Layout><AdminHomepageEditor /></Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/about"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Layout><AdminAboutEditor /></Layout>
                 </ProtectedRoute>
               }
             />
