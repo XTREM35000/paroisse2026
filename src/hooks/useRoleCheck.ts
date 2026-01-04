@@ -3,7 +3,7 @@ import { useUser } from '@/hooks/useUser';
 import { canAccess as rpCanAccess, isAdmin as rpIsAdmin } from '@/utils/rolePermissions';
 
 export function useRoleCheck() {
-  const { profile } = useUser();
+  const { profile, isLoading } = useUser();
 
   const hasRole = useMemo(() => {
     return (role: string) => {
@@ -18,7 +18,7 @@ export function useRoleCheck() {
 
   const isAdmin = rpIsAdmin(profile?.role as string | undefined);
 
-  return { profile, hasRole, canAccess, isAdmin };
+  return { profile, hasRole, canAccess, isAdmin, isLoading };
 }
 
 export default useRoleCheck;

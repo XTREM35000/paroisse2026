@@ -10,10 +10,10 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
-  const { profile, isLoading: profileLoading, canAccess } = useRoleCheck();
+  const { profile, isLoading, canAccess } = useRoleCheck();
   const location = useLocation();
 
-  if (loading || profileLoading) return <div className="p-6">Vérification...</div>;
+  if (loading || isLoading) return <div className="p-6">Vérification...</div>;
 
   if (!user) {
     return <Navigate to={'/?mode=login#auth'} state={{ from: location.pathname }} replace />;
