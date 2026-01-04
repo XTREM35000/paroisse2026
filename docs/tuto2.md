@@ -1,253 +1,328 @@
 # Guide d'Administration de PAROISSE
+## Naviguer dans votre espace simplement
 
-## Guide Complet de la Barre Latérale
-
-Bienvenue dans ce tutoriel ! Ce guide vous aidera à naviguer et utiliser efficacement chaque section de l'interface d'administration de votre site paroissial.
-
-> **Conseil** : Prenez votre temps pour explorer chaque section. Tous les changements sont sauvegardables, et vous pouvez modifier les contenus à tout moment.
+**Bienvenue !** Voici votre guide pour utiliser chaque section de votre site paroissial. Tout est conçu pour être simple et intuitif.
 
 ---
 
-## 1. Tableau de Bord
+## 📊 **1. Tableau de bord**
+*Votre vue d'ensemble*
 
-**Sous-titre** : Aperçu général de l'activité et des performances du site.
+### **Vue d'ensemble**
+🎯 **À quoi ça sert ?**  
+Voir rapidement ce qui se passe sur votre site : les dernières activités, les nouveaux commentaires, les statistiques clés.
 
-**Mission de la page** : Offrir une vue d'ensemble rapide de l'état du site paroissial (visiteurs, derniers contenus, statistiques clés).
+🛠️ **Que faire ici ?**
+- Vérifier les commentaires en attente de modération
+- Voir les nouvelles vidéos publiées
+- Consulter les statistiques d'accès
 
-### Sections principales
+### **Analytics**
+📈 **À quoi ça sert ?**  
+Comprendre comment votre communauté utilise le site.
 
-- **Vue d'ensemble** : Consultez en un coup d'œil les derniers chiffres et activités (nombre de vidéos, d'événements, de commentaires en attente).
-- **Statistiques** : Analysez le trafic et l'engagement des visiteurs sur les différentes pages.
-- **Éléments récents** : Accédez rapidement aux dernières vidéos, photos et événements publiés.
-
-### Astuce pratique
-
-💡 Consultez le tableau de bord chaque matin pour vérifier les commentaires à modérer ou les tâches urgentes.
-
----
-
-## 2. Gestion des Annonces Paroissiales
-
-**Sous-titre** : Publier et organiser les annonces, avis et informations importantes de la paroisse.
-
-**Mission de la page** : Centraliser toutes les annonces (messes, réunions, appels à dons, etc.) et les rendre facilement accessibles aux fidèles.
-
-### Sections principales
-
-- **Toutes les annonces** : Consultez, éditez ou supprimez l'ensemble des annonces publiées.
-- **Ajouter une annonce** : Rédigez une nouvelle annonce rapidement. Remplissez le titre et le contenu, puis publiez.
-- **Recherche** : Filtrez les annonces par mots-clés ou dates pour retrouver rapidement une information.
-
-### Astuce pratique
-
-💡 Créez des annonces régulièrement (hebdomadaires) pour tenir la communauté informée. Utilisez des titres clairs et concis.
+🛠️ **Que faire ici ?**
+- Voir combien de personnes ont visité le site
+- Découvrir les pages les plus populaires
+- Savoir d'où viennent vos visiteurs
 
 ---
 
-## 3. Gestion des Événements
+## 🎥 **2. Médias**
+*Votre bibliothèque de contenus*
 
-**Sous-titre** : Créer et organiser le calendrier paroissial (messes, réunions, pèlerinages, etc.).
+### **Vidéos**
+📹 **À quoi ça sert ?**  
+Partager les célébrations, enseignements, homélies et témoignages.
 
-**Mission de la page** : Centraliser tous les événements de la paroisse et les rendre visibles aux fidèles via un calendrier interactif.
+🛠️ **Actions simples :**
+1. Cliquer sur "Ajouter une vidéo"
+2. Choisir le fichier ou coller l'URL
+3. Donner un titre (ex: "Messe du dimanche 15 janvier")
+4. Ajouter une description et une catégorie
+5. Publier !
 
-### Sections principales
+💡 **Astuce** : Compressez vos vidéos avant upload pour un chargement plus rapide.
 
-- **Tous les événements** : Affichez, modifiez ou supprimez les événements existants.
-- **Ajouter un événement** : Créez un nouvel événement en remplissant la date, l'heure, le lieu et une description.
-- **Catégories d'événements** : Organisez les événements par type (célébrations, formations, sorties).
-- **Vue calendrier** : Visualisez tous les événements sur un calendrier mensuel ou annuel.
+### **Galerie photos**
+📸 **À quoi ça sert ?**  
+Montrer la vie de votre paroisse en images.
 
-### Astuce pratique
+🛠️ **Actions :**
+1. Cliquer "Ajouter une photo"
+2. Télécharger depuis votre ordinateur
+3. Ajouter une description courte
+4. Organiser par catégories/albums
 
-💡 Programmez vos événements loin à l'avance (au moins 3 mois) pour laisser le temps à la communauté de s'organiser. N'oubliez pas d'ajouter un lieu et une heure précise.
+💡 **Astuce** : Créez des albums thématiques :
+- "Fête paroissiale 2025"
+- "Célébrations de Pâques"
+- "Activités des jeunes"
 
----
+📐 **Dimensions recommandées :**
+- Desktop : 1920×840 (16:7)
+- Mobile : 800×1200 (3:4)
 
-## 4. Gestion des Médias
+### **Documents**
+📄 **À quoi ça sert ?**  
+Partager les feuilles de messe, bulletins, formulaires, ressources.
 
-**Sous-titre** : Gérer les images, vidéos et documents de la paroisse.
-
-**Mission de la page** : Organiser et centraliser tous les contenus multimédia (photos de messes, vidéos d'enseignement, documents PDF).
-
-### Sections principales
-
-- **Galerie photos** : Téléversez, organisez et catégorisez les photos des événements et activités paroissiales.
-- **Vidéos** : Publiez des vidéos (messes retransmises, homélie, témoignages). Ajoutez une description et une miniature.
-- **Documents** : Partagez des documents PDF (horaires des messes, formulaires, brochures).
-- **Albums/Dossiers** : Créez des collections thématiques (ex : "Noël 2025", "Pèlerinage 2025").
-
-### Astuce pratique
-
-💡 Dimensionnez vos images avant upload (voir le guide des tailles recommandées). Utilisez des descriptions courtes pour aider les visiteurs à comprendre le contenu.
-
----
-
-## 5. Gestion des Utilisateurs et Rôles
-
-**Sous-titre** : Gérer les accès et les permissions des administrateurs, modérateurs et bénévoles.
-
-**Mission de la page** : Contrôler qui peut accéder à quelle partie du site et quelles actions ils peuvent effectuer.
-
-### Sections principales
-
-- **Liste des utilisateurs** : Affichez tous les comptes (prêtres, bénévoles, secrétariat).
-- **Ajouter un utilisateur** : Créez un nouveau compte et attribuez un rôle (admin, modérateur, contributeur).
-- **Rôles et permissions** : Définissez les droits (qui peut éditer les articles, supprimer des commentaires, etc.).
-- **Invitations** : Envoyez des invitations par email aux nouveaux membres de l'équipe.
-
-### Astuce pratique
-
-💡 Limitez les droits d'administration aux personnes de confiance. Les modérateurs peuvent valider les commentaires sans risque.
+🛠️ **Formats acceptés :** PDF, Word, Excel
 
 ---
 
-## 6. Gestion des Pages Fixes
+## 🙏 **3. Culte & Prière**
+*Le cœur spirituel de votre site*
 
-**Sous-titre** : Éditer les pages statiques (Présentation, Horaires, Contact, À Propos).
+### **Homélies**
+📖 **À quoi ça sert ?**  
+Archiver et partager les prédications et enseignements.
 
-**Mission de la page** : Maintenir à jour les informations structurelles et essentielles du site (horaires, adresse, historique).
+🛠️ **Organisation :**
+- Par date
+- Par célébrant
+- Par thème liturgique
 
-### Sections principales
+### **Intentions de prière**
+💝 **À quoi ça sert ?**  
+Permettre à chacun de partager ses intentions.
 
-- **Page Présentation** : Rédigez ou modifiez le texte de bienvenue de votre paroisse.
-- **Horaires des messes** : Mettez à jour les horaires (dimanches, jours de semaine, jours fériés).
-- **Page Contact** : Ajouter ou modifier l'adresse, les numéros de téléphone, les emails de contact.
-- **À Propos** : Racontez l'histoire et les valeurs de votre paroisse.
-- **Conditions d'utilisation** : Mettez à jour les CGU si nécessaire.
+🛠️ **Modération :**
+- Lire les nouvelles intentions
+- Les valider avant publication
+- Prier avec votre communauté
 
-### Astuce pratique
+### **Verset du jour**
+🌿 **À quoi ça sert ?**  
+Offrir une méditation quotidienne à votre communauté.
 
-💡 Vérifiez les horaires 2 fois par an (après changements d'heure). Assurez-vous que les numéros de contact sont corrects et à jour.
+🛠️ **Conseil** : Préparez une semaine à l'avance !
 
----
+### **Messe en direct**
+⛪ **À quoi ça sert ?**  
+Diffuser les célébrations en temps réel pour ceux qui ne peuvent pas être présents.
 
-## 7. Gestion des Commentaires et Modération
-
-**Sous-titre** : Valider, filtrer et modérer les commentaires des fidèles.
-
-**Mission de la page** : Assurer une communauté respectueuse et un dialogue constructif sur le site.
-
-### Sections principales
-
-- **Commentaires en attente** : Affichez les commentaires à valider avant publication.
-- **Commentaires approuvés** : Consultez les commentaires déjà en ligne.
-- **Commentaires rejetés** : Visualisez les messages rejetés pour des raisons de modération.
-- **Paramètres de modération** : Décidez si les commentaires sont auto-approuvés ou validés manuellement.
-
-### Astuce pratique
-
-💡 Répondez aux commentaires constructifs pour encourager la discussion. Rejetez poliment les messages hors sujet ou offensants.
-
----
-
-## 8. Apparence et Thème
-
-**Sous-titre** : Personnaliser le design, les couleurs, le logo et la navigation du site.
-
-**Mission de la page** : Adapter l'apparence visuelle du site à l'identité de votre paroisse.
-
-### Sections principales
-
-- **Paramètres du Header** : Téléversez le logo, changez le titre principal et le sous-titre.
-- **Section Héro** : Modifiez l'image d'en-tête de la page d'accueil, le titre et le bouton d'appel à l'action.
-- **Navigation** : Ajoutez, supprimez ou réorganisez les liens du menu principal.
-- **Thème** : Changez la palette de couleurs ou le mode clair/sombre.
-- **Widgets** : Activez ou désactivez les blocs secondaires (météo, calendrier, etc.).
-
-### Astuce pratique
-
-💡 Gardez votre logo dans les dimensions recommandées (voir guide des tailles). Testez les changements en mode aperçu avant de les valider.
+🛠️ **Comment faire :**
+1. Cliquer "Nouveau direct"
+2. Ajouter l'heure de début
+3. Intégrer le lien YouTube/Facebook
+4. Votre communauté est informée !
 
 ---
 
-## 9. Dons et Contributions
+## 👥 **4. Communauté**
+*Vivre ensemble en ligne*
 
-**Sous-titre** : Gérer les dons en ligne et les contributions de la communauté.
+### **Annonces**
+📢 **À quoi ça sert ?**  
+Informer rapidement toute la communauté des nouvelles importantes.
 
-**Mission de la page** : Faciliter les dons (financiers, matériels) et remercier les généreux donateurs.
+🛠️ **Exemples d'annonces :**
+- "Messe annulée demain pour cause de neige"
+- "Inscriptions ouvertes pour le catéchisme"
+- "Réunion des jeunes vendredi à 19h"
 
-### Sections principales
+🛠️ **Actions :**
+1. Cliquer "Ajouter une annonce"
+2. Écrire le titre et le contenu
+3. Ajouter la date pertinente
+4. Publier
 
-- **Historique des dons** : Consultez la liste de tous les dons reçus (montants, types, donateurs).
-- **Campagnes de collecte** : Créez une campagne spécifique (ex : "Rénovation du toit", "Aide alimentaire").
-- **Reçus de don** : Générez et envoyez des reçus fiscaux aux donateurs.
-- **Paramètres des dons** : Activez/désactivez les dons en ligne, définissez les types acceptés.
+### **Événements**
+📅 **À quoi ça sert ?**  
+Annoncer et gérer les activités paroissiales.
 
-### Astuce pratique
+🛠️ **Créer un événement :**
+1. Titre (ex: "Pique-nique paroissial")
+2. Date, heure et lieu
+3. Description détaillée
+4. Options d'inscriptions si besoin
 
-💡 Créez des campagnes claires avec un montant cible et un délai. Remerciez les donateurs publiquement (avec permission).
+💡 **Conseil** : Programmez vos événements 3 mois à l'avance pour laisser le temps à la communauté de s'organiser.
 
----
+### **Chat**
+💬 **À quoi ça sert ?**  
+Permettre aux membres d'échanger en temps réel.
 
-## 10. Annuaire Paroissial
+🛠️ **Bon à savoir :**
+- Les messages sont modérés
+- Créez des groupes de discussion (chorale, catéchisme, etc.)
+- Définissez vos horaires de modération
 
-**Sous-titre** : Gérer le répertoire des services, membres clés et contacts importants.
+### **Annuaire**
+📇 **À quoi ça sert ?**  
+Mettre à disposition les contacts importants de la paroisse.
 
-**Mission de la page** : Offrir à la communauté un accès facile aux contacts (prêtre, diacre, secrétariat, services spécialisés).
-
-### Sections principales
-
-- **Services** : Ajouter et modifier les services proposés (catéchèse, accompagnement des malades, etc.).
-- **Membres clés** : Lister les prêtres, religieuses et responsables.
-- **Contacts** : Centraliser les numéros et emails importants.
-- **Catégories** : Organisez par type (clergé, bénévoles, fournisseurs).
-
-### Astuce pratique
-
-💡 Mettez à jour l'annuaire chaque trimestre. Laissez les données de contact actualisées en cas de changements d'équipe.
-
----
-
-## 11. Paramètres Généraux
-
-**Sous-titre** : Configurer les options globales du site.
-
-**Mission de la page** : Gérer les paramètres techniques et administratifs (emails, sauvegardes, logs).
-
-### Sections principales
-
-- **Informations du site** : Nom, domaine, description (utilisé par les moteurs de recherche).
-- **Emails** : Configurez l'adresse de contact et les notifications administrateur.
-- **Sauvegardes** : Lancez ou consultez les sauvegardes régulières.
-- **Logs d'activité** : Consultez l'historique des modifications pour audit.
-- **Sécurité** : Activez l'authentification à deux facteurs, gérez les sessions.
-
-### Astuce pratique
-
-💡 Testez la sauvegarde régulièrement. Activez les notifications emails pour être alerté des changements importants.
+🛠️ **Mettez à jour chaque trimestre :**
+- Coordonnées du clergé
+- Contacts de l'accueil
+- Services spécialisés
 
 ---
 
-## 12. Vidéothèque et Médias Enrichis
+## 🤲 **5. Donations**
+*La générosité en ligne*
 
-**Sous-titre** : Téléverser et gérer les vidéos (homélies, célébrations, cours).
+### **Faire un don**
+💳 **À quoi ça sert ?**  
+Proposer un don simple, sécurisé et transparent.
 
-**Mission de la page** : Centraliser les vidéos paroissiales et les rendre accessibles avec descriptions et transcriptions.
+🛠️ **Options :**
+- Don unique ou mensuel
+- Montants suggérés ou libre
+- Dons anonymes possibles
 
-### Sections principales
+### **Campagnes de collecte**
+🎯 **À quoi ça sert ?**  
+Financer un projet paroissial précis.
 
-- **Toutes les vidéos** : Affichez, modifiez ou supprimez les vidéos publiées.
-- **Ajouter une vidéo** : Téléversez une vidéo, ajoutez un titre, description et catégorie.
-- **Catégories** : Organisez par type (homélies, témoignages, tutoriels, célébrations).
-- **Recommandations** : Marquez les vidéos populaires pour les afficher en vedette.
+🛠️ **Exemples :**
+- "Rénovation du toit de l'église"
+- "Aide aux familles en difficulté"
+- "Achat de nouveaux équipements de chauffage"
 
-### Astuce pratique
+🛠️ **Créer une campagne :**
+1. Définir le but et le montant cible
+2. Ajouter une description
+3. Fixer une date limite
+4. Remercier publiquement les donateurs
 
-💡 Téléversez les vidéos de messes régulièrement pour fidéliser votre audience. Compressez les vidéos avant upload pour un chargement plus rapide.
+### **Historique des dons**
+📊 **À quoi ça sert ?**  
+Suivre et gérer les dons reçus.
+
+🛠️ **Fonctionnalités :**
+- Voir tous les dons par date
+- Exporter les rapports
+- Vérifier les données
+
+### **Reçus fiscaux**
+🧾 **À quoi ça sert ?**  
+Générer les reçus fiscaux automatiquement pour les donateurs.
+
+🛠️ **Pratique :**
+- Envoi automatique par email
+- Modèle personnalisé à votre paroisse
 
 ---
 
-## Conseils Généraux pour les Administrateurs
+## ⚙️ **6. Administration**
+*La gestion au quotidien*
 
-### Avant de commencer
+### **Page d'accueil**
+🏠 **À quoi ça sert ?**  
+Personnaliser l'apparence et le message de bienvenue de votre site.
 
-✅ Familiarisez-vous avec chaque section graduellement.
-✅ Explorez le mode aperçu avant de publier.
-✅ Sauvegardez régulièrement votre travail.
+🛠️ **Personnalisation :**
+- Photo de bannière héroïque
+- Message de bienvenue
+- Liens importants en évidence
+- Derniers contenus à afficher
 
-### Bonnes pratiques
+💡 **Conseil** : Gardez votre logo dans les bonnes dimensions (voir guide des tailles).
 
-✅ Mettez à jour le contenu régulièrement (au moins 1-2 fois par semaine).
-✅ Répondez aux commentaires et questions des fidèles.
-✅ Utilisez des images de bonne qualité et de dimensions appropriées.
-✅ Écrivez des textes clairs et concis.
+### **Utilisateurs et Rôles**
+👤 **À quoi ça sert ?**  
+Gérer qui a accès à quoi dans l'administration.
+
+🛠️ **Rôles disponibles :**
+- **Administrateur** : Accès complet
+- **Modérateur** : Gérer les contenus et commentaires
+- **Contributeur** : Publier des articles et vidéos
+- **Membre** : Accès public uniquement
+
+🛠️ **Actions :**
+1. Ajouter un nouvel utilisateur
+2. Attribuer un rôle
+3. Envoyer une invitation par email
+4. Révoquer l'accès si nécessaire
+
+💡 **Conseil** : Limitez les droits administrateur aux personnes de confiance.
+
+### **Paramètres généraux**
+🔧 **À quoi ça sert ?**  
+Configurer les informations de base de votre paroisse.
+
+🛠️ **À vérifier régulièrement :**
+- Nom de la paroisse
+- Adresse et contacts
+- Horaires des messes
+- Email de contact
+
+### **Modération des commentaires**
+✏️ **À quoi ça sert ?**  
+Valider et modérer les commentaires des fidèles.
+
+🛠️ **Processus :**
+- Lire les commentaires en attente
+- Valider les constructifs
+- Rejeter poliment les hors sujet ou offensants
+- Répondre aux questions
+
+### **Annuaire (administration)**
+📒 **À quoi ça sert ?**  
+Gérer complètement la liste des contacts et services officiels.
+
+🛠️ **Services à lister :**
+- Clergé et diacres
+- Secrétariat
+- Services spécialisés (accompagnement des malades, etc.)
+
+---
+
+## 💡 **Conseils pratiques pour bien commencer**
+
+### **Premières étapes (Semaine 1) :**
+1. **Compléter votre profil** (photo et bio)
+2. **Ajouter les horaires des messes**
+3. **Publier une annonce de bienvenue**
+4. **Programmer le verset de la semaine**
+5. **Ajouter l'adresse et contacts de la paroisse**
+
+### **Routine hebdomadaire :**
+✅ **Lundi** : Consulter les intentions de prière  
+✅ **Mardi** : Programmer le verset du jour  
+✅ **Mercredi** : Modérer les commentaires  
+✅ **Jeudi** : Préparer et publier les annonces  
+✅ **Vendredi** : Vérifier les événements à venir  
+✅ **Samedi** : Programmer la messe en direct (si applicable)  
+✅ **Dimanche** : Publier les photos de la célébration  
+
+### **Maintenance mensuelle :**
+- Mettre à jour les horaires si changement
+- Vérifier les coordonnées de contact
+- Archiver les anciennes annonces
+- Exporter les statistiques d'accès
+
+### **En cas de doute :**
+❓ **Testez d'abord** en mode brouillon  
+❓ **Demandez** à un autre administrateur  
+❓ **Consultez** les derniers changements  
+❓ **Explorez** les options des formulaires  
+
+---
+
+## 🌟 **Vous êtes prêt !**
+
+### **Votre mission :**
+> Faire de ce site un lieu de rencontre,  
+> de prière et de communion  
+> pour toute votre communauté.
+
+### **N'oubliez pas :**
+Chaque publication, chaque photo, chaque annonce  
+est une occasion de créer du lien  
+et de partager la Bonne Nouvelle.
+
+### **Bonnes pratiques :**
+✅ Mettez à jour le contenu régulièrement (1-2 fois par semaine)  
+✅ Répondez aux commentaires et questions des fidèles  
+✅ Utilisez des images de bonne qualité et de dimensions appropriées  
+✅ Écrivez des textes clairs et concis  
+✅ Publiez à des horaires réguliers  
+
+---
+
+**Bonne navigation et que Dieu bénisse votre ministère numérique !** 🙏
+
+*Guide simplifié • Mise à jour : janvier 2026*
