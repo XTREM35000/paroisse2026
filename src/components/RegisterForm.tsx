@@ -65,16 +65,39 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         console.error('Impossible de compter les profiles, assignation par défaut:', err);
       }
 
-      // 1) Créer l'utilisateur d'abord
-      await register(email, password, {
+      // 1) Créer l'utilisateur d'abord et récupérer la réponse
+      const registerRes: any = await register(email, password, {
         full_name: fullName,
         phone: fullPhone,
         role: assignedRole,
       });
 
-      // Récupérer l'utilisateur courant depuis Supabase
-      const userResp = await supabase.auth.getUser();
-      const createdUser = userResp.data?.user;
+      // Essayer d'extraire l'utilisateur depuis la réponse
+      let createdUser = registerRes?.data?.user ?? null;
+
+      // Si l'utilisateur n'est pas dans la réponse, attendre qu'il apparaisse via getUser()
+      if (!createdUser) {
+        const maxAttempts = 8;
+        const delayMs = 300;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            const resp = await supabase.auth.getUser();
+            const maybeUser = resp?.data?.user ?? null;
+            if (maybeUser) {
+              createdUser = maybeUser;
+              break;
+            }
+          } catch (e) {
+            // ignore and retry
+          }
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
+
+      // If still no createdUser, throw so we don't create a profile without id
+      if (!createdUser) {
+        throw new Error('User not available after registration; profile creation aborted');
+      }
 
       let avatar_url: string | undefined;
 
@@ -100,12 +123,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       if (createdUser) {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mapRoleToDb = (r?: string) => {
+            if (!r) return undefined;
+            const s = String(r).toLowerCase();
+            if (s.includes('admin')) return 'admin';
+            if (s.includes('super')) return 'admin';
+            if (s.includes('moder')) return 'moderateur';
+            if (s.includes('pretre') || s.includes('priest')) return 'pretre';
+            if (s.includes('diacre')) return 'diacre';
+            // defaults
+            if (s.includes('membre') || s.includes('member')) return 'membre';
+            return undefined;
+          };
+
+          const dbRole = mapRoleToDb(createdUser?.user_metadata?.role) ?? mapRoleToDb(assignedRole) ?? 'membre';
+
           const insertData: any = {
             id: createdUser.id,
             email: createdUser.email,
             full_name: fullName || null,
             phone: fullPhone || null,
-            role: (createdUser?.user_metadata?.role as string) || assignedRole || 'member',
+            role: dbRole,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };

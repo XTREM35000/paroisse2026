@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useUser } from '@/hooks/useUser';
+import useRoleCheck from '@/hooks/useRoleCheck';
 
 export const MENU_GROUPS = [
   {
@@ -67,7 +67,7 @@ export interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
-  const { profile, isAdmin } = useUser();
+  const { profile, isAdmin } = useRoleCheck();
 
   return (
     <aside

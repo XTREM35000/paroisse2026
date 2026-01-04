@@ -39,7 +39,7 @@ const PhoneInputWithCountry: React.FC<PhoneInputWithCountryProps> = ({
   return (
     <div className="flex gap-2">
       <Select value={countryCode} onValueChange={onCountryChange}>
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-20">
           <SelectValue placeholder="Pays" />
         </SelectTrigger>
         <SelectContent>
@@ -54,10 +54,10 @@ const PhoneInputWithCountry: React.FC<PhoneInputWithCountryProps> = ({
       </Select>
       <Input
         type="tel"
-        placeholder="XX XX XX XX"
+        placeholder="07 00 00 00"
         value={phone}
         onChange={(e) => onPhoneChange(e.target.value)}
-        className="flex-1"
+        className="flex-1 min-w-0"
       />
     </div>
   );

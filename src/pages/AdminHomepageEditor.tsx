@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { uploadFile } from "@/lib/supabase/storage";
 import type { NavigationItem } from "@/hooks/useHeaderConfig";
+import useRoleCheck from '@/hooks/useRoleCheck';
 
 // use shared `supabase` client from integrations
 const AdminHomepageEditor = () => {
@@ -159,7 +160,9 @@ const AdminHomepageEditor = () => {
     }
   }, [sections]);
 
-  // Check if user is admin
+  const { profile, isAdmin } = useRoleCheck();
+
+  // Not authenticated
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -172,6 +175,24 @@ const AdminHomepageEditor = () => {
             className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             Se connecter
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+          <p className="text-lg font-semibold">Accès interdit</p>
+          <p className="text-muted-foreground">Vous n'avez pas les permissions nécessaires pour modifier la page d'accueil.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Retour
           </button>
         </div>
       </div>
@@ -320,9 +341,10 @@ const AdminHomepageEditor = () => {
 
     try {
       setLoading(true);
-      const fileName = `header-logo-${Date.now()}`;
-      const url = await uploadFile(file, 'logos', fileName);
-      setHeaderData({ ...headerData, logo_url: url });
+      const fileName = `header-logo-${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+      const res = await uploadFile(file, `logos/${fileName}`);
+      if (!res || !res.publicUrl) throw new Error('Upload failed');
+      setHeaderData({ ...headerData, logo_url: res.publicUrl });
       toast({ title: "Succès", description: "Logo téléchargé" });
     } catch (error) {
       console.error("Error uploading logo:", error);

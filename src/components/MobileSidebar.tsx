@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import useRoleCheck from '@/hooks/useRoleCheck';
 
 interface NavItem {
   label: string;
@@ -43,6 +44,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
   const auth = useAuth();
   const { user: authUser, signOut: authSignOut } = auth || {};
   const user = userProp ?? authUser;
+  const { isAdmin } = useRoleCheck();
   const signOut = onSignOut ?? authSignOut;
 
   const renderIcon = (icon?: React.ReactNode) => {
@@ -153,7 +155,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
               {/* If grouped navigation provided, render groups */}
               {((navigationGroups && navigationGroups.length > 0) ? navigationGroups : undefined) ? (
                 (navigationGroups as NavGroup[]).map((group) => {
-                  if (group.adminOnly && !user) return null;
+                  if (group.adminOnly && !isAdmin) return null;
                   return (
                     <div key={group.title} className="mb-4">
                       <div className="px-2 text-xs text-muted-foreground uppercase mb-2 font-semibold">

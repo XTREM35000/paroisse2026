@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
 import { useHeaderConfig } from "@/hooks/useHeaderConfig";
+import useRoleCheck from '@/hooks/useRoleCheck';
+import { supabase } from '@/integrations/supabase/client';
 
 interface HeaderProps {
   darkMode?: boolean;
@@ -30,6 +32,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile } = useUser();
+  const { isAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
 
   // Close mobile menu when auth state changes (e.g. on logout)
@@ -168,15 +171,28 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 className="text-muted-foreground hover:text-foreground overflow-hidden rounded-full"
                 title={user ? user.email : "Se connecter"}
               >
-                {user && profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.full_name || user.email}
-                    className="w-5 h-5 rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="h-5 w-5" />
-                )}
+                {(() => {
+                  let avatarSrc: string | null = null;
+                  if (user && profile?.avatar_url) {
+                    const val = String(profile.avatar_url);
+                    if (val.startsWith('http') || val.startsWith('data:')) {
+                      avatarSrc = val;
+                    } else {
+                      const bucket = import.meta.env.VITE_BUCKET_AVATAR || 'avatars';
+                      try {
+                        const { data } = supabase.storage.from(bucket).getPublicUrl(val);
+                        avatarSrc = data?.publicUrl || null;
+                      } catch (e) {
+                        avatarSrc = null;
+                      }
+                    }
+                  }
+                  return avatarSrc ? (
+                    <img src={avatarSrc} alt={profile?.full_name || user.email} className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5" />
+                  );
+                })()}
               </Button>
 
               {/* Dropdown menu seulement si connecté */}
@@ -196,29 +212,33 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                         Connecté
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-xs mt-1"
-                      onClick={() => {
-                        navigate("/membres");
-                        setIsUserMenuOpen(false);
-                      }}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Membre
-                    </Button>
+
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-xs mt-1"
+                        onClick={() => {
+                          navigate('/membres');
+                          setIsUserMenuOpen(false);
+                        }}
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Membre
+                      </Button>
+                    )}
 
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-xs mt-1"
                       onClick={() => {
-                        navigate("/profil");
+                        navigate('/profil');
                         setIsUserMenuOpen(false);
                       }}
                     >
                       <User className="h-4 w-4 mr-2" />
                       Mon profil
                     </Button>
+
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -226,7 +246,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                         await signOut();
                         setIsUserMenuOpen(false);
                         setIsMobileMenuOpen(false);
-                        navigate("/");
+                        navigate('/');
                       }}
                     >
                       <LogOut className="h-4 w-4 mr-2" />

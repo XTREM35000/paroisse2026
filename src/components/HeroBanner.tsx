@@ -6,6 +6,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import HeroBgEditor from "@/components/HeroBgEditor";
 import { useState, useEffect } from "react";
+import useRoleCheck from '@/hooks/useRoleCheck';
 
 interface HeroBannerProps {
   title: string;
@@ -33,6 +34,7 @@ const HeroBanner = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [bg, setBg] = useState<string | undefined>(backgroundImage);
+  const { isAdmin } = useRoleCheck();
 
   // Synchroniser quand backgroundImage change (navigation)
   useEffect(() => {
@@ -72,8 +74,8 @@ const HeroBanner = ({
         <div className="absolute inset-0 cross-pattern opacity-10" />
       </div>
 
-      {/* Editor button for non-index pages */}
-      {location.pathname !== '/' && (
+      {/* Editor button for non-index pages (admins only) */}
+      {location.pathname !== '/' && isAdmin && (
         <HeroBgEditor current={bg} onSave={handleBgSave} bucket={bucket} />
       )}
 

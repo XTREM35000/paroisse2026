@@ -130,14 +130,14 @@ const VideosPage = () => {
                 <Button 
                   className="gap-2 h-12" 
                   onClick={() => {
-                    if (isAdmin) {
-                      handleOpenModal();
-                    } else {
-                      console.debug('❌ User is not admin');
+                    if (!user) {
+                      console.debug('❌ User not authenticated');
+                      return;
                     }
+                    handleOpenModal();
                   }}
-                  disabled={!isAdmin}
-                  title={!user ? 'Connectez-vous pour ajouter une vidéo' : !isAdmin ? 'Vous n\'êtes pas admin' : 'Ajouter une nouvelle vidéo'}
+                  disabled={!user}
+                  title={!user ? 'Connectez-vous pour ajouter une vidéo' : 'Ajouter une nouvelle vidéo'}
                 >
                   <Plus className="h-5 w-5" />
                   Ajouter une vidéo

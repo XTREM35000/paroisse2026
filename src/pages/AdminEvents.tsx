@@ -7,7 +7,7 @@ import HeroBanner from '@/components/HeroBanner';
 import EventModalForm from '@/components/EventModalForm';
 import { useEvents } from '@/hooks/useEvents';
 import { useAuth } from '@/hooks/useAuth';
-import { useUser } from '@/hooks/useUser';
+import useRoleCheck from '@/hooks/useRoleCheck';
 import usePageHero from '@/hooks/usePageHero';
 import { useNotification } from '@/components/ui/notification-system';
 import { Button } from '@/components/ui/button';
@@ -32,12 +32,9 @@ const AdminEvents: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ eventId: string; clickCount: number } | null>(null);
 
   const { user } = useAuth();
-  const { profile } = useUser();
+  const { profile, isAdmin } = useRoleCheck();
   const { events, createEvent, updateEvent, deleteEvent, loading } = useEvents();
   const { notifySuccess, notifyError } = useNotification();
-
-  // Vérifier si l'utilisateur est admin
-  const isAdmin = profile?.role === 'admin' || user?.user_metadata?.role === 'admin';
 
   console.debug('📅 AdminEvents:', {
     userId: user?.id,
