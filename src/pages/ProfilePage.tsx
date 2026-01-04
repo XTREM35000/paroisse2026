@@ -54,7 +54,15 @@ const ProfilePage = () => {
         phone: user.user_metadata?.phone || '',
         avatar_url: profile.avatar_url || user.user_metadata?.avatar_url || '',
         email: user.email || '',
-        role: profile.role || null,
+        role: (function normalize(r?: string | null){
+          if(!r) return null;
+          const lower = r.toLowerCase();
+          if(lower === 'membre' || lower === 'member') return 'member';
+          if(lower === 'moderateur' || lower === 'moderator') return 'moderator';
+          if(lower === 'admin' || lower === 'administrateur') return 'admin';
+          if(lower === 'super_admin' || lower === 'superadmin' || lower === 'super-admin') return 'super_admin';
+          return lower;
+        })(profile.role),
       });
     } else if (user) {
       setUserData((prev) => ({ 
@@ -63,7 +71,15 @@ const ProfilePage = () => {
         full_name: user.user_metadata?.full_name || '',
         phone: user.user_metadata?.phone || '',
         avatar_url: user.user_metadata?.avatar_url || '',
-        role: user.user_metadata?.role || prev.role || null,
+        role: (function normalize(r?: string | null){
+          if(!r) return prev.role || null;
+          const lower = r.toLowerCase();
+          if(lower === 'membre' || lower === 'member') return 'member';
+          if(lower === 'moderateur' || lower === 'moderator') return 'moderator';
+          if(lower === 'admin' || lower === 'administrateur') return 'admin';
+          if(lower === 'super_admin' || lower === 'superadmin' || lower === 'super-admin') return 'super_admin';
+          return lower;
+        })(user.user_metadata?.role),
       }));
     }
   }, [user, profile, navigate]);
@@ -108,10 +124,20 @@ const ProfilePage = () => {
       }
 
       // Update profile in database
+      const normalize = (r?: string | null) => {
+        if(!r) return undefined;
+        const lower = r.toLowerCase();
+        if(lower === 'membre' || lower === 'member') return 'member';
+        if(lower === 'moderateur' || lower === 'moderator') return 'moderator';
+        if(lower === 'admin' || lower === 'administrateur') return 'admin';
+        if(lower === 'super_admin' || lower === 'superadmin' || lower === 'super-admin') return 'super_admin';
+        return lower;
+      };
+
       const profileUpdates: Database['public']['Tables']['profiles']['Update'] = {
         full_name: userData.full_name,
         avatar_url: updatedAvatarUrl,
-        role: userData.role ?? undefined,
+        role: normalize(userData.role ?? null) ?? undefined,
       };
       
       const { error: updateError } = await supabase
