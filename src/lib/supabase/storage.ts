@@ -18,14 +18,35 @@ export async function uploadFile(file: File, path?: string) {
   const fileName = (file.name || '').replace(/\s+/g, '-');
   const key = path ?? `uploads/${Date.now()}_${fileName}`;
   try {
-    const { data, error } = await supabase.storage.from(GALLERY_BUCKET).upload(key, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-    if (error) {
-      console.error('uploadFile error', error);
-      return null;
+    // Try upload with a timeout and one retry to handle flaky network
+    const attemptUpload = async (attempt = 1) => {
+      const uploadPromise = supabase.storage.from(GALLERY_BUCKET).upload(key, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      const timeoutMs = 60000;
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('upload timeout')), timeoutMs));
+      const res = await Promise.race([uploadPromise, timeout]);
+      return res as Awaited<ReturnType<typeof supabase.storage.from>>;
+    };
+
+    let data: any = null;
+    try {
+      const first = await attemptUpload(1);
+      if ((first as any).error) throw (first as any).error;
+      data = (first as any).data;
+    } catch (e) {
+      console.warn('uploadFile first attempt failed, retrying...', e);
+      try {
+        const second = await attemptUpload(2);
+        if ((second as any).error) throw (second as any).error;
+        data = (second as any).data;
+      } catch (err) {
+        console.error('uploadFile error', err);
+        return null;
+      }
     }
+
     const { data: publicData } = supabase.storage.from(GALLERY_BUCKET).getPublicUrl(data.path);
     return { key: data.path, publicUrl: publicData.publicUrl };
   } catch (e) {
@@ -151,14 +172,35 @@ export async function uploadDirectoryImage(file: File, bucketName: string = 'dir
   const fileName = (file.name || '').replace(/\s+/g, '-');
   const key = `public/${Date.now()}_${fileName}`;
   try {
-    const { data, error } = await supabase.storage.from(bucketName).upload(key, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-    if (error) {
-      console.error('uploadDirectoryImage error', error);
-      return null;
+    // same retry/timeout logic as uploadFile
+    const attemptUpload = async (attempt = 1) => {
+      const uploadPromise = supabase.storage.from(bucketName).upload(key, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      const timeoutMs = 60000;
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('upload timeout')), timeoutMs));
+      const res = await Promise.race([uploadPromise, timeout]);
+      return res as Awaited<ReturnType<typeof supabase.storage.from>>;
+    };
+
+    let data: any = null;
+    try {
+      const first = await attemptUpload(1);
+      if ((first as any).error) throw (first as any).error;
+      data = (first as any).data;
+    } catch (e) {
+      console.warn('uploadDirectoryImage first attempt failed, retrying...', e);
+      try {
+        const second = await attemptUpload(2);
+        if ((second as any).error) throw (second as any).error;
+        data = (second as any).data;
+      } catch (err) {
+        console.error('uploadDirectoryImage error', err);
+        return null;
+      }
     }
+
     const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(data.path);
     return { key: data.path, publicUrl: publicData.publicUrl };
   } catch (e) {

@@ -62,7 +62,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeroBanner title="Tableau de bord" subtitle="Vue d'ensemble et statistiques" backgroundImage={hero?.image_url || '/images/videos/celebration.png'} showBackButton={false} onBgSave={saveHero} />
+      <HeroBanner title="Tableau de bord" subtitle="Vue d'ensemble et statistiques" backgroundImage={hero?.image_url || '/images/videos/celebration.png'} showBackButton={true} onBgSave={saveHero} />
 
       <main className="py-12 lg:py-16 container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

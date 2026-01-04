@@ -63,7 +63,7 @@ const DashboardAnalytics: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeroBanner title="Analytics" subtitle="Rapports et graphiques" backgroundImage={hero?.image_url || '/images/events/bapteme.png'} showBackButton={false} onBgSave={saveHero} />
+      <HeroBanner title="Analytics" subtitle="Rapports et graphiques" backgroundImage={hero?.image_url || '/images/events/bapteme.png'} showBackButton={true} onBgSave={saveHero} />
 
       <main className="py-12 lg:py-16 container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

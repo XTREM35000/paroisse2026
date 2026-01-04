@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import HeroBgEditor from "@/components/HeroBgEditor";
 import { useState, useEffect } from "react";
 import useRoleCheck from '@/hooks/useRoleCheck';
+import usePageHero from '@/hooks/usePageHero';
 
 interface HeroBannerProps {
   title: string;
@@ -35,10 +36,15 @@ const HeroBanner = ({
   const location = useLocation();
   const [bg, setBg] = useState<string | undefined>(backgroundImage);
   const { isAdmin } = useRoleCheck();
+  // provide a fallback save for pages that don't pass `onBgSave`
+  const { save: saveHero } = usePageHero(location.pathname);
 
   // Synchroniser quand backgroundImage change (navigation)
+  // Ne pas écraser la valeur locale si la nouvelle valeur est indéfinie/vide
   useEffect(() => {
-    setBg(backgroundImage);
+    if (backgroundImage) {
+      setBg(backgroundImage);
+    }
   }, [backgroundImage]);
 
   const handleBgSave = async (url: string) => {
@@ -55,6 +61,15 @@ const HeroBanner = ({
     // Appeler le callback si fourni pour persister la donnée
     if (onBgSave) {
       await onBgSave(url);
+    } else {
+      // si la page n'a pas fourni de callback, sauvegarder dans la table page_hero_banners
+      try {
+        await saveHero(url);
+      } catch (e) {
+        // noop: on ne veut pas casser l'édition si la sauvegarde échoue
+        // log pour debug
+        // console.warn('Could not persist hero bg for path', location.pathname, e);
+      }
     }
   };
   return (

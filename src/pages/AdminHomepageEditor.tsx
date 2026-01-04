@@ -346,6 +346,13 @@ const AdminHomepageEditor = () => {
       if (!res || !res.publicUrl) throw new Error('Upload failed');
       setHeaderData({ ...headerData, logo_url: res.publicUrl });
       toast({ title: "Succès", description: "Logo téléchargé" });
+
+      // Auto-save header logo so header and favicon update immediately
+      try {
+        updateHeaderConfig({ logo_url: res.publicUrl });
+      } catch (err) {
+        console.error('Error auto-saving header logo:', err);
+      }
     } catch (error) {
       console.error("Error uploading logo:", error);
       toast({ 

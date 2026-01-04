@@ -300,11 +300,12 @@ export default function Documents() {
                       Télécharger
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent aria-describedby="upload-doc-desc">
                     <DialogHeader>
                       <DialogTitle>Télécharger un document</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleUpload} className="space-y-4">
+                      <div id="upload-doc-desc" className="sr-only">Formulaire pour téléverser un document et définir ses métadonnées.</div>
+                      <form onSubmit={handleUpload} className="space-y-4">
                       <div>
                         <Label htmlFor="title">Titre</Label>
                         <Input
@@ -459,10 +460,11 @@ export default function Documents() {
                               <Edit2 className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent aria-describedby="doc-edit-desc">
                             <DialogHeader>
                               <DialogTitle>Modifier le document</DialogTitle>
                             </DialogHeader>
+                            <div id="doc-edit-desc" className="sr-only">Formulaire de modification des métadonnées du document.</div>
                             <div className="space-y-4">
                               <div>
                                 <Label htmlFor="edit-title">Titre</Label>

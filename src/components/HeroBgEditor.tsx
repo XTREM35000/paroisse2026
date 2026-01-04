@@ -17,6 +17,7 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
   const [value, setValue] = useState(current || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Synchroniser le state avec les changements de 'current' (pour les navigations)
   useEffect(() => {
@@ -36,6 +37,7 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
   const handleFile = async (file?: File) => {
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const res = bucket 
         ? await uploadDirectoryImage(file, bucket)
@@ -44,10 +46,15 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
         setValue(res.publicUrl);
       } else {
         // fallback: create object URL
-        setValue(URL.createObjectURL(file));
+        const obj = URL.createObjectURL(file);
+        setValue(obj);
+        setUploadError('Téléversement échoué — affichage local seulement. Réessayez pour publier l\'image.');
       }
     } catch (e) {
       console.error('Upload failed', e);
+      const obj = URL.createObjectURL(file);
+      setValue(obj);
+      setUploadError('Téléversement échoué — affichage local seulement. Réessayez pour publier l\'image.');
     } finally {
       setUploading(false);
     }
@@ -60,12 +67,12 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby="hero-bg-desc">
           <DialogHeader>
             <DialogTitle>Modifier l'image de fond</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 mt-2">
+            <div className="space-y-3 mt-2" id="hero-bg-desc">
             <label className="text-sm text-muted-foreground">URL de l'image</label>
             <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="https://.../image.jpg" />
 
@@ -75,6 +82,8 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
               </div>
               <div className="flex-1 text-sm text-muted-foreground">Collez une URL publique ou téléversez une image depuis votre ordinateur.</div>
             </div>
+
+            {uploadError && <div className="text-sm text-destructive mt-2">{uploadError}</div>}
 
             <div className="flex items-center gap-2 mt-2">
               <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-muted rounded text-sm">

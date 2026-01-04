@@ -78,7 +78,7 @@ const Directory: React.FC = () => {
       <HeroBanner
         title="Annuaire"
         subtitle="Retrouvez nos services, nos membres et notre clergé"
-        showBackButton={false}
+        showBackButton={true}
         bucket="directory-images"
         backgroundImage={hero?.image_url}
         onBgSave={saveHero}

@@ -20,8 +20,12 @@ export function useUser() {
   useEffect(() => {
     if (!user) {
       setProfile(null);
+      setIsLoading(false);
       return;
     }
+
+    // Utiliser une variable pour tracker le montage et éviter les mises à jour après unmount
+    let isMounted = true;
 
     const fetchProfile = async () => {
       setIsLoading(true);
@@ -31,6 +35,8 @@ export function useUser() {
           .select('*')
           .eq('id', user.id)
           .maybeSingle();
+
+        if (!isMounted) return; // Vérifier si le composant est toujours monté
 
         if (error) {
           console.error('Erreur lors de la récupération du profil:', error);
@@ -46,17 +52,25 @@ export function useUser() {
         }
       } catch (err) {
         console.error('Erreur lors de la récupération du profil:', err);
-        setProfile({
-          id: user.id,
-          email: user.email || '',
-        });
+        if (isMounted) {
+          setProfile({
+            id: user.id,
+            email: user.email || '',
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchProfile();
-  }, [user]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]); // Dépendre de user pour que l'effet se déclenche quand l'objet user change
 
   const isAdmin = !!(profile && typeof profile.role === 'string' && ['admin', 'administrateur', 'superadmin'].includes(profile.role.toLowerCase()));
 

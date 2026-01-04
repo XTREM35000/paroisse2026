@@ -14,16 +14,27 @@ export function useUserRoles(userId: string | undefined) {
     }
 
     try {
-      const { data, error } = await supabase
-        .rpc('get_user_roles', { _user_id: userId });
+      // Ensure supabase RPC is available (can throw if client not initialized)
+      type RpcFn = (fn: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+      const rpc = (supabase as unknown as { rpc?: RpcFn }).rpc;
+      if (typeof rpc !== 'function') {
+        console.warn('[useUserRoles] supabase.rpc not available yet');
+        setRoles([]);
+        setLoading(false);
+        return;
+      }
+
+      // supabase client may have narrow typings for rpc names; call via typed rpc
+      const { data, error } = await rpc('get_user_roles', { _user_id: userId });
 
       if (error) {
         console.error('Error fetching roles:', error);
         setRoles([]);
       } else {
-        setRoles((data as AppRole[]) || []);
+        // supabase typings for rpc can be strict; cast via unknown first then to AppRole[]
+        setRoles(((data as unknown) as AppRole[]) || []);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error fetching roles:', err);
       setRoles([]);
     } finally {

@@ -50,7 +50,7 @@ const AboutPage: React.FC = () => {
         title={organized.hero?.title || 'À propos de nous'}
         subtitle={organized.hero?.subtitle || 'Découvrez l\'histoire et la mission de notre paroisse'}
         backgroundImage={organized.hero?.image_url || undefined}
-        showBackButton={false}
+        showBackButton={true}
         bucket="directory-images"
         onBgSave={handleHeroImageSave}
       />

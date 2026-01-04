@@ -127,10 +127,12 @@ const MembersPage: React.FC = () => {
       </main>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby="member-edit-desc">
           <DialogHeader>
             <DialogTitle>Éditer le membre</DialogTitle>
           </DialogHeader>
+
+          <div id="member-edit-desc" className="sr-only">Formulaire d'édition du membre sélectionné.</div>
 
           <div className="space-y-4">
             <div>

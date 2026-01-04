@@ -235,7 +235,7 @@ const AdminDirectoryEditor: React.FC = () => {
       <HeroBanner
         title="Annuaire - Administration"
         subtitle="Gérez les services, le clergé et les membres"
-        showBackButton={false}
+        showBackButton={true}
         backgroundImage={hero?.image_url || undefined}
         onBgSave={saveHero}
       />
@@ -321,12 +321,14 @@ const AdminDirectoryEditor: React.FC = () => {
 
       {/* Edit/Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="admin-directory-desc">
           <DialogHeader>
             <DialogTitle>
               {editingId ? 'Éditer l\'élément' : 'Créer un nouvel élément'}
             </DialogTitle>
           </DialogHeader>
+
+          <div id="admin-directory-desc" className="sr-only">Dialog pour créer ou éditer un élément de l'annuaire.</div>
 
           <div className="space-y-4 py-4">
             {/* Name */}

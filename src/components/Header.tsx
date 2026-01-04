@@ -35,6 +35,36 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const { isAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
 
+  // When a logo is present, update the favicon dynamically (cache-busted).
+  // This effect must run unconditionally to keep hooks order stable.
+  useEffect(() => {
+    if (!headerConfig?.logo_url) return;
+    try {
+      const url = headerConfig.logo_url;
+      const cacheBusted = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
+
+      // standard favicon
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = cacheBusted;
+
+      // apple touch icon
+      let apple: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
+      if (!apple) {
+        apple = document.createElement('link');
+        apple.rel = 'apple-touch-icon';
+        document.head.appendChild(apple);
+      }
+      apple.href = cacheBusted;
+    } catch (e) {
+      // noop - don't block render
+    }
+  }, [headerConfig?.logo_url]);
+
   // Close mobile menu when auth state changes (e.g. on logout)
   useEffect(() => {
     if (!user) {
@@ -51,6 +81,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   if (headerLoading || !headerConfig) {
     return <HeaderSkeleton />;
   }
+
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50">

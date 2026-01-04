@@ -64,19 +64,36 @@ export const useUpdateHeaderConfig = () => {
 
   return useMutation({
     mutationFn: async (config: Partial<HeaderConfig>) => {
-      // @ts-expect-error - header_config table exists but not in types yet
-      const { data, error } = await supabase
-        .from('header_config')
-        .update(config)
-        .eq('is_active', true)
-        .select()
-        .single();
+      try {
+        // @ts-expect-error - header_config table exists but not in types yet
+        const { data, error, status, statusText } = await supabase
+          .from('header_config')
+          .update(config)
+          .eq('is_active', true)
+          .select();
 
-      if (error) {
-        throw new Error(`Erreur lors de la mise à jour: ${error.message}`);
+        if (error) {
+          console.error('[useUpdateHeaderConfig] update error', { error, status, statusText, config });
+          throw new Error(`Erreur lors de la mise à jour: ${error?.message ?? JSON.stringify(error)}`);
+        }
+
+        // PostgREST may return an array when multiple rows match; handle both cases
+        if (Array.isArray(data)) {
+          if (data.length === 0) {
+            throw new Error('Aucune ligne mise à jour pour header_config');
+          }
+          return data[0] as unknown as HeaderConfig;
+        }
+
+        if (data && typeof data === 'object') {
+          return data as unknown as HeaderConfig;
+        }
+
+        throw new Error('Impossible de convertir le résultat en objet HeaderConfig');
+      } catch (err: any) {
+        console.error('[useUpdateHeaderConfig] unexpected error', err, { config });
+        throw err;
       }
-
-      return data as unknown as HeaderConfig;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['header-config'] });
