@@ -22,15 +22,38 @@ export function useUserRoles(userId: string | undefined) {
         return;
       }
 
-      // Call rpc directly via supabase client
-      const { data, error } = await (supabase as any).rpc('get_user_roles', { _user_id: userId });
-
-      if (error) {
-        console.error('Error fetching roles:', error);
-        setRoles([]);
-      } else {
-        // Cast the response to AppRole[]
+      // Try RPC first (if present on the DB). If RPC is missing, fall back to reading `profiles.role`.
+      try {
+        const { data, error } = await (supabase as any).rpc('get_user_roles', { _user_id: userId });
+        if (error) throw error;
         setRoles(((data as unknown) as AppRole[]) || []);
+      } catch (rpcErr: any) {
+        // If the RPC is not found in the schema (common in fresh projects), fallback to profiles table
+        const msg = rpcErr?.message || String(rpcErr || '');
+        const code = rpcErr?.code || rpcErr?.status || null;
+        if (String(msg).includes('Could not find the function') || code === 'PGRST202' || code === 404) {
+          try {
+            const { data: profileData, error: profileErr } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
+            if (profileErr) {
+              console.error('Error fetching profile role fallback:', profileErr);
+              setRoles([]);
+            } else if (profileData && (profileData as any).role) {
+              const r = String((profileData as any).role).toLowerCase();
+              // map DB role to AppRole
+              if (r.includes('admin')) setRoles(['admin']);
+              else if (r.includes('moder')) setRoles(['moderator']);
+              else setRoles(['member']);
+            } else {
+              setRoles([]);
+            }
+          } catch (pfErr) {
+            console.error('Fallback profile read failed:', pfErr);
+            setRoles([]);
+          }
+        } else {
+          console.error('Error fetching roles:', rpcErr);
+          setRoles([]);
+        }
       }
     } catch (err: unknown) {
       console.error('Error fetching roles:', err);

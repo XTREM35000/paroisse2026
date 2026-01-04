@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
 
       <nav className="px-2 py-4">
         {MENU_GROUPS.map((group) => {
-          if (group.adminOnly && !(isAdmin || isModerator)) return null;
+          if (group.adminOnly && !isAdmin) return null;
           return (
             <div key={group.title} className="mb-6">
               {!isCollapsed && (

@@ -156,7 +156,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
               {/* If grouped navigation provided, render groups */}
               {((navigationGroups && navigationGroups.length > 0) ? navigationGroups : undefined) ? (
                 (navigationGroups as NavGroup[]).map((group) => {
-                  if (group.adminOnly && !(isAdmin || isModerator)) return null;
+                  if (group.adminOnly && !isAdmin) return null;
                   return (
                     <div key={group.title} className="mb-4">
                       <div className="px-2 text-xs text-muted-foreground uppercase mb-2 font-semibold">
