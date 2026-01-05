@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from './input'
@@ -70,12 +70,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 		return localPart && currentDomain ? `${localPart}@${currentDomain}` : ''
 	}, [localPart, domain, customDomain])
 
-	useEffect(() => {
-		const isValid = !required || (required && validateEmail(fullValue))
-		onValidationChange?.(isValid)
-	}, [fullValue, required, onValidationChange])
-
-	const validateEmail = (email: string) => {
+	const validateEmail = useCallback((email: string) => {
 		if (!email) {
 			setInternalError(required ? 'Email requis' : '')
 			return !required
@@ -84,7 +79,14 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 		const ok = re.test(email)
 		setInternalError(ok ? '' : 'Format email invalide')
 		return ok
-	}
+	}, [required])
+
+	useEffect(() => {
+		const isValid = !required || (required && validateEmail(fullValue))
+		onValidationChange?.(isValid)
+	}, [fullValue, required, onValidationChange, validateEmail])
+
+	// validateEmail implemented via useCallback above
 
 	const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const sanitized = e.target.value.replace(/@/g, '').trim()

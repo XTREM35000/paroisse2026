@@ -3,6 +3,9 @@ import Header from './Header';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
 import { useAuth } from '@/hooks/useAuth';
+import { SetupProvider, useSetup } from '@/contexts/SetupContext';
+import useFirstLaunch from '@/hooks/useFirstLaunch';
+import SetupWizardModal from './SetupWizardModal';
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -15,10 +18,33 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   }, [sidebarCollapsed]);
 
   const { user } = useAuth();
+  const { isFirstLaunch, loading: firstLaunchLoading } = useFirstLaunch();
+
+  // consume setup context to check completed flag
+  // We'll render the provider lower in the tree, so create a small inner component to use it.
+  const SetupGate: React.FC = () => {
+    const { setupCompleted } = useSetup();
+    const [modalOpen, setModalOpen] = React.useState(false);
+
+    React.useEffect(() => {
+      if (!firstLaunchLoading && isFirstLaunch && user && !setupCompleted) {
+        // show modal only for admin users — best-effort: check email presence
+        setModalOpen(true);
+      }
+    }, [firstLaunchLoading, isFirstLaunch, user, setupCompleted]);
+
+    return (
+      <>
+        <SetupWizardModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      </>
+    );
+  };
 
   return (
+    <SetupProvider>
     <div className="min-h-screen flex flex-col">
       <Header darkMode={false} toggleDarkMode={() => {}} />
+      <SetupGate />
       <div className="flex flex-1">
         {/* Sidebar fixed à gauche - visible sur desktop uniquement (affiché seulement si connecté) */}
         {user && (
@@ -38,6 +64,7 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
       </div>
       <Footer />
     </div>
+    </SetupProvider>
   );
 };
 

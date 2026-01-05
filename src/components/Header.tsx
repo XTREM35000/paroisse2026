@@ -83,7 +83,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   }, [location.hash]);
 
   // Afficher le skeleton pendant le chargement
-  if (headerLoading || !headerConfig) {
+  if (headerLoading) {
     return <HeaderSkeleton />;
   }
 
@@ -96,18 +96,18 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 flex-shrink-0">
               {/* Logo dynamique */}
-              {headerConfig.logo_url ? (
+              {headerConfig?.logo_url ? (
                 <img
                   src={headerConfig.logo_url}
-                  alt={headerConfig.logo_alt_text}
+                  alt={headerConfig.logo_alt_text ?? 'Logo'}
                   className={`h-${
-                    headerConfig.logo_size === 'sm' ? '8' :
-                    headerConfig.logo_size === 'md' ? '10' :
+                    (headerConfig.logo_size ?? 'sm') === 'sm' ? '8' :
+                    (headerConfig.logo_size ?? 'sm') === 'md' ? '10' :
                     '12'
                   } w-auto object-contain`}
                 />
               ) : (
-                <AnimatedLogo size={headerConfig.logo_size} />
+                <AnimatedLogo size={(headerConfig?.logo_size ?? 'sm') as any} />
               )}
               
               {/* Titres dynamiques */}
@@ -117,18 +117,22 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 transition={{ delay: 0.1 }}
                 className="hidden sm:block"
               >
-                <h1 className="text-sm lg:text-base font-semibold text-foreground leading-tight">
-                  {headerConfig.main_title}
-                </h1>
-                <p className="text-xs text-muted-foreground -mt-0.5">
-                  {headerConfig.subtitle}
-                </p>
+                {headerConfig?.main_title && (
+                  <h1 className="text-sm lg:text-base font-semibold text-foreground leading-tight">
+                    {headerConfig.main_title}
+                  </h1>
+                )}
+                {headerConfig?.subtitle && (
+                  <p className="text-xs text-muted-foreground -mt-0.5">
+                    {headerConfig.subtitle}
+                  </p>
+                )}
               </motion.div>
             </Link>
 
             {/* Navigation Menu - Desktop */}
             <nav className="hidden md:flex items-center gap-2">
-              {headerConfig.navigation_items.map((item, index) => (
+              {(headerConfig?.navigation_items || []).map((item, index) => (
                 <Link 
                   key={index}
                   to={item.href}

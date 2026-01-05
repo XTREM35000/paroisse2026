@@ -30,7 +30,7 @@ export interface HeaderConfig {
 export const useHeaderConfig = () => {
   return useQuery({
     queryKey: ['header-config'],
-    queryFn: async (): Promise<HeaderConfig> => {
+    queryFn: async (): Promise<HeaderConfig | null> => {
       // @ts-expect-error - header_config table exists but not in types yet
       const { data, error } = await supabase
         .from('header_config')
@@ -41,13 +41,13 @@ export const useHeaderConfig = () => {
 
       if (error) {
         console.error('Erreur lors du chargement de la config du header:', error);
-        // Retourner une configuration par défaut en cas d'erreur
-        return getDefaultHeaderConfig();
+        // En cas d'erreur, retourner null pour forcer le tenant à configurer
+        return null;
       }
 
       if (!data) {
-        // Aucune config trouvée, retourner la config par défaut
-        return getDefaultHeaderConfig();
+        // Aucune config trouvée -> retourner null (nouveau tenant doit configurer)
+        return null;
       }
 
       return data as HeaderConfig;
@@ -65,6 +65,7 @@ export const useUpdateHeaderConfig = () => {
   return useMutation({
     mutationFn: async (config: Partial<HeaderConfig>) => {
       try {
+        // Try update first
         // @ts-expect-error - header_config table exists but not in types yet
         const { data, error, status, statusText } = await supabase
           .from('header_config')
@@ -77,11 +78,8 @@ export const useUpdateHeaderConfig = () => {
           throw new Error(`Erreur lors de la mise à jour: ${error?.message ?? JSON.stringify(error)}`);
         }
 
-        // PostgREST may return an array when multiple rows match; handle both cases
-        if (Array.isArray(data)) {
-          if (data.length === 0) {
-            throw new Error('Aucune ligne mise à jour pour header_config');
-          }
+        // If update returned rows, return the first
+        if (Array.isArray(data) && data.length > 0) {
           return data[0] as unknown as HeaderConfig;
         }
 
@@ -89,7 +87,28 @@ export const useUpdateHeaderConfig = () => {
           return data as unknown as HeaderConfig;
         }
 
-        throw new Error('Impossible de convertir le résultat en objet HeaderConfig');
+        // No rows were updated -> insert a new config (table was likely empty)
+        const insertPayload = { ...(config as object), is_active: true } as any;
+        // @ts-expect-error
+        const { data: insertData, error: insertError } = await supabase
+          .from('header_config')
+          .insert(insertPayload)
+          .select();
+
+        if (insertError) {
+          console.error('[useUpdateHeaderConfig] insert error', insertError, { config });
+          throw new Error(`Erreur lors de l'insertion: ${insertError?.message ?? JSON.stringify(insertError)}`);
+        }
+
+        if (Array.isArray(insertData) && insertData.length > 0) {
+          return insertData[0] as unknown as HeaderConfig;
+        }
+
+        if (insertData && typeof insertData === 'object') {
+          return insertData as unknown as HeaderConfig;
+        }
+
+        throw new Error('Impossible de mettre à jour ou d\'insérer la config du header');
       } catch (err: any) {
         console.error('[useUpdateHeaderConfig] unexpected error', err, { config });
         throw err;
