@@ -476,6 +476,96 @@ export type Database = {
           },
         ]
       }
+      donations: {
+        Row: {
+          id: string
+          donor_id: string | null
+          donor_name: string | null
+          donor_email: string | null
+          amount: number
+          currency: string | null
+          payment_method: string | null
+          payment_status: string | null
+          purpose: string | null
+          intention_id: string | null
+          notes: Json | null
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+          is_anonymous: boolean | null
+          type: string | null
+          amount_value: number | null
+          amount_currency: string | null
+          description: string | null
+          donation_date: string | null
+          is_verified: boolean | null
+          is_active: boolean | null
+        }
+        Insert: {
+          id?: string
+          donor_id?: string | null
+          donor_name?: string | null
+          donor_email?: string | null
+          amount: number
+          currency?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          purpose?: string | null
+          intention_id?: string | null
+          notes?: Json | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+          is_anonymous?: boolean | null
+          type?: string | null
+          amount_value?: number | null
+          amount_currency?: string | null
+          description?: string | null
+          donation_date?: string | null
+          is_verified?: boolean | null
+          is_active?: boolean | null
+        }
+        Update: {
+          id?: string
+          donor_id?: string | null
+          donor_name?: string | null
+          donor_email?: string | null
+          amount?: number
+          currency?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          purpose?: string | null
+          intention_id?: string | null
+          notes?: Json | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+          is_anonymous?: boolean | null
+          type?: string | null
+          amount_value?: number | null
+          amount_currency?: string | null
+          description?: string | null
+          donation_date?: string | null
+          is_verified?: boolean | null
+          is_active?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_intention_id_fkey"
+            columns: ["intention_id"]
+            isOneToOne: false
+            referencedRelation: "mass_intentions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

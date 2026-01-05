@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppRole } from '@/types/database';
 
+// Cache whether RPC is missing to avoid repeated 404s in the console
+let rpcMissing = false;
+
 export function useUserRoles(userId: string | undefined) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,14 +27,20 @@ export function useUserRoles(userId: string | undefined) {
 
       // Try RPC first (if present on the DB). If RPC is missing, fall back to reading `profiles.role`.
       try {
-        const { data, error } = await (supabase as any).rpc('get_user_roles', { _user_id: userId });
-        if (error) throw error;
-        setRoles(((data as unknown) as AppRole[]) || []);
+        if (!rpcMissing) {
+          const { data, error } = await (supabase as any).rpc('get_user_roles', { _user_id: userId });
+          if (error) throw error;
+          setRoles(((data as unknown) as AppRole[]) || []);
+        } else {
+          // RPC known missing, skip RPC and fallback to profiles below
+          throw { message: 'RPC missing (cached)' };
+        }
       } catch (rpcErr: any) {
         // If the RPC is not found in the schema (common in fresh projects), fallback to profiles table
         const msg = rpcErr?.message || String(rpcErr || '');
         const code = rpcErr?.code || rpcErr?.status || null;
-        if (String(msg).includes('Could not find the function') || code === 'PGRST202' || code === 404) {
+        if (String(msg).includes('Could not find the function') || code === 'PGRST202' || code === 404 || String(msg).includes('RPC missing (cached)')) {
+          rpcMissing = true;
           try {
             const { data: profileData, error: profileErr } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
             if (profileErr) {

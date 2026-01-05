@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Edit2, Trash2, Upload, Heart, Calendar, User } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, Upload, Heart, Calendar, User, Printer, CalendarDays, Church } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,14 @@ interface Prayer {
   updated_at: string;
 }
 
+interface HeaderConfig {
+  id: string;
+  logo_url: string | null;
+  logo_alt_text: string | null;
+  main_title: string | null;
+  subtitle: string | null;
+}
+
 const PrayersPage = () => {
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
@@ -33,10 +42,15 @@ const PrayersPage = () => {
   const { toast } = useToast();
 
   const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [headerConfig, setHeaderConfig] = useState<HeaderConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({
+    from: null,
+    to: null,
+  });
 
   const [formData, setFormData] = useState({
     title: "",
@@ -52,12 +66,8 @@ const PrayersPage = () => {
     ["admin", "super_admin", "administrateur"].includes(String(profile.role).toLowerCase())
   );
 
-  // Fetch prayers
-  useEffect(() => {
-    fetchPrayers();
-  }, []);
-
-  const fetchPrayers = async () => {
+  // Fetch prayers with useCallback to avoid dependency issues
+  const fetchPrayers = useCallback(async () => {
     try {
       setLoading(true);
       const query = (supabase as any).from("prayer_intentions").select("*");
@@ -81,6 +91,471 @@ const PrayersPage = () => {
     } finally {
       setLoading(false);
     }
+  }, [isAdmin, toast]);
+
+  // Fetch header configuration
+  useEffect(() => {
+    const fetchHeaderConfig = async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from("header_config")
+          .select("id, logo_url, logo_alt_text, main_title, subtitle")
+          .eq("is_active", true)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error("Error fetching header config:", error);
+        }
+        
+        if (data) {
+          setHeaderConfig(data);
+        } else {
+          setHeaderConfig({
+            id: 'default',
+            logo_url: null,
+            logo_alt_text: 'Logo Paroisse',
+            main_title: 'Paroisse Notre Dame',
+            subtitle: 'de la Compassion'
+          });
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement de la config header:", error);
+      }
+    };
+
+    fetchHeaderConfig();
+  }, []);
+
+  // Fetch prayers
+  useEffect(() => {
+    fetchPrayers();
+  }, [fetchPrayers]);
+
+  // Fonction d'impression pour les intentions de prière
+  const handlePrintPrayers = async () => {
+    // 1. Filtrer les intentions par période
+    const prayersToPrint = dateRange.from && dateRange.to
+      ? filteredPrayers.filter((prayer) => {
+          const prayerDate = new Date(prayer.created_at);
+          return prayerDate >= dateRange.from! && prayerDate <= dateRange.to!;
+        })
+      : filteredPrayers; // Si pas de filtre, tout imprimer
+
+    if (prayersToPrint.length === 0) {
+      toast({ 
+        title: "Aucune donnée", 
+        description: "Aucune intention à imprimer pour cette période.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // 2. Récupérer la dernière config d'en-tête si pas déjà chargée
+    let currentHeaderConfig = headerConfig;
+    if (!currentHeaderConfig) {
+      const { data } = await (supabase as any)
+        .from("header_config")
+        .select("id, logo_url, logo_alt_text, main_title, subtitle")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      currentHeaderConfig = data || {
+        id: 'default',
+        logo_url: null,
+        logo_alt_text: 'Logo Paroisse',
+        main_title: 'Paroisse Notre Dame',
+        subtitle: 'de la Compassion'
+      };
+    }
+
+    // 3. Créer un contenu HTML pour l'impression
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ 
+        title: "Erreur", 
+        description: "Veuillez autoriser les fenêtres popup pour l'impression.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Récupérer la date du jour formatée
+    const today = format(new Date(), "d MMMM yyyy", { locale: fr });
+    
+    // Format des dates de la période
+    const fromDate = dateRange.from 
+      ? format(dateRange.from, "dd/MM/yyyy", { locale: fr })
+      : format(new Date(prayersToPrint[prayersToPrint.length - 1].created_at), "dd/MM/yyyy", { locale: fr });
+      
+    const toDate = dateRange.to 
+      ? format(dateRange.to, "dd/MM/yyyy", { locale: fr })
+      : format(new Date(prayersToPrint[0].created_at), "dd/MM/yyyy", { locale: fr });
+
+    // Préparer les catégories pour les statistiques
+    const categoryStats: Record<string, number> = {};
+    prayersToPrint.forEach(prayer => {
+      const category = prayer.category || 'autre';
+      categoryStats[category] = (categoryStats[category] || 0) + 1;
+    });
+
+    // Obtenir les labels des catégories
+    const categories = {
+      autre: "Autre",
+      guerison: "Guérison",
+      famille: "Famille",
+      travail: "Travail",
+      etudes: "Études",
+      gratitude: "Gratitude",
+      monde: "Pour le monde"
+    };
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Intentions de Prière - ${today}</title>
+        <style>
+          @page {
+            margin: 15mm 20mm;
+            size: A4;
+          }
+          body { 
+            font-family: 'Arial', 'Helvetica', sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            color: #333; 
+            font-size: 12pt;
+            line-height: 1.5;
+          }
+          
+          /* En-tête avec logo et titres */
+          .print-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #9333ea;
+            padding-bottom: 15px;
+            page-break-after: avoid;
+          }
+          
+          .logo-container {
+            flex-shrink: 0;
+            margin-right: 20px;
+          }
+          
+          .print-logo {
+            max-height: 80px;
+            max-width: 120px;
+            object-fit: contain;
+          }
+          
+          .title-container {
+            flex-grow: 1;
+            text-align: left;
+          }
+          
+          .print-main-title {
+            margin: 0 0 5px 0;
+            font-size: 24pt;
+            color: #7c3aed;
+            font-weight: bold;
+            line-height: 1.1;
+          }
+          
+          .print-subtitle {
+            margin: 0 0 10px 0;
+            font-size: 16pt;
+            color: #8b5cf6;
+            font-weight: normal;
+            font-style: italic;
+          }
+          
+          .print-document-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e9d5ff;
+          }
+          
+          .print-document-title {
+            font-size: 18pt;
+            color: #7c3aed;
+            margin: 0 0 8px 0;
+            font-weight: 600;
+          }
+          
+          .print-date-period {
+            font-size: 11pt;
+            color: #8b5cf6;
+            margin: 5px 0;
+          }
+          
+          /* Statistiques */
+          .print-stats {
+            background: #faf5ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-left: 4px solid #8b5cf6;
+            page-break-inside: avoid;
+          }
+          
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+          }
+          
+          .stat-item {
+            text-align: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          
+          .stat-label {
+            font-size: 10pt;
+            color: #7c3aed;
+            font-weight: 500;
+          }
+          
+          .stat-value {
+            font-size: 16pt;
+            color: #7c3aed;
+            font-weight: bold;
+            margin-top: 5px;
+          }
+          
+          /* Contenu des intentions */
+          .prayer-item { 
+            margin-bottom: 25px; 
+            page-break-inside: avoid; 
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9d5ff;
+          }
+          
+          .prayer-item:last-child {
+            border-bottom: none;
+          }
+          
+          .prayer-title { 
+            color: #7c3aed; 
+            margin-bottom: 8px; 
+            font-size: 14pt;
+            font-weight: bold;
+            line-height: 1.3;
+          }
+          
+          .prayer-category {
+            display: inline-block;
+            background: #f3e8ff;
+            color: #7c3aed;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10pt;
+            font-weight: 500;
+            margin-bottom: 10px;
+          }
+          
+          .prayer-meta { 
+            font-size: 10pt; 
+            color: #8b5cf6; 
+            margin-bottom: 12px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-style: italic;
+          }
+          
+          .prayer-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+          
+          .prayer-content { 
+            font-size: 11pt; 
+            line-height: 1.6;
+            white-space: pre-line;
+            text-align: justify;
+            color: #4a5568;
+          }
+          
+          /* Pied de page */
+          .print-footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #e9d5ff;
+            font-size: 10pt;
+            color: #8b5cf6;
+            text-align: center;
+            page-break-before: avoid;
+          }
+          
+          .prayer-icon {
+            display: inline-block;
+            margin-right: 5px;
+          }
+          
+          /* Masquer les éléments de contrôle */
+          .no-print { 
+            display: none !important; 
+          }
+          
+          /* Utilitaires */
+          .text-muted {
+            color: #8b5cf6;
+          }
+          
+          .font-bold {
+            font-weight: bold;
+          }
+          
+          /* Gestion des sauts de page */
+          @media print {
+            .page-break {
+              page-break-before: always;
+            }
+            
+            .avoid-break {
+              page-break-inside: avoid;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <!-- En-tête avec logo et titres -->
+        <div class="print-header avoid-break">
+          ${currentHeaderConfig.logo_url ? `
+            <div class="logo-container">
+              <img src="${currentHeaderConfig.logo_url}" 
+                   alt="${currentHeaderConfig.logo_alt_text || 'Logo'}" 
+                   class="print-logo" />
+            </div>
+          ` : ''}
+          
+          <div class="title-container">
+            <h1 class="print-main-title">
+              ${currentHeaderConfig.main_title || 'Paroisse Notre Dame'}
+            </h1>
+            ${currentHeaderConfig.subtitle ? `
+              <h2 class="print-subtitle">
+                ${currentHeaderConfig.subtitle}
+              </h2>
+            ` : ''}
+            
+            <div class="print-document-info">
+              <h3 class="print-document-title">
+                <span class="prayer-icon">🙏</span> Intentions de Prière
+              </h3>
+              <div class="print-date-period">
+                <span class="font-bold">Période :</span> ${fromDate} – ${toDate}<br/>
+                <span class="font-bold">Imprimé le :</span> ${today}<br/>
+                <span class="font-bold">Nombre d'intentions :</span> ${prayersToPrint.length}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="print-stats avoid-break">
+          <div class="font-bold" style="color: #7c3aed; margin-bottom: 10px;">
+            Statistiques de la période
+          </div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">Total d'intentions</div>
+              <div class="stat-value">${prayersToPrint.length}</div>
+            </div>
+            ${Object.entries(categoryStats).map(([cat, count]) => `
+              <div class="stat-item">
+                <div class="stat-label">${categories[cat as keyof typeof categories] || cat}</div>
+                <div class="stat-value">${count}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Liste des intentions -->
+        ${prayersToPrint.map((prayer, index) => `
+          <div class="prayer-item avoid-break">
+            <div class="prayer-category">
+              ${categories[prayer.category as keyof typeof categories] || prayer.category || 'Autre'}
+            </div>
+            
+            <h4 class="prayer-title">${prayer.title}</h4>
+            
+            <div class="prayer-meta">
+              <span class="prayer-meta-item">
+                <span class="font-bold">Date :</span>
+                ${format(new Date(prayer.created_at), "d MMMM yyyy", { locale: fr })}
+              </span>
+              
+              <span class="prayer-meta-item">
+                <span class="font-bold">Par :</span>
+                ${prayer.is_anonymous ? 'Anonyme' : (prayer.submitted_by_name || 'Non spécifié')}
+              </span>
+            </div>
+            
+            <div class="prayer-content">
+              ${prayer.content}
+            </div>
+          </div>
+          
+          ${index < prayersToPrint.length - 1 && index % 4 === 3 ? '<div class="page-break"></div>' : ''}
+        `).join('')}
+
+        <!-- Pied de page -->
+        <div class="print-footer avoid-break">
+          Document des intentions de prière • ${currentHeaderConfig.main_title || 'Paroisse'} • 
+          Généré le ${today} depuis l'application Paroisse<br/>
+          <em>"Priez sans cesse" (1 Thessaloniciens 5:17)</em>
+        </div>
+
+        <!-- Contrôles d'impression (masqués à l'impression) -->
+        <div class="no-print" style="position: fixed; top: 20px; right: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+          <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
+            <strong>Contrôles d'impression</strong><br/>
+            Ce document a été généré automatiquement.
+          </p>
+          <div style="display: flex; gap: 10px;">
+            <button onclick="window.print();" style="padding: 8px 16px; background: #7c3aed; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+              🖨️ Imprimer
+            </button>
+            <button onclick="window.close();" style="padding: 8px 16px; background: #e9d5ff; color: #7c3aed; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+              Fermer
+            </button>
+          </div>
+        </div>
+        
+        <script>
+          // Délai pour s'assurer que le contenu est chargé
+          setTimeout(() => {
+            window.focus();
+            // Lancement automatique de l'impression
+            window.print();
+            
+            // Fermer la fenêtre après impression (optionnel)
+            window.onafterprint = function() {
+              setTimeout(() => {
+                window.close();
+              }, 100);
+            };
+          }, 300);
+        </script>
+      </body>
+      </html>
+    `;
+
+    // 4. Écrire et lancer l'impression
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   const handleSave = async () => {
@@ -204,6 +679,91 @@ const PrayersPage = () => {
 
       <main className="flex-1 py-12 lg:py-16">
         <div className="container mx-auto px-4 space-y-8">
+          {/* Filtres et Impression */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-4"
+          >
+            {/* Barre de recherche */}
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Rechercher une intention..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12 bg-white/90 border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500"
+              />
+            </div>
+
+            {/* Filtres de date et impression */}
+            <div className="flex flex-col md:flex-row gap-4 p-4 bg-card rounded-lg border">
+              <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 text-sm font-medium mb-1">
+                    <CalendarDays className="h-4 w-4" />
+                    Du
+                  </label>
+                  <Input 
+                    type="date"
+                    onChange={(e) => setDateRange({...dateRange, from: e.target.value ? new Date(e.target.value) : null})}
+                    className="w-full bg-white/90 border-2 border-gray-300 text-gray-900 focus:border-purple-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 text-sm font-medium mb-1">
+                    <CalendarDays className="h-4 w-4" />
+                    Au
+                  </label>
+                  <Input 
+                    type="date"
+                    onChange={(e) => setDateRange({...dateRange, to: e.target.value ? new Date(e.target.value) : null})}
+                    className="w-full bg-white/90 border-2 border-gray-300 text-gray-900 focus:border-purple-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  onClick={handlePrintPrayers}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-10 w-full md:w-auto"
+                  disabled={!headerConfig}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimer la Sélection
+                  {dateRange.from && dateRange.to && (
+                    <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded">
+                      {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM")}
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Indication de la paroisse */}
+            {headerConfig && (
+              <div className="flex items-center gap-3 text-sm text-muted-foreground bg-purple-50 p-3 rounded-lg">
+                {headerConfig.logo_url ? (
+                  <img 
+                    src={headerConfig.logo_url} 
+                    alt={headerConfig.logo_alt_text || 'Logo'} 
+                    className="h-8 w-8 object-contain"
+                  />
+                ) : (
+                  <Church className="h-5 w-5 text-purple-500" />
+                )}
+                <div>
+                  <span className="font-medium text-purple-700">{headerConfig.main_title}</span>
+                  {headerConfig.subtitle && (
+                    <span className="ml-2 text-purple-600">- {headerConfig.subtitle}</span>
+                  )}
+                  <span className="ml-2 text-gray-500">• Ces informations apparaîtront sur l'impression</span>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
           {/* Search & Create */}
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -214,12 +774,12 @@ const PrayersPage = () => {
                   placeholder="Rechercher une intention..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-white/90 border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500"
                 />
               </div>
               <Button
                 onClick={() => (showForm ? resetForm() : setShowForm(true))}
-                className="gap-2"
+                className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
                 <Plus className="h-4 w-4" />
                 {showForm ? "Annuler" : "Soumettre une intention"}
@@ -241,6 +801,7 @@ const PrayersPage = () => {
                   placeholder="Titre de l'intention"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="bg-white/90 border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500"
                 />
 
                 <textarea
@@ -248,7 +809,7 @@ const PrayersPage = () => {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   rows={4}
-                  className="w-full border border-border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full bg-white/90 border-2 border-gray-300 text-gray-900 placeholder-gray-500 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
 
                 <div>
@@ -256,7 +817,7 @@ const PrayersPage = () => {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full border border-border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full bg-white/90 border-2 border-gray-300 text-gray-900 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     {categories.map(({ value, label }) => (
                       <option key={value} value={value}>
@@ -287,6 +848,7 @@ const PrayersPage = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, submitted_by_name: e.target.value })
                       }
+                      className="bg-white/90 border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500"
                     />
                     <Input
                       type="email"
@@ -295,6 +857,7 @@ const PrayersPage = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, submitted_by_email: e.target.value })
                       }
+                      className="bg-white/90 border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500"
                     />
                   </>
                 )}

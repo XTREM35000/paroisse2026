@@ -25,6 +25,8 @@ interface Donation {
   quantity?: string;
   donation_date: string;
   location: string;
+  purpose?: string;
+  metadata?: any;
   notes?: string;
   is_verified: boolean;
   created_at: string;
@@ -65,6 +67,11 @@ const DonationsHistoryPage = () => {
       const mappedData = (data || []).map((d: any) => ({
         ...d,
         user_id: d.user_id ?? d.donor_id,
+        // compatibility: map purpose -> location, metadata.quantity -> quantity
+        location: d.purpose ?? d.location ?? "",
+        quantity: d.metadata?.quantity ?? d.quantity ?? undefined,
+        purpose: d.purpose ?? undefined,
+        metadata: d.metadata ?? undefined,
       }));
       setAllDonations(mappedData);
       setDonations(mappedData);
