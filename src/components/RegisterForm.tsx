@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import PhoneInputWithCountry from "@/components/PhoneInputWithCountry";
-import EmailInputWithSuffix from "@/components/EmailInputWithSuffix";
+import { EmailFieldPro } from "@/components/ui/email-field-pro";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -203,13 +203,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 w-full">
+    <form onSubmit={onSubmit} className="space-y-2 w-full text-sm">
       {/* Section Avatar compacte en haut */}
-      <div className="flex gap-4">
-        <div className="flex flex-col items-center space-y-2">
+      <div className="flex gap-3">
+        <div className="flex flex-col items-center space-y-1 flex-shrink-0">
           <div
             onClick={handleAvatarClick}
-            className="relative w-32 h-32 rounded-full border-4 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer bg-muted/30 overflow-hidden group"
+            className="relative w-24 h-24 rounded-full border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer bg-muted/30 overflow-hidden group"
           >
             {avatarPreview ? (
               <img
@@ -219,11 +219,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Camera className="h-10 w-10 text-muted-foreground/50 group-hover:text-primary/70 transition-colors" />
+                <Camera className="h-6 w-6 text-muted-foreground/50 group-hover:text-primary/70 transition-colors" />
               </div>
             )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-              <Camera className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
           <input
@@ -233,46 +233,49 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             onChange={onFileChange}
             className="hidden"
           />
-          <p className="text-xs text-muted-foreground text-center">Avatar (optionnel)</p>
+          <p className="text-xs text-muted-foreground text-center">Avatar</p>
         </div>
 
         {/* Champs principaux */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-2">
           {/* Prénom + Nom sur une ligne */}
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-xs font-medium mb-1">Prénom *</label>
+              <label className="block text-xs font-medium mb-0.5">Prénom *</label>
               <Input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 type="text"
                 placeholder="Jean"
                 required
-                className="h-9"
+                className="h-8 text-xs"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium mb-1">Nom *</label>
+              <label className="block text-xs font-medium mb-0.5">Nom *</label>
               <Input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 type="text"
                 placeholder="Dupont"
                 required
-                className="h-9"
+                className="h-8 text-xs"
               />
             </div>
           </div>
 
           {/* Email avec auto-complétion */}
-          <div>
-            <label className="block text-xs font-medium mb-1">Email *</label>
-            <EmailInputWithSuffix email={email} onEmailChange={setEmail} />
-          </div>
+          <EmailFieldPro
+            value={email}
+            onChange={setEmail}
+            label="Email"
+            required
+            onValidationChange={() => {}}
+          />
 
           {/* Mot de passe avec indicateur */}
           <div>
-            <label className="block text-xs font-medium mb-1">Mot de passe *</label>
+            <label className="block text-xs font-medium mb-0.5">Mot de passe *</label>
             <div className="relative">
               <Input
                 value={password}
@@ -299,7 +302,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
 
           {/* Téléphone avec indicatif */}
           <div>
-            <label className="block text-xs font-medium mb-1">Téléphone</label>
+            <label className="block text-xs font-medium mb-0.5">Téléphone</label>
             <PhoneInputWithCountry
               phone={phone}
               onPhoneChange={setPhone}
@@ -311,13 +314,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={loading} className="flex-1 h-9">
+      <div className="flex gap-2 pt-1">
+        <Button type="submit" disabled={loading} className="flex-1 h-8 text-xs">
           {loading ? "Création..." : "Créer mon compte"}
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-muted-foreground text-center py-1">
         * Champs obligatoires
       </p>
     </form>

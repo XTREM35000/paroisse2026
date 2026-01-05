@@ -56,8 +56,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
           <X className="h-6 w-6 text-muted-foreground hover:text-foreground" />
         </motion.button>
 
-        <div className="overflow-y-auto flex-1 px-4 py-4 md:px-6 md:py-6">
-          <div className="flex gap-6 items-stretch">
+        <div className="flex-1 px-4 py-4 md:px-6 md:py-6 overflow-hidden">
+          <div className="flex gap-6 items-stretch h-full">
             {/* Branding Section */}
             <div className="hidden md:flex flex-col items-center justify-center w-1/3">
               <motion.img
