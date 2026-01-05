@@ -154,8 +154,8 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
 
             <nav className="p-4 flex flex-col gap-2 overflow-y-auto h-[calc(100%-64px)]">
               {/* If grouped navigation provided, render groups */}
-              {((navigationGroups && navigationGroups.length > 0) ? navigationGroups : undefined) ? (
-                (navigationGroups as NavGroup[]).map((group) => {
+              {navigationGroups && navigationGroups.length > 0 ? (
+                navigationGroups.map((group) => {
                   if (group.adminOnly && !isAdmin) return null;
                   return (
                     <div key={group.title} className="mb-4">

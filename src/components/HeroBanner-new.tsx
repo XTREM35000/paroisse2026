@@ -111,7 +111,7 @@ const HeroBanner = ({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
               onClick={() => navigate(-1)}
-              className="mb-4 md:mb-6 inline-flex items-center gap-2 text-xs md:text-sm text-white hover:text-white transition-colors backdrop-blur-sm bg-black/40 px-2 md:px-3 py-1.5 rounded-full border border-white/20"
+              className="mb-4 md:mb-6 inline-flex items-center gap-2 text-xs md:text-sm text-accent-foreground hover:text-accent-foreground transition-colors backdrop-blur-sm bg-accent/80 hover:bg-accent px-2 md:px-3 py-1.5 rounded-full border border-accent/50"
             >
               <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
               Retour

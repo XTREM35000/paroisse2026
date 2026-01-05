@@ -72,6 +72,11 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
     }
   }, [user]);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
   // Ouvrir le modal d'authentification si l'URL contient #auth
   useEffect(() => {
     setIsAuthModalOpen(location.hash === '#auth');
@@ -294,7 +299,10 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 variant="ghost"
                 size="icon"
                 className="lg:hidden text-muted-foreground"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                onClick={() => {
+                  console.log('Mobile menu toggle - current state:', isMobileMenuOpen);
+                  setIsMobileMenuOpen(prev => !prev);
+                }}
                 title="Menu mobile"
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
