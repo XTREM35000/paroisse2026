@@ -62,7 +62,7 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
 
   return (
     <div className="absolute top-3 right-3 z-40">
-      <Button size="icon" onClick={() => setOpen(true)} title="Modifier l'image de fond" className="bg-black/40 hover:bg-black/60">
+      <Button size="icon" onClick={() => setOpen(true)} title="Modifier l'image de fond" className="bg-primary hover:bg-primary/90 text-primary-foreground">
         <Edit3 className="w-4 h-4" />
       </Button>
 
@@ -86,11 +86,22 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
             {uploadError && <div className="text-sm text-destructive mt-2">{uploadError}</div>}
 
             <div className="flex items-center gap-2 mt-2">
-              <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-muted rounded text-sm">
-                <Upload className="w-4 h-4" /> Sélectionner un fichier
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-              </label>
-              {uploading && <span className="text-sm text-muted-foreground">Téléversement...</span>}
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2"
+                disabled={uploading}
+                onClick={() => document.querySelector('input[type="file"]')?.click()}
+              >
+                <Upload className="w-4 h-4" />
+                {uploading ? 'Téléversement...' : 'Sélectionner une image'}
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+              />
             </div>
 
             <div className="flex justify-end gap-2 mt-4">
