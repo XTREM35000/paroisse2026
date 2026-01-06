@@ -43,6 +43,7 @@ import HelpPage from './pages/HelpPage';
 import Unauthorized from './pages/Unauthorized';
 import NotificationProvider from '@/components/ui/notification-system';
 import MembersPage from './pages/MembersPage';
+import Notifications from './pages/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => (
             <Route path="/podcasts" element={<Layout><Podcasts /></Layout>} />
             <Route path="/documents" element={<Layout><Documents /></Layout>} />
             <Route path="/live" element={<Layout><Live /></Layout>} />
+            <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
             <Route path="/homilies" element={<Layout><Homilies /></Layout>} />
             <Route path="/prayers" element={<Layout><Prayers /></Layout>} />
             <Route path="/verse" element={<Layout><Verse /></Layout>} />
