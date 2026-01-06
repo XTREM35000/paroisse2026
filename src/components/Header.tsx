@@ -23,12 +23,14 @@ interface HeaderProps {
 }
 
 const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }: HeaderProps) => {
+  // All hooks FIRST, in strict order
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
+  
   const location = useLocation();
   const authMode = new URLSearchParams(location.search).get("mode") === "register" ? "register" : "login";
   const navigate = useNavigate();
@@ -37,15 +39,12 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const { isAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
 
-  // When a logo is present, update the favicon dynamically (cache-busted).
-  // This effect must run unconditionally to keep hooks order stable.
+  // Favicon effect
   useEffect(() => {
     if (!headerConfig?.logo_url) return;
     try {
       const url = headerConfig.logo_url;
       const cacheBusted = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
-
-      // standard favicon
       let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
       if (!link) {
         link = document.createElement('link');
@@ -53,8 +52,6 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
         document.head.appendChild(link);
       }
       link.href = cacheBusted;
-
-      // apple touch icon
       let apple: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
       if (!apple) {
         apple = document.createElement('link');
@@ -63,11 +60,11 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
       }
       apple.href = cacheBusted;
     } catch (e) {
-      // noop - don't block render
+      // noop
     }
   }, [headerConfig?.logo_url]);
 
-  // Close mobile menu when auth state changes (e.g. on logout)
+  // Close mobile menu when auth state changes
   useEffect(() => {
     if (!user) {
       setIsMobileMenuOpen(false);
@@ -79,23 +76,21 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Ouvrir le modal d'authentification si l'URL contient #auth
+  // Handle auth modal
   useEffect(() => {
     setIsAuthModalOpen(location.hash === '#auth');
   }, [location.hash]);
 
-  // Afficher le skeleton pendant le chargement
-  if (headerLoading) {
-    return <HeaderSkeleton />;
-  }
-
-  // Charger les compteurs non lus pour l'utilisateur connecté
+  // Load unread counts ONLY if user is logged in
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user || !profile) {
+      setUnreadMessagesCount(0);
+      setUnreadNotificationsCount(0);
+      return;
+    }
 
     const loadCounts = async () => {
       try {
-        // Notifications non lues
         const { count: notifCount } = await supabase
           .from('notifications')
           .select('id', { count: 'exact', head: true })
@@ -104,7 +99,6 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
 
         setUnreadNotificationsCount(notifCount || 0);
 
-        // Messages non lus: messages newer than profile.last_read_messages_at
         if (profile.last_read_messages_at) {
           const { count: msgCount } = await supabase
             .from('messages')
@@ -114,7 +108,6 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
 
           setUnreadMessagesCount(msgCount || 0);
         } else {
-          // If never read, count recent messages (e.g. last 7 days)
           const d = new Date();
           d.setDate(d.getDate() - 7);
           const { count: msgCount } = await supabase
@@ -132,6 +125,11 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
 
     loadCounts();
   }, [user, profile]);
+
+  // Loading skeleton
+  if (headerLoading) {
+    return <HeaderSkeleton />;
+  }
 
 
   return (
@@ -228,41 +226,45 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
               <Search className="h-5 w-5" />
             </Button>
 
-            {/* Chat icon with badge */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/live')}
-                className="text-muted-foreground hover:text-foreground"
-                title="Chat en direct"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </Button>
-              {unreadMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-destructive rounded-full">
-                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
-                </span>
-              )}
-            </div>
+            {/* Chat icon with badge - Only if logged in */}
+            {user && (
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/live')}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Chat en direct"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </Button>
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-destructive rounded-full">
+                    {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                  </span>
+                )}
+              </div>
+            )}
 
-            {/* Notifications icon with badge */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/notifications')}
-                className="text-muted-foreground hover:text-foreground"
-                title="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-              </Button>
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-rose-600 rounded-full">
-                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
-                </span>
-              )}
-            </div>
+            {/* Notifications icon with badge - Only if logged in */}
+            {user && (
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/notifications')}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                </Button>
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-rose-600 rounded-full">
+                    {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Help */}
             <Button

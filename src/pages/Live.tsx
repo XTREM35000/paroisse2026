@@ -18,6 +18,7 @@ interface ChatMessage {
 }
 
 const Live: React.FC = () => {
+  // ALL HOOKS FIRST - strict order
   const [isLive] = useState(true);
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
@@ -26,13 +27,13 @@ const Live: React.FC = () => {
   const [viewerCount, setViewerCount] = useState<number>(0);
   const [duration, setDuration] = useState<string>('00:00:00');
 
+  const location = useLocation();
   const { profile } = useUser();
+  const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
-  // Déterminer le nom de la paroisse (depuis les paramètres statiques)
-  const paroisseName = 'Notre Paroisse';
-  const paroisseSubtitle = 'En ligne';
-
+  // Fetch messages from Supabase
   const fetchMessages = useCallback(async () => {
+    if (!profile) return;
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -42,10 +43,9 @@ const Live: React.FC = () => {
 
       if (error) throw error;
 
-      // Map to ChatMessage
       const msgs: ChatMessage[] = (data || []).map((m) => ({
         id: m.id,
-        author: m.sender_id === profile?.id ? 'Vous' : (m.sender_id || 'Invité'),
+        author: m.sender_id === profile.id ? 'Vous' : (m.sender_id || 'Invité'),
         message: m.content,
         timestamp: new Date(m.created_at),
       }));
@@ -56,44 +56,18 @@ const Live: React.FC = () => {
     }
   }, [profile]);
 
+  // Polling for messages
   useEffect(() => {
+    if (!profile) return;
     fetchMessages();
-    // Optionally: poll every 6s
     const t = setInterval(fetchMessages, 6000);
     return () => clearInterval(t);
-  }, [fetchMessages]);
+  }, [fetchMessages, profile]);
 
-  const handleLike = () => {
-    setHasLiked(!hasLiked);
-    setLikes(hasLiked ? Math.max(0, likes - 1) : likes + 1);
-  };
-
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !profile) return;
-
-    try {
-      const { error } = await supabase
-        .from('messages')
-        .insert([{ content: newMessage.trim(), sender_id: profile.id }]);
-
-      if (error) throw error;
-      setNewMessage('');
-      // mark messages read for this user
-      await supabase
-        .from('profiles')
-        .update({ last_read_messages_at: new Date().toISOString() })
-        .eq('id', profile.id);
-
-      fetchMessages();
-    } catch (e) {
-      // silent
-    }
-  };
-
-  // When component mounts / user opens chat, update last_read_messages_at
+  // Mark messages as read on mount
   useEffect(() => {
+    if (!profile) return;
     const markRead = async () => {
-      if (!profile) return;
       try {
         await supabase
           .from('profiles')
@@ -106,14 +80,37 @@ const Live: React.FC = () => {
     markRead();
   }, [profile]);
 
-  const location = useLocation();
-  const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  // Handlers
+  const handleLike = () => {
+    setHasLiked(!hasLiked);
+    setLikes(hasLiked ? Math.max(0, likes - 1) : likes + 1);
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !profile) return;
+
+    try {
+      await supabase
+        .from('messages')
+        .insert([{ content: newMessage.trim(), sender_id: profile.id }]);
+
+      setNewMessage('');
+      await supabase
+        .from('profiles')
+        .update({ last_read_messages_at: new Date().toISOString() })
+        .eq('id', profile.id);
+
+      fetchMessages();
+    } catch (e) {
+      // silent
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <HeroBanner
-        title={`Messe en direct - ${paroisseName}`}
-        subtitle={paroisseSubtitle ? `${paroisseSubtitle} - Rejoignez notre communauté pour ce moment de prière` : "Rejoignez notre communauté pour ce moment de prière"}
+        title="Messe en direct"
+        subtitle="Rejoignez notre communauté pour ce moment de prière"
         backgroundImage={hero?.image_url || '/images/gallery/prieres.png'}
         onBgSave={saveHero}
       />
@@ -177,10 +174,10 @@ const Live: React.FC = () => {
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-foreground mb-2">
-                      {paroisseName}
+                    Messe Solennelle du Dimanche
                   </h1>
                   <p className="text-muted-foreground">
-                    Rejoignez-nous pour cette messe solennelle en direct de l&apos;église Saint-Jean. Un moment de prière et de recueillement en famille.
+                    Rejoignez-nous pour cette messe solennelle en direct. Un moment de prière et de recueillement en famille.
                   </p>
                 </div>
                 <button className="text-muted-foreground hover:text-foreground transition-colors p-2">
@@ -237,7 +234,7 @@ const Live: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Lieu</p>
-                    <p className="font-semibold">{paroisseName}</p>
+                  <p className="font-semibold">Église Saint-Jean, Paris</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Horaire</p>
