@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Edit2, Trash2, Upload, ChevronLeft, Calendar, User, Download, Play } from "lucide-react";
+import { Search, BookOpen, Users, Calendar, Play, Plus, Edit2, Trash2, Clock, Zap, Music } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "@/hooks/useUser";
 import { useToast } from "@/hooks/use-toast";
@@ -34,24 +34,11 @@ const HomilyPage = () => {
   const { toast } = useToast();
 
   const [homilies, setHomilies] = useState<Homily[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "priest">("date");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
-    title: "",
-    priest_name: "",
-    description: "",
-    homily_date: new Date().toISOString().split("T")[0],
-    image_url: "",
-    video_url: "",
-    transcript: "",
-    duration_minutes: "",
-  });
 
   const isAdmin = !!(
     profile?.role &&
@@ -74,7 +61,7 @@ const HomilyPage = () => {
       if (error) throw error;
       setHomilies(data || []);
     } catch (err) {
-      console.error("Erreur lors du chargement des homélies:", err);
+      console.error("Erreur:", err);
       toast({
         title: "Erreur",
         description: "Impossible de charger les homélies.",
@@ -85,119 +72,8 @@ const HomilyPage = () => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setVideoFile(file);
-      toast({
-        title: "Info",
-        description: `Vidéo sélectionnée: ${file.name}`,
-      });
-    }
-  };
-
-  const handleSave = async () => {
-    if (!formData.title || !formData.priest_name || !formData.homily_date) {
-      toast({
-        title: "Erreur",
-        description: "Titre, prêtre et date sont obligatoires.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      let imageUrl = formData.image_url;
-      let videoUrl = formData.video_url;
-
-      // Upload image if selected
-      if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `homilies/${fileName}`;
-        const bucket = import.meta.env.VITE_BUCKET_GALLERY || "gallery";
-
-        const { error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(filePath, imageFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-        imageUrl = data?.publicUrl || formData.image_url;
-      }
-
-      // Upload video if selected (note: large files may need special handling)
-      if (videoFile) {
-        const fileExt = videoFile.name.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `homilies/videos/${fileName}`;
-        const bucket = import.meta.env.VITE_BUCKET_GALLERY || "gallery";
-
-        const { error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(filePath, videoFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-        videoUrl = data?.publicUrl || formData.video_url;
-      }
-
-      const homilyData = {
-        title: formData.title,
-        priest_name: formData.priest_name,
-        description: formData.description || null,
-        homily_date: formData.homily_date,
-        image_url: imageUrl || null,
-        video_url: videoUrl || null,
-        transcript: formData.transcript || null,
-        duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
-      };
-
-      if (editingId) {
-        const { error } = await (supabase as any)
-          .from("homilies")
-          .update(homilyData)
-          .eq("id", editingId);
-
-        if (error) throw error;
-        toast({ title: "Succès", description: "Homélie mise à jour." });
-      } else {
-        const { error } = await (supabase as any)
-          .from("homilies")
-          .insert([homilyData]);
-
-        if (error) throw error;
-        toast({ title: "Succès", description: "Homélie créée." });
-      }
-
-      fetchHomilies();
-      resetForm();
-    } catch (err) {
-      console.error("Erreur:", err);
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder l'homélie.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr ?")) return;
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette homélie ?")) return;
 
     try {
       const { error } = await (supabase as any)
@@ -206,9 +82,11 @@ const HomilyPage = () => {
         .eq("id", id);
 
       if (error) throw error;
+
       toast({ title: "Succès", description: "Homélie supprimée." });
       fetchHomilies();
     } catch (err) {
+      console.error("Erreur:", err);
       toast({
         title: "Erreur",
         description: "Impossible de supprimer l'homélie.",
@@ -217,334 +95,368 @@ const HomilyPage = () => {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      priest_name: "",
-      description: "",
-      homily_date: new Date().toISOString().split("T")[0],
-      image_url: "",
-      video_url: "",
-      transcript: "",
-      duration_minutes: "",
-    });
-    setImageFile(null);
-    setImagePreview(null);
-    setVideoFile(null);
-    setShowForm(false);
-    setEditingId(null);
-  };
-
+  // Filter & sort homilies
   const filteredHomilies = useMemo(() => {
-    return homilies.filter(
+    let filtered = homilies.filter(
       (h) =>
         h.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         h.priest_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (h.description || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (h.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
     );
-  }, [homilies, searchTerm]);
+
+    if (sortBy === "priest") {
+      filtered.sort((a, b) => a.priest_name.localeCompare(b.priest_name));
+    }
+
+    return filtered;
+  }, [homilies, searchTerm, sortBy]);
+
+  // Stats
+  const stats = {
+    total: homilies.length,
+    priests: new Set(homilies.map((h) => h.priest_name)).size,
+    avgDuration:
+      homilies.length > 0
+        ? Math.round(
+            homilies.reduce((sum, h) => sum + (h.duration_minutes || 0), 0) / homilies.length
+          )
+        : 0,
+  };
+
+  // Priests list
+  const priests = useMemo(() => {
+    return Array.from(new Set(homilies.map((h) => h.priest_name)));
+  }, [homilies]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       <HeroBanner
-        title="Homélies"
-        subtitle="Enregistrements et transcriptions des homélies"
-        showBackButton={true}
-        backgroundImage={hero?.image_url || "/images/church.png"}
+        title="Les Homélies"
+        subtitle="Écoutez les prédications spirituelles de nos prêtres"
+        backgroundImage={hero?.image_url || "/images/gallery/homelies.png"}
         onBgSave={saveHero}
       />
 
-      <main className="flex-1 py-12 lg:py-16">
-        <div className="container mx-auto px-4 space-y-8">
-          {/* Search & Admin Actions */}
-          <div className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Rechercher une homélie..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Stats Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Total Homilies */}
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              className="relative overflow-hidden bg-gradient-to-br from-blue-500/20 to-blue-600/5 border border-blue-200 dark:border-blue-800 rounded-xl p-8"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                    Homélies
+                  </h3>
+                  <BookOpen className="h-6 w-6 text-blue-500" />
+                </div>
+                <p className="text-4xl font-bold text-blue-700 dark:text-blue-300 mb-2">
+                  {stats.total}
+                </p>
+                <p className="text-sm text-blue-600/70 dark:text-blue-400/70">
+                  Ensemble des prédications
+                </p>
               </div>
-              {isAdmin && (
-                <Button
-                  onClick={() => (showForm ? resetForm() : setShowForm(true))}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  {showForm ? "Annuler" : "Nouvelle homélie"}
-                </Button>
-              )}
+            </motion.div>
+
+            {/* Priests */}
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              className="relative overflow-hidden bg-gradient-to-br from-purple-500/20 to-purple-600/5 border border-purple-200 dark:border-purple-800 rounded-xl p-8"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-12 -mt-12" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                    Prêtres
+                  </h3>
+                  <Users className="h-6 w-6 text-purple-500" />
+                </div>
+                <p className="text-4xl font-bold text-purple-700 dark:text-purple-300 mb-2">
+                  {stats.priests}
+                </p>
+                <p className="text-sm text-purple-600/70 dark:text-purple-400/70">
+                  Prédicateurs
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Duration */}
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              className="relative overflow-hidden bg-gradient-to-br from-amber-500/20 to-amber-600/5 border border-amber-200 dark:border-amber-800 rounded-xl p-8"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full -mr-12 -mt-12" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                    Durée Moy.
+                  </h3>
+                  <Clock className="h-6 w-6 text-amber-500" />
+                </div>
+                <p className="text-4xl font-bold text-amber-700 dark:text-amber-300 mb-2">
+                  {stats.avgDuration}
+                  <span className="text-lg ml-1">min</span>
+                </p>
+                <p className="text-sm text-amber-600/70 dark:text-amber-400/70">
+                  Par homélie
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </motion.section>
+
+        {/* Controls Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-xl border border-border p-6 mb-8"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Search */}
+            <div className="md:col-span-2 relative">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher une homélie..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
 
-            {/* Admin Form */}
-            {isAdmin && showForm && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="border border-border rounded-lg p-6 bg-card space-y-4"
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "date" | "priest")}
+              className="px-4 py-2 rounded-lg bg-background border border-border text-sm font-medium"
+            >
+              <option value="date">Récentes d'abord</option>
+              <option value="priest">Par prêtre</option>
+            </select>
+
+            {/* Action Button */}
+            {isAdmin && (
+              <Button
+                onClick={() => {
+                  setShowForm(!showForm);
+                  setEditingId(null);
+                }}
+                className="w-full"
               >
-                <h3 className="text-lg font-semibold">
-                  {editingId ? "Modifier l'homélie" : "Créer une homélie"}
-                </h3>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    placeholder="Titre de l'homélie"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Nom du prêtre"
-                    value={formData.priest_name}
-                    onChange={(e) => setFormData({ ...formData, priest_name: e.target.value })}
-                  />
-                </div>
-
-                <textarea
-                  placeholder="Description (résumé de l'homélie)"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-border rounded-lg p-2 min-h-20 focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-
-                <textarea
-                  placeholder="Transcription (texte complet de l'homélie)"
-                  value={formData.transcript}
-                  onChange={(e) => setFormData({ ...formData, transcript: e.target.value })}
-                  className="w-full border border-border rounded-lg p-2 min-h-24 focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    placeholder="Date de l'homélie"
-                    type="date"
-                    value={formData.homily_date}
-                    onChange={(e) => setFormData({ ...formData, homily_date: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Durée (minutes)"
-                    type="number"
-                    value={formData.duration_minutes}
-                    onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                  />
-                </div>
-
-                {/* Image Upload */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Image de couverture</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors">
-                    <label className="block cursor-pointer">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-sm">Cliquez pour uploader une image</span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                    </label>
-                    {imagePreview && (
-                      <img
-                        src={imagePreview}
-                        alt="Aperçu"
-                        className="mt-3 max-h-32 mx-auto rounded"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Video Upload */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Vidéo de l'homélie</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors">
-                    <label className="block cursor-pointer">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-sm">Cliquez pour uploader une vidéo</span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={handleVideoChange}
-                        className="hidden"
-                      />
-                    </label>
-                    {videoFile && (
-                      <p className="mt-2 text-sm text-green-600">✓ {videoFile.name}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button onClick={handleSave} className="flex-1">
-                    Sauvegarder
-                  </Button>
-                  <Button onClick={resetForm} variant="outline" className="flex-1">
-                    Annuler
-                  </Button>
-                </div>
-              </motion.div>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle homélie
+              </Button>
             )}
           </div>
+        </motion.section>
 
-          {/* Homilies Grid */}
+        {/* Priests Directory Section */}
+        {priests.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-12"
+          >
+            <h2 className="text-2xl font-bold text-foreground mb-6">Nos Prédicateurs</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {priests.map((priest, idx) => {
+                const priestHomilies = homilies.filter((h) => h.priest_name === priest);
+                return (
+                  <motion.div
+                    key={priest}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="bg-card border border-border rounded-lg p-5 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center flex-shrink-0">
+                        <Users className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground">{priest}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {priestHomilies.length} homélie{priestHomilies.length > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Homilies List */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-2xl font-bold text-foreground mb-6">
+            {filteredHomilies.length === homilies.length
+              ? "Toutes les homélies"
+              : `${filteredHomilies.length} résultat${filteredHomilies.length > 1 ? "s" : ""}`}
+          </h2>
+
           {loading ? (
             <div className="text-center py-12">
+              <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
               <p className="text-muted-foreground">Chargement des homélies...</p>
             </div>
           ) : filteredHomilies.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="bg-muted/50 rounded-lg p-12 text-center">
+              <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                {searchTerm ? "Aucune homélie trouvée." : "Aucune homélie pour le moment."}
+                {searchTerm
+                  ? "Aucune homélie ne correspond à votre recherche"
+                  : "Aucune homélie disponible"}
               </p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {filteredHomilies.map((homily, idx) => (
                 <motion.div
                   key={homily.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="border border-border rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="group bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-all hover:shadow-md"
                 >
-                  {/* Image */}
-                  <div className="h-48 overflow-hidden bg-muted relative group">
-                    {homily.image_url ? (
-                      <img
-                        src={homily.image_url}
-                        alt={homily.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20">
-                        <span className="text-4xl">🙏</span>
+                  <div className="flex flex-col md:flex-row gap-4 p-6">
+                    {/* Image */}
+                    {homily.image_url && (
+                      <div className="md:w-40 md:h-40 flex-shrink-0">
+                        <img
+                          src={homily.image_url}
+                          alt={homily.title}
+                          className="w-full h-40 md:h-40 object-cover rounded-lg"
+                        />
                       </div>
                     )}
 
-                    {/* Video Badge */}
-                    {homily.video_url && (
-                      <a
-                        href={homily.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Play className="h-12 w-12 text-white fill-white" />
-                      </a>
-                    )}
-                  </div>
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                            {homily.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                            <Users className="h-4 w-4" />
+                            {homily.priest_name}
+                          </p>
+                        </div>
+                      </div>
 
-                  {/* Content */}
-                  <div className="p-4 space-y-3 flex-1 flex flex-col">
-                    <div>
-                      <h3 className="text-lg font-semibold leading-tight mb-1">
-                        {homily.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {homily.priest_name}
-                      </p>
-                    </div>
+                      {homily.description && (
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {homily.description}
+                        </p>
+                      )}
 
-                    {/* Date & Duration */}
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          {format(new Date(homily.homily_date), "d MMMM yyyy", { locale: fr })}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(homily.homily_date), "dd MMM yyyy", { locale: fr })}
                         </span>
+                        {homily.duration_minutes && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {homily.duration_minutes} min
+                          </span>
+                        )}
                       </div>
-                      {homily.duration_minutes && (
-                        <span>⏱️ {homily.duration_minutes}min</span>
-                      )}
-                    </div>
 
-                    {/* Description */}
-                    {homily.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {homily.description}
-                      </p>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-3 mt-auto border-t border-border">
-                      {homily.video_url && (
-                        <a
-                          href={homily.video_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1"
-                        >
-                          <Button size="sm" variant="outline" className="w-full gap-1">
-                            <Play className="h-3 w-3" />
-                            Regarder
-                          </Button>
-                        </a>
-                      )}
-
-                      {homily.transcript && (
-                        <a
-                          href={`data:text/plain;charset=utf-8,${encodeURIComponent(homily.transcript)}`}
-                          download={`${homily.title.replace(/\s+/g, "_")}.txt`}
-                          className="flex-1"
-                        >
-                          <Button size="sm" variant="outline" className="w-full gap-1">
-                            <Download className="h-3 w-3" />
-                            Texte
-                          </Button>
-                        </a>
-                      )}
-
-                      {isAdmin && (
-                        <>
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        {homily.video_url && (
                           <Button
+                            variant="default"
                             size="sm"
-                            variant="outline"
+                            onClick={() => window.open(homily.video_url, "_blank")}
                             className="flex-1"
-                            onClick={() => {
-                              setFormData({
-                                title: homily.title,
-                                priest_name: homily.priest_name,
-                                description: homily.description || "",
-                                homily_date: homily.homily_date,
-                                image_url: homily.image_url || "",
-                                video_url: homily.video_url || "",
-                                transcript: homily.transcript || "",
-                                duration_minutes: homily.duration_minutes?.toString() || "",
-                              });
-                              setEditingId(homily.id);
-                              setShowForm(true);
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
                           >
-                            <Edit2 className="h-3 w-3" />
+                            <Play className="h-4 w-4 mr-2" />
+                            Écouter
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="flex-1"
-                            onClick={() => handleDelete(homily.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </>
-                      )}
+                        )}
+                        {isAdmin && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingId(homily.id);
+                                setShowForm(true);
+                              }}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(homily.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
           )}
-        </div>
-      </main>
+        </motion.section>
+
+        {/* Info Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-16 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-8"
+        >
+          <h3 className="text-xl font-bold text-foreground mb-4">À propos des homélies</h3>
+          <p className="text-muted-foreground leading-relaxed mb-4">
+            Retrouvez ici toutes les homélies prononcées par nos prêtres lors des célébrations. 
+            Chaque homélie est une réflexion spirituelle approfondie sur la Parole de Dieu et 
+            un guide pour notre vie de foi.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex gap-3">
+              <Zap className="h-5 w-5 text-blue-500 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-foreground">Spiritualité</h4>
+                <p className="text-sm text-muted-foreground">
+                  Nourrir votre foi avec des enseignements profonds
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Music className="h-5 w-5 text-purple-500 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-foreground">Accessibles</h4>
+                <p className="text-sm text-muted-foreground">
+                  Écoutez à tout moment, n'importe où
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+      </div>
     </div>
   );
 };
