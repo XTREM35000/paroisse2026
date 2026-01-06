@@ -4,7 +4,6 @@ import { MessageCircle, Users, Heart, Share2, MoreVertical, Send } from "lucide-
 import HeroBanner from "@/components/HeroBanner";
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
-import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from '@/integrations/supabase/client';
@@ -29,12 +28,9 @@ const Live: React.FC = () => {
 
   const { profile } = useUser();
 
-  // Fetch messages from DB
-  const { data: headerConfig } = useHeaderConfig();
-
-  // Déterminer le nom de la paroisse
-  const paroisseName = headerConfig?.main_title || 'Notre Paroisse';
-  const paroisseSubtitle = headerConfig?.subtitle || '';
+  // Déterminer le nom de la paroisse (depuis les paramètres statiques)
+  const paroisseName = 'Notre Paroisse';
+  const paroisseSubtitle = 'En ligne';
 
   const fetchMessages = useCallback(async () => {
     try {
