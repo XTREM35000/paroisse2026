@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { HelpCircle, MessageSquare, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
 
 const HelpPage = () => {
+  const navigate = useNavigate();
   const faqItems = [
     {
       question: "Comment me connecter?",
@@ -67,7 +69,7 @@ const HelpPage = () => {
             Contactez-nous via le chat en direct ou envoyez-nous un email.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button variant="default" size="lg" className="gap-2">
+            <Button variant="default" size="lg" className="gap-2" onClick={() => navigate('/chat')}>
               <MessageSquare className="h-5 w-5" />
               Chat en direct
             </Button>

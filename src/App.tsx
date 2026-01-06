@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Layout from "@/components/Layout";
+import ScrollToTop from '@/components/ScrollToTop';
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import VideoDetail from "./pages/VideoDetail";
@@ -56,6 +57,7 @@ const App = () => (
         <ThemeProvider>
         <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/connexion" element={<Navigate to="/#auth" replace />} />
