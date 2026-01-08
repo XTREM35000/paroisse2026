@@ -19,7 +19,7 @@ const AdminLiveEditor = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  type Section = { id?: string; title: string; content: string };
+  type Section = { id?: string; type?: 'text' | 'youtube' | 'image' | 'html'; title: string; content: string };
   const [sections, setSections] = useState<Section[]>([]);
   const [loadingSections, setLoadingSections] = useState(false);
   const [savingSections, setSavingSections] = useState(false);
@@ -75,7 +75,7 @@ const AdminLiveEditor = () => {
     }
   };
 
-  const addSection = () => setSections((s) => [...s, { title: 'Nouvelle section', content: '' }]);
+  const addSection = () => setSections((s) => [...s, { type: 'text', title: 'Nouvelle section', content: '' }]);
   const updateSection = (idx: number, key: 'title' | 'content', value: string) => {
     setSections((s) => s.map((sec, i) => (i === idx ? { ...sec, [key]: value } : sec)));
   };
@@ -181,11 +181,35 @@ const AdminLiveEditor = () => {
           <div className="space-y-4">
             {sections.map((sec, idx) => (
               <div key={idx} className="bg-background p-4 rounded border border-border">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
                   <Input value={sec.title} onChange={(e) => updateSection(idx, 'title', e.target.value)} />
+                  <select
+                    value={sec.type ?? 'text'}
+                    onChange={(e) => {
+                      const val = e.target.value as 'text' | 'youtube' | 'image' | 'html';
+                      setSections(s => s.map((x,i) => i===idx ? {...x, type: val} : x));
+                    }}
+                    className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                  >
+                    <option value="text">Texte</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="image">Image</option>
+                    <option value="html">HTML</option>
+                  </select>
                   <Button variant="ghost" onClick={() => removeSection(idx)}><Trash2 /></Button>
                 </div>
-                <Textarea value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} />
+                {sec.type === 'text' && (
+                  <Textarea value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} />
+                )}
+                {sec.type === 'html' && (
+                  <Textarea value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="HTML autorisé" />
+                )}
+                {sec.type === 'youtube' && (
+                  <Input value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="URL ou ID YouTube" />
+                )}
+                {sec.type === 'image' && (
+                  <Input value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="URL de l'image" />
+                )}
               </div>
             ))}
             {sections.length === 0 && <div className="text-sm text-muted-foreground">Aucune section définie.</div>}

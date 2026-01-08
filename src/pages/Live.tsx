@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { MessageCircle, Users, Heart, Share2, MoreVertical, Send } from "lucide-react";
+import { MessageCircle, Users, Heart, Share2, MoreVertical, Send, Trash2 } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
@@ -8,6 +8,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/hooks/useUser';
+import useRoleCheck from '@/hooks/useRoleCheck';
+import { useToast } from '@/hooks/use-toast';
+
+function getYouTubeEmbedUrl(input?: string) {
+  if (!input) return '';
+  // Try to extract a YouTube video id from many common formats
+  let id: string | null = null;
+  try {
+    const url = new URL(input);
+    const host = url.hostname.replace('www.', '');
+    if (host.includes('youtube.com')) {
+      // /embed/ID or v=ID
+      if (url.pathname.includes('/embed/')) {
+        id = url.pathname.split('/embed/')[1].split('/')[0];
+      } else {
+        id = url.searchParams.get('v');
+      }
+    } else if (host === 'youtu.be') {
+      id = url.pathname.replace('/', '');
+    }
+  } catch (e) {
+    // not a full URL, fall through to regex
+  }
+
+  if (!id) {
+    const m = input.match(/(?:v=|v\/|embed\/|youtu\.be\/|watch\?v=)([A-Za-z0-9_-]{11})/);
+    if (m) id = m[1];
+  }
+
+  if (id) return `https://www.youtube.com/embed/${id}`;
+  // If input already looks like an embed URL, return it
+  if (input.includes('youtube.com/embed')) return input;
+  // As a last resort, assume the whole input is the id
+  return `https://www.youtube.com/embed/${input}`;
+}
+import { useEffectState } from '@/lib/utils';
 
 interface ChatMessage {
   id: string;
@@ -29,7 +65,29 @@ const Live: React.FC = () => {
 
   const location = useLocation();
   const { profile } = useUser();
+  const { isAdmin } = useRoleCheck();
+  const { toast } = useToast();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  const [liveSections, setLiveSections] = useState<Array<any>>([]);
+
+  // Load dynamic sections for live page
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('homepage_sections').select('*').eq('section_key', 'live_sections').maybeSingle();
+        if (!mounted) return;
+        if (error) throw error;
+        if (data && data.content) {
+          const parsed = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+          if (Array.isArray(parsed)) setLiveSections(parsed);
+        }
+      } catch (e) {
+        console.error('Could not load live sections', e);
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
 
   // Fetch messages from Supabase
   const fetchMessages = useCallback(async () => {
@@ -103,6 +161,36 @@ const Live: React.FC = () => {
       fetchMessages();
     } catch (e) {
       // silent
+    }
+  };
+
+  const deleteSection = async (index: number) => {
+    if (!isAdmin) return;
+    try {
+      const ok = window.confirm('Supprimer cette section ?');
+      if (!ok) return;
+      const previous = liveSections;
+      const next = previous.filter((_, i) => i !== index);
+      setLiveSections(next);
+
+      const payload = {
+        section_key: 'live_sections',
+        title: 'En Ligne - Sections',
+        content: JSON.stringify(next),
+        display_order: 0,
+        is_active: true,
+      };
+      const { error } = await supabase.from('homepage_sections').upsert([payload], { onConflict: 'section_key' });
+      if (error) {
+        setLiveSections(previous);
+        console.error('deleteSection error', error);
+        toast({ title: 'Erreur', description: 'Impossible de supprimer la section', variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Supprimé', description: 'Section supprimée' });
+    } catch (e) {
+      console.error('deleteSection exception', e);
+      toast({ title: 'Erreur', description: 'Une erreur est survenue', variant: 'destructive' });
     }
   };
 
@@ -184,21 +272,60 @@ const Live: React.FC = () => {
                   <MoreVertical className="w-6 h-6" />
                 </button>
               </div>
-
-              <div className="grid grid-cols-3 gap-4 mb-6 py-4 border-y border-border">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{viewerCount.toLocaleString("fr-FR")}</p>
-                  <p className="text-sm text-muted-foreground">Spectateurs en ligne</p>
+              {/* Render dynamic live sections if present */}
+              {liveSections.length > 0 ? (
+                <div className="space-y-4 mb-6">
+                  {liveSections.map((sec: any, i: number) => (
+                    <div key={i} className="p-4 bg-background rounded border border-border">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold mb-2">{sec.title}</h3>
+                        {isAdmin && (
+                          <div className="ml-4">
+                            <Button variant="ghost" size="icon" onClick={() => deleteSection(i)}>
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      {sec.type === 'youtube' && (
+                        <div className="relative aspect-video">
+                          <iframe
+                            src={getYouTubeEmbedUrl(sec.content)}
+                            title={sec.title || `video-${i}`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="absolute inset-0 w-full h-full"
+                          />
+                        </div>
+                      )}
+                      {sec.type === 'image' && sec.content && (
+                        <img src={sec.content} alt={sec.title || ''} className="w-full h-auto rounded" />
+                      )}
+                      {sec.type === 'html' && (
+                        <div dangerouslySetInnerHTML={{ __html: sec.content || '' }} />
+                      )}
+                      {(!sec.type || sec.type === 'text') && (
+                        <p className="text-muted-foreground">{sec.content}</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{likes.toLocaleString("fr-FR")}</p>
-                  <p className="text-sm text-muted-foreground">J&apos;aime</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-4 mb-6 py-4 border-y border-border">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">{viewerCount.toLocaleString("fr-FR")}</p>
+                    <p className="text-sm text-muted-foreground">Spectateurs en ligne</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">{likes.toLocaleString("fr-FR")}</p>
+                    <p className="text-sm text-muted-foreground">J&apos;aime</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">{messages.length}</p>
+                    <p className="text-sm text-muted-foreground">Messages</p>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{messages.length}</p>
-                  <p className="text-sm text-muted-foreground">Messages</p>
-                </div>
-              </div>
+              )}
 
               <div className="flex gap-2 flex-wrap">
                 <Button
@@ -219,29 +346,7 @@ const Live: React.FC = () => {
               </div>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-card rounded-xl p-6 border border-border space-y-4"
-            >
-              <h2 className="text-xl font-bold">À propos de cet événement</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Cette messe solennelle marque un moment important de notre vie spirituelle en communauté.
-                Nous vous invitons à vous joindre à nous pour ce temps de prière et de recueillement,
-                que vous soyez présent physiquement dans notre église ou en ligne depuis chez vous.
-              </p>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Lieu</p>
-                  <p className="font-semibold">Église Saint-Jean, Paris</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Horaire</p>
-                  <p className="font-semibold">10:00 - 11:30</p>
-                </div>
-              </div>
-            </motion.div>
+            
           </div>
 
           <motion.div
