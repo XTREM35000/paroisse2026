@@ -163,7 +163,7 @@ const HeroBanner = ({
           </motion.p>
 
           {/* CTA Buttons - Only show on homepage */}
-          {subtitle.includes("Découvrez") && (
+          {subtitle && subtitle.includes("Découvrez") && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}

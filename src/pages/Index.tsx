@@ -10,7 +10,9 @@ import GalleryCard from "@/components/GalleryCard";
 import EventCard from "@/components/EventCard";
 // AuthModal is now controlled globally in Header
 import VideoPlayerModal from "@/components/VideoPlayerModal";
+import AdvertisementPopup from "@/components/AdvertisementPopup";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
+import { useAdvertisements } from "@/hooks/useAdvertisements";
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
@@ -52,6 +54,7 @@ const Index = () => {
   const { user } = useAuth();
   const { profile } = useUser();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [showAdPopup, setShowAdPopup] = useState(true);
   const [homilies, setHomilies] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
@@ -74,7 +77,20 @@ const Index = () => {
     isLoading,
     sections,
   } = useHomepageContent();
+  
+  // Get latest advertisement
+  const { latestAd } = useAdvertisements();
+  
   const queryClient = useQueryClient();
+
+  // Debug: Log when latestAd changes
+  useEffect(() => {
+    if (latestAd) {
+      console.log('Latest advertisement loaded:', latestAd.title);
+    } else {
+      console.log('No advertisement available');
+    }
+  }, [latestAd]);
 
   // Fetch homilies
   useEffect(() => {
@@ -175,6 +191,14 @@ const Index = () => {
       <main>
         {/* Hero Section - Dynamic from Database */}
         <HomepageHero data={hero} isLoading={isLoading} />
+
+        {/* Latest Advertisement Popup */}
+        {latestAd && showAdPopup && (
+          <AdvertisementPopup 
+            ad={latestAd} 
+            onClose={() => setShowAdPopup(false)} 
+          />
+        )}
 
         {/* Last Live Video Section */}
         {sections && sections.length > 0 && (() => {

@@ -26,6 +26,7 @@ import AdminLiveEditor from './pages/AdminLiveEditor';
 import AddMemberForm from '@/components/AddMemberForm';
 import ChatPage from './pages/ChatPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
+import PublicitePage from './pages/PublicitePage';
 import Dashboard from './pages/Dashboard';
 import DashboardAnalytics from './pages/DashboardAnalytics';
 import Podcasts from './pages/Podcasts';
@@ -41,6 +42,7 @@ import DonationsHistory from './pages/DonationsHistory';
 import Receipts from './pages/Receipts';
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
+import AdminAds from './pages/AdminAds';
 import HelpPage from './pages/HelpPage';
 import Unauthorized from './pages/Unauthorized';
 import NotificationProvider from '@/components/ui/notification-system';
@@ -120,6 +122,7 @@ const App = () => (
             />
             <Route path="/chat" element={<Layout><ChatPage /></Layout>} />
             <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
+            <Route path="/publicite" element={<Layout><PublicitePage /></Layout>} />
             <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
             <Route path="/dashboard/analytics" element={<Layout><DashboardAnalytics /></Layout>} />
             <Route path="/podcasts" element={<Layout><Podcasts /></Layout>} />
@@ -136,6 +139,7 @@ const App = () => (
             <Route path="/receipts" element={<Layout><Receipts /></Layout>} />
             <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><Layout><AdminUsers /></Layout></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><Layout><AdminSettings /></Layout></ProtectedRoute>} />
+            <Route path="/admin/ads" element={<ProtectedRoute requiredRole="admin"><Layout><AdminAds /></Layout></ProtectedRoute>} />
             <Route path="/admin/directory" element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>} />
             <Route path="/admin/members" element={
               <ProtectedRoute requiredRole="admin">

@@ -4,6 +4,8 @@ import { supabase as supabaseClient } from '@/integrations/supabase/client';
 export interface PageHero {
   id: string;
   path: string;
+  title?: string | null;
+  subtitle?: string | null;
   image_url?: string | null;
   metadata?: Record<string, unknown> | null;
   updated_at?: string;

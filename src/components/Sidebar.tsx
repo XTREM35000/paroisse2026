@@ -34,7 +34,8 @@ export const MENU_GROUPS = [
     title: 'Communauté',
     items: [
       { label: 'Chat', href: '/chat', icon: MessageSquare },
-      { label: 'Annonces', href: '/announcements', icon: BarChart3 },
+          { label: 'Annonces', href: '/announcements', icon: BarChart3 },
+          { label: 'Publicité', href: '/publicite', icon: Image },
       { label: 'Événements', href: '/evenements', icon: Calendar },
       { label: 'Annuaire', href: '/directory', icon: Users },
     ],
@@ -53,6 +54,7 @@ export const MENU_GROUPS = [
     adminOnly: true,
     items: [
       { label: 'En Ligne', href: '/admin/live', icon: Video },
+      { label: 'Publicité', href: '/admin/ads', icon: Image },
       { label: 'Utilisateurs', href: '/admin/users', icon: Users },
       { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },
       { label: 'Annuaire', href: '/admin/directory', icon: Users },

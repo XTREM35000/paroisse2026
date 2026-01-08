@@ -723,6 +723,62 @@ export type Database = {
           },
         ]
       }
+      public_advertisements: {
+        Row: {
+          id: string
+          title: string
+          subtitle: string | null
+          content: string | null
+          image_url: string
+          pdf_url: string | null
+          start_date: string | null
+          end_date: string | null
+          is_active: boolean
+          priority: number
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          subtitle?: string | null
+          content?: string | null
+          image_url: string
+          pdf_url?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_active?: boolean
+          priority?: number
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          subtitle?: string | null
+          content?: string | null
+          image_url?: string
+          pdf_url?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_active?: boolean
+          priority?: number
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_advertisements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
