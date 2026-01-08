@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import HeroBanner from '@/components/HeroBanner';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import { useAnalyticsDashboard } from '@/hooks/useAnalytics';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Users, Video, Calendar, BarChart2, TrendingUp } from 'lucide-react';
+import { Users, Video, Calendar, BarChart2, TrendingUp, Images, BookOpen, MessageSquare } from 'lucide-react';
 import { ChartContainer } from '@/components/ui/chart';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import VideoCard from '@/components/VideoCard';
@@ -35,13 +35,59 @@ const Dashboard: React.FC = () => {
       return count || 0;
     },
   });
+
+  // Fetch gallery images count
+  const { data: galleryCount = 0 } = useQuery({
+    queryKey: ['gallery-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('gallery_images')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  // Fetch homilies count
+  const { data: homiliesCount = 0 } = useQuery({
+    queryKey: ['homilies-count'],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count } = await (supabase.from('homilies') as any)
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  // Fetch messages count
+  const { data: messagesCount = 0 } = useQuery({
+    queryKey: ['messages-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  // Fetch video count (total, not just recent)
+  const { data: videoCount = 0 } = useQuery({
+    queryKey: ['video-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('videos')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
   
   const statsData = useMemo(() => ({
     users: userCount,
-    videos: recentVideos.length || 0,
+    videos: videoCount,
     events: events.length || 0,
-    storage_gb: 42,
-  }), [userCount, recentVideos.length, events.length]);
+    gallery: galleryCount,
+    homilies: homiliesCount,
+    messages: messagesCount,
+  }), [userCount, videoCount, events, galleryCount, homiliesCount, messagesCount]);
   
   const activityMock = analyticsData?.weeklyViews || [
     { day: 'Lun', views: 120 },
@@ -57,8 +103,10 @@ const Dashboard: React.FC = () => {
     { id: 'users', label: 'Membres', value: statsData.users, icon: Users, color: 'bg-primary/10 text-primary' },
     { id: 'videos', label: 'Vidéos', value: statsData.videos, icon: Video, color: 'bg-gold/10 text-gold' },
     { id: 'events', label: 'Événements', value: statsData.events, icon: Calendar, color: 'bg-accent/10 text-accent' },
-    { id: 'storage', label: 'Stockage (GB)', value: statsData.storage_gb, icon: BarChart2, color: 'bg-muted/10 text-muted-foreground' },
-  ], []);
+    { id: 'gallery', label: 'Images', value: statsData.gallery, icon: Images, color: 'bg-emerald/10 text-emerald' },
+    { id: 'homilies', label: 'Homélies', value: statsData.homilies, icon: BookOpen, color: 'bg-purple/10 text-purple' },
+    { id: 'messages', label: 'Messages', value: statsData.messages, icon: MessageSquare, color: 'bg-cyan/10 text-cyan' },
+  ], [statsData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -118,7 +166,7 @@ const Dashboard: React.FC = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Récents</CardTitle>
+                <CardTitle>Vidéos récentes</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -167,6 +215,18 @@ const Dashboard: React.FC = () => {
                   <li className="flex items-center justify-between">
                     <span>Événements:</span>
                     <strong className="text-foreground">{statsData.events}</strong>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Images:</span>
+                    <strong className="text-foreground">{statsData.gallery}</strong>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Homélies:</span>
+                    <strong className="text-foreground">{statsData.homilies}</strong>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span>Messages:</span>
+                    <strong className="text-foreground">{statsData.messages}</strong>
                   </li>
                   <li className="flex items-center justify-between">
                     <span>Total vues:</span>
