@@ -138,9 +138,11 @@ const AdminLiveEditor = () => {
             </div>
             <div className="mt-3 flex items-center gap-2">
               <input id="live-upload" type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-              <label htmlFor="live-upload" className="inline-flex items-center gap-2 cursor-pointer">
-                <Button variant="outline"><Upload className="w-4 h-4 mr-2" />Téléverser</Button>
-              </label>
+              <Button asChild variant="outline">
+                <label htmlFor="live-upload" className="inline-flex items-center gap-2 cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2" />Téléverser
+                </label>
+              </Button>
               <Button onClick={() => saveHero(null)} variant="ghost">Supprimer</Button>
               <Button variant="outline" onClick={async () => {
                 console.log('[AdminLiveEditor] testing storage connection...');
