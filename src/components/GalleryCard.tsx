@@ -5,11 +5,12 @@ import type { GalleryImage } from '@/types/database';
 import { useUser } from '@/hooks/useUser';
 import { deleteGalleryImage } from '@/lib/supabase/galleryQueries';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface GalleryCardProps {
   image?: GalleryImage | null;
   onOpen?: () => void;
-  onDeleted?: () => void;
+  onDeleted?: (id?: string) => void;
 }
 
 const GalleryCard = ({ image, onOpen, onDeleted }: GalleryCardProps) => {
@@ -18,6 +19,7 @@ const GalleryCard = ({ image, onOpen, onDeleted }: GalleryCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { profile } = useUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const isAdmin = profile?.role === 'admin';
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -50,17 +52,29 @@ const GalleryCard = ({ image, onOpen, onDeleted }: GalleryCardProps) => {
         return;
       }
 
-      const success = await deleteGalleryImage(image.id);
+      const res: any = await deleteGalleryImage(image.id);
+      const success = res && res.success;
       if (success) {
         toast({
           title: 'Succès ✓',
           description: 'Image supprimée avec succès',
         });
-        onDeleted?.();
+        // Prévenir le parent via callback si fourni, sinon invalider la query homepage pour forcer le rafraîchissement
+        if (onDeleted) {
+          onDeleted(String(image.id));
+        } else {
+          try {
+            queryClient.invalidateQueries({ queryKey: ['homepage-gallery'] });
+          } catch (e) {
+            // silent
+          }
+        }
       } else {
+        console.error('deleteGalleryImage failed', res?.error || res);
+        const message = res?.error?.message || (res?.error?.msg ?? 'Impossible de supprimer l\'image');
         toast({
           title: 'Erreur',
-          description: 'Impossible de supprimer l\'image',
+          description: message,
           variant: 'destructive',
         });
       }

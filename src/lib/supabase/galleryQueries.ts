@@ -128,15 +128,15 @@ export async function deleteGalleryImage(id: string) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from(galleryImagesTable) as any).delete().eq('id', id);
+    const { data, error } = await (supabase.from(galleryImagesTable) as any).delete().eq('id', id).select();
     if (error) {
       console.error('deleteGalleryImage error', error);
-      return false;
+      return { success: false, error } as any;
     }
-    return true;
+    return { success: true, data } as any;
   } catch (e) {
     console.error('deleteGalleryImage unexpected error', e);
-    return false;
+    return { success: false, error: e } as any;
   }
 }
 

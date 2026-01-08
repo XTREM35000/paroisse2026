@@ -246,6 +246,93 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_sections: {
+        Row: {
+          id: string
+          section_key: string
+          title: string | null
+          subtitle: string | null
+          content: string | null
+          content_type: string | null
+          metadata: Json | null
+          image_url: string | null
+          icon: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          section_key: string
+          title?: string | null
+          subtitle?: string | null
+          content?: string | null
+          content_type?: string | null
+          metadata?: Json | null
+          image_url?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          section_key?: string
+          title?: string | null
+          subtitle?: string | null
+          content?: string | null
+          content_type?: string | null
+          metadata?: Json | null
+          image_url?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      homilies: {
+        Row: {
+          id: string
+          title: string
+          priest_name: string | null
+          description: string | null
+          homily_date: string | null
+          video_url: string | null
+          image_url: string | null
+          duration_minutes: number | null
+          created_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          priest_name?: string | null
+          description?: string | null
+          homily_date?: string | null
+          video_url?: string | null
+          image_url?: string | null
+          duration_minutes?: number | null
+          created_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          priest_name?: string | null
+          description?: string | null
+          homily_date?: string | null
+          video_url?: string | null
+          image_url?: string | null
+          duration_minutes?: number | null
+          created_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       about_page_sections: {
         Row: {
           id: string

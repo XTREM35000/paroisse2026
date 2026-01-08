@@ -17,9 +17,11 @@ export const GALLERY_BUCKET = (import.meta.env.VITE_BUCKET_GALLERY as string) ||
 export async function uploadFile(file: File, path?: string) {
   const fileName = (file.name || '').replace(/\s+/g, '-');
   const key = path ?? `uploads/${Date.now()}_${fileName}`;
+  console.log('[uploadFile] called', { fileName, key, bucket: GALLERY_BUCKET });
   try {
     // Try upload with a timeout and one retry to handle flaky network
     const attemptUpload = async (attempt = 1) => {
+      console.log(`[uploadFile] attempt ${attempt} starting for key=${key}`);
       const uploadPromise = supabase.storage.from(GALLERY_BUCKET).upload(key, file, {
         cacheControl: '3600',
         upsert: false,
@@ -30,27 +32,29 @@ export async function uploadFile(file: File, path?: string) {
       return res as Awaited<ReturnType<typeof supabase.storage.from>>;
     };
 
-    let data: any = null;
+      let data: any = null;
     try {
       const first = await attemptUpload(1);
-      if ((first as any).error) throw (first as any).error;
-      data = (first as any).data;
+        if ((first as any).error) throw (first as any).error;
+        data = (first as any).data;
     } catch (e) {
       console.warn('uploadFile first attempt failed, retrying...', e);
       try {
         const second = await attemptUpload(2);
-        if ((second as any).error) throw (second as any).error;
-        data = (second as any).data;
+          if ((second as any).error) throw (second as any).error;
+          data = (second as any).data;
       } catch (err) {
-        console.error('uploadFile error', err);
+          console.error('[uploadFile] both attempts failed', err);
         return null;
       }
     }
 
+    console.log('[uploadFile] upload succeeded, path=', data.path);
     const { data: publicData } = supabase.storage.from(GALLERY_BUCKET).getPublicUrl(data.path);
+    console.log('[uploadFile] publicUrl=', publicData?.publicUrl);
     return { key: data.path, publicUrl: publicData.publicUrl };
   } catch (e) {
-    console.error('uploadFile unexpected error', e);
+    console.error('[uploadFile] unexpected error', e);
     return null;
   }
 }

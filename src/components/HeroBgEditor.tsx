@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Edit3, Image as ImageIcon, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -34,14 +34,18 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const handleFile = async (file?: File) => {
     if (!file) return;
     setUploading(true);
     setUploadError(null);
+    console.log('[HeroBgEditor] handleFile start', { name: file.name, size: file.size, type: file.type, bucket });
     try {
       const res = bucket 
         ? await uploadDirectoryImage(file, bucket)
         : await uploadFile(file);
+      console.log('[HeroBgEditor] upload result', res);
       if (res?.publicUrl) {
         setValue(res.publicUrl);
       } else {
@@ -91,16 +95,24 @@ const HeroBgEditor: React.FC<Props> = ({ current, onSave, bucket }) => {
                 size="sm"
                 className="gap-2"
                 disabled={uploading}
-                onClick={() => document.querySelector('input[type="file"]')?.click()}
+                onClick={() => {
+                  console.log('[HeroBgEditor] open file selector');
+                  fileInputRef.current?.click();
+                }}
               >
                 <Upload className="w-4 h-4" />
                 {uploading ? 'Téléversement...' : 'Sélectionner une image'}
               </Button>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => handleFile(e.target.files?.[0])}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  console.log('[HeroBgEditor] file input changed', { fileName: f?.name, size: f?.size });
+                  handleFile(f);
+                }}
               />
             </div>
 

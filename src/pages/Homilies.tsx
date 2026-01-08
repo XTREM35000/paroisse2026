@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import HeroBanner from "@/components/HeroBanner";
 import usePageHero from "@/hooks/usePageHero";
 import { supabase } from "@/integrations/supabase/client";
+import HomilyModal from '@/components/HomilyModal';
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -258,6 +259,19 @@ const HomilyPage = () => {
             )}
           </div>
         </motion.section>
+
+        {/* Homily Modal for create/edit */}
+        <HomilyModal
+          open={showForm}
+          homilyId={editingId}
+          onClose={() => {
+            setShowForm(false);
+            setEditingId(null);
+          }}
+          onSaved={() => {
+            fetchHomilies();
+          }}
+        />
 
         {/* Priests Directory Section */}
         {priests.length > 0 && (

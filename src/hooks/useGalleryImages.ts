@@ -55,5 +55,9 @@ export function useGalleryImages(initialLimit = 20) {
     refresh();
   }, [refresh]);
 
-  return { images, loading, error, refresh, loadMore, hasMore, isEmpty: images.length === 0, refetch: refresh } as const;
+  const removeImageById = useCallback((id: string) => {
+    setImages((prev) => prev.filter((img) => img.id !== id));
+  }, []);
+
+  return { images, loading, error, refresh, loadMore, hasMore, isEmpty: images.length === 0, refetch: refresh, removeImageById } as const;
 }

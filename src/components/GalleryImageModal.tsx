@@ -66,6 +66,7 @@ const GalleryImageModal: React.FC<GalleryImageModalProps> = ({ open, onClose, on
 
   // Gérer l'upload de fichier
   const handleFileUpload = async (file: File) => {
+    console.log('[GalleryImageModal] handleFileUpload called', { name: file.name, size: file.size, type: file.type });
     try {
       setLoading(true);
       setError(null);
@@ -247,7 +248,10 @@ const GalleryImageModal: React.FC<GalleryImageModalProps> = ({ open, onClose, on
                 Télécharger une image
               </label>
               <div
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  console.log('[GalleryImageModal] upload area clicked');
+                  fileInputRef.current?.click();
+                }}
                 className="cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center hover:border-primary hover:bg-muted transition-colors"
               >
                 <Upload className="mx-auto w-8 h-8 text-muted-foreground mb-2" />
@@ -264,6 +268,7 @@ const GalleryImageModal: React.FC<GalleryImageModalProps> = ({ open, onClose, on
                 accept="image/*"
                 onChange={(e) => {
                   const file = e.currentTarget.files?.[0];
+                  console.log('[GalleryImageModal] file input changed', { fileName: file?.name, size: file?.size });
                   if (file) handleFileUpload(file);
                 }}
                 className="hidden"

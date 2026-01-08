@@ -15,7 +15,7 @@ interface GalleryGridProps {
 }
 
 const GalleryGrid: React.FC<GalleryGridProps> = ({ columns = 4, gap = '6', onOpen, pageSize = 12, canAddImages = true }) => {
-  const { images, loading, error, loadMore, hasMore, isEmpty, refetch } = useGalleryImages(pageSize);
+  const { images, loading, error, loadMore, hasMore, isEmpty, refetch, removeImageById } = useGalleryImages(pageSize);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const style: React.CSSProperties = {
@@ -87,7 +87,13 @@ const GalleryGrid: React.FC<GalleryGridProps> = ({ columns = 4, gap = '6', onOpe
                 <GalleryCard 
                   image={img} 
                   onOpen={() => onOpen?.(img)}
-                  onDeleted={() => refetch?.()}
+                  onDeleted={(id?: string) => {
+                    if (id) {
+                      removeImageById(id);
+                    } else {
+                      refetch?.();
+                    }
+                  }}
                 />
             </Fragment>
           ))

@@ -52,6 +52,7 @@ export const MENU_GROUPS = [
     title: 'Administration',
     adminOnly: true,
     items: [
+      { label: 'En Ligne', href: '/admin/live', icon: Video },
       { label: 'Utilisateurs', href: '/admin/users', icon: Users },
       { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },
       { label: 'Annuaire', href: '/admin/directory', icon: Users },

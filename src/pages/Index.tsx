@@ -11,6 +11,7 @@ import EventCard from "@/components/EventCard";
 // AuthModal is now controlled globally in Header
 import VideoPlayerModal from "@/components/VideoPlayerModal";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,7 @@ const Index = () => {
     upcomingEvents,
     isLoading
   } = useHomepageContent();
+  const queryClient = useQueryClient();
 
   // Fetch homilies
   useEffect(() => {
@@ -163,7 +165,7 @@ const Index = () => {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <GalleryCard image={image} />
+                  <GalleryCard image={image} onDeleted={() => queryClient.invalidateQueries({ queryKey: ['homepage-gallery'] })} />
                 </motion.div>
               ))}
             </div>
