@@ -6,6 +6,7 @@ import usePageHero from '@/hooks/usePageHero';
 import HeroBanner from '@/components/HeroBanner';
 import SectionTitle from '@/components/SectionTitle';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadFile } from '@/lib/supabase/storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Download, Edit2, Upload, FileText, Clock, FolderOpen } from 'lucide-react';
@@ -143,25 +144,18 @@ export default function Documents() {
       const category = formData.get('category') as string;
       const is_public = formData.get('is_public') === 'true';
 
-      // Upload file to storage
+      // Upload file to storage via centralized helper (ensures GALLERY_BUCKET)
       const fileExt = fileInput.name.split('.').pop();
       const fileName = `${Date.now()}-${fileInput.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(`public/${fileName}`, fileInput);
+      const uploadResult = await uploadFile(fileInput, `public/${fileName}`);
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('documents')
-        .getPublicUrl(uploadData.path);
+      if (!uploadResult || !uploadResult.publicUrl) throw new Error('Upload failed');
 
       // Create document record
       const { error: insertError } = await supabase.from('documents').insert({
         title,
         description,
-        file_url: urlData.publicUrl,
+        file_url: uploadResult.publicUrl,
         file_name: fileInput.name,
         file_type: fileExt || 'unknown',
         category: category || null,
