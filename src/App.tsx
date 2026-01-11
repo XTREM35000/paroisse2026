@@ -23,6 +23,7 @@ import AdminEvents from "./pages/AdminEvents";
 import AdminAboutEditor from './pages/AdminAboutEditor';
 import AdminDirectoryEditor from './pages/AdminDirectoryEditor';
 import AdminLiveEditor from './pages/AdminLiveEditor';
+import AdminNotificationsEditor from './pages/AdminNotificationsEditor';
 import AddMemberForm from '@/components/AddMemberForm';
 import ChatPage from './pages/ChatPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
@@ -101,6 +102,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="admin">
                   <Layout><AdminLiveEditor /></Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/notifications"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Layout><AdminNotificationsEditor /></Layout>
                 </ProtectedRoute>
               }
             />

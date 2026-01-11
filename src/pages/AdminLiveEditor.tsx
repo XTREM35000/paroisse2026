@@ -19,7 +19,7 @@ const AdminLiveEditor = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  type Section = { id?: string; type?: 'text' | 'youtube' | 'image' | 'html'; title: string; content: string };
+  type Section = { id?: string; type?: 'text' | 'youtube' | 'image' | 'html'; title: string; content: string; is_live?: boolean; start_time?: string; end_time?: string };
   const [sections, setSections] = useState<Section[]>([]);
   const [loadingSections, setLoadingSections] = useState(false);
   const [savingSections, setSavingSections] = useState(false);
@@ -75,8 +75,8 @@ const AdminLiveEditor = () => {
     }
   };
 
-  const addSection = () => setSections((s) => [...s, { type: 'text', title: 'Nouvelle section', content: '' }]);
-  const updateSection = (idx: number, key: 'title' | 'content', value: string) => {
+  const addSection = () => setSections((s) => [...s, { type: 'text', title: 'Nouvelle section', content: '', is_live: false }]);
+  const updateSection = (idx: number, key: string, value: any) => {
     setSections((s) => s.map((sec, i) => (i === idx ? { ...sec, [key]: value } : sec)));
   };
   const removeSection = (idx: number) => setSections((s) => s.filter((_, i) => i !== idx));
@@ -205,7 +205,24 @@ const AdminLiveEditor = () => {
                   <Textarea value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="HTML autorisé" />
                 )}
                 {sec.type === 'youtube' && (
-                  <Input value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="URL ou ID YouTube" />
+                  <div className="space-y-2">
+                    <Input value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="URL ou ID YouTube" />
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="checkbox" checked={!!sec.is_live} onChange={(e) => updateSection(idx, 'is_live', e.target.checked)} />
+                        <span>En direct</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <span className="text-xs text-muted-foreground">Heure de début (optionnel)</span>
+                        <input
+                          type="datetime-local"
+                          value={sec.start_time ?? ''}
+                          onChange={(e) => updateSection(idx, 'start_time', e.target.value)}
+                          className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                        />
+                      </label>
+                    </div>
+                  </div>
                 )}
                 {sec.type === 'image' && (
                   <Input value={sec.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} placeholder="URL de l'image" />

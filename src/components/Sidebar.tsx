@@ -1,17 +1,19 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
 
 export const MENU_GROUPS = [
   {
     title: 'Tableau de bord',
+    adminOnly: true,
     items: [
       { label: 'Vue d\'ensemble', href: '/dashboard', icon: Home },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     ],
   },
+  // NOTE: this group should be admin-only (same visibility as Administration)
   {
     title: 'Médias',
     items: [
@@ -54,6 +56,7 @@ export const MENU_GROUPS = [
     adminOnly: true,
     items: [
       { label: 'En Ligne', href: '/admin/live', icon: Video },
+      { label: 'Notifications', href: '/admin/notifications', icon: Bell },
       { label: 'Publicité', href: '/admin/ads', icon: Image },
       { label: 'Utilisateurs', href: '/admin/users', icon: Users },
       { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },

@@ -673,7 +673,7 @@ const DonatePage = () => {
                         <option value="EUR">EUR</option>
                         <option value="USD">USD</option>
                         <option value="GBP">GBP</option>
-                        <option value="FCFA">FCFA</option>
+                        <option value="F">FCFA</option>
                       </select>
                     </div>
                   </div>

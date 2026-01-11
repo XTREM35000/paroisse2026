@@ -15,7 +15,8 @@ import { fr } from "date-fns/locale";
 interface Notification {
   id: string;
   title: string;
-  body: string;
+  message?: string;
+  body?: string;
   is_read: boolean;
   created_at: string;
   metadata?: Record<string, unknown> | null;
@@ -60,6 +61,34 @@ const NotificationsPage = () => {
     };
 
     loadNotifications();
+    // Realtime subscription: prepend new notifications for this user
+    const channel = supabase
+      .channel('public:notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, (payload) => {
+        try {
+          const newRow = payload.new as any;
+          setNotifications((prev) => [
+            {
+              id: newRow.id,
+              title: newRow.title,
+              message: newRow.message,
+              body: newRow.body,
+              is_read: newRow.is_read,
+              created_at: newRow.created_at,
+              metadata: newRow.metadata,
+            },
+            ...prev,
+          ]);
+          toast({ title: 'Nouvelle notification', description: newRow.title });
+        } catch (e) {
+          // ignore
+        }
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch (e) { /* ignore */ }
+    };
   }, [profile, toast]);
 
   // Mark as read
@@ -313,7 +342,7 @@ const NotificationsPage = () => {
                     locale: fr,
                   })}</span>
                 </div>
-                <div class="notification-body">${notif.body}</div>
+                <div class="notification-body">${notif.body || notif.message}</div>
                 <div class="notification-status">
                   ${notif.is_read ? "✓ Lue" : "● Non lue"}
                 </div>
@@ -342,9 +371,10 @@ const NotificationsPage = () => {
 
   // Filter notifications
   const filteredNotifications = notifications.filter((notif) => {
+    const content = notif.body || notif.message || '';
     const matchesSearch =
       notif.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notif.body.toLowerCase().includes(searchTerm.toLowerCase());
+      content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterUnread ? !notif.is_read : true;
     return matchesSearch && matchesFilter;
   });
@@ -504,7 +534,7 @@ const NotificationsPage = () => {
                         <span className="inline-flex items-center justify-center h-2 w-2 bg-amber-500 rounded-full"></span>
                       )}
                     </div>
-                    <p className="text-muted-foreground mb-3">{notif.body}</p>
+                    <p className="text-muted-foreground mb-3">{notif.body || notif.message}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(notif.created_at), "dd MMMM yyyy 'à' HH:mm", {

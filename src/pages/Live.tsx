@@ -56,7 +56,7 @@ interface ChatMessage {
 
 const Live: React.FC = () => {
   // ALL HOOKS FIRST - strict order
-  const [isLive] = useState(true);
+  const [isLive, setIsLive] = useState(false);
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -70,6 +70,9 @@ const Live: React.FC = () => {
   const { toast } = useToast();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
   const [liveSections, setLiveSections] = useState<Array<any>>([]);
+
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [nextLiveAt, setNextLiveAt] = useState<Date | null>(null);
 
   // Load dynamic sections for live page
   useEffect(() => {
@@ -89,6 +92,48 @@ const Live: React.FC = () => {
     })();
     return () => { mounted = false };
   }, []);
+
+  // Determine if there is an active live section and compute next scheduled live
+  useEffect(() => {
+    try {
+      const now = new Date();
+      let foundActive: any = null;
+      let next: Date | null = null;
+
+      for (const sec of liveSections) {
+        if (sec.type === 'youtube' && sec.content) {
+          // active if explicitly marked or within start/end window
+          const isMarkedLive = !!sec.is_live;
+          const start = sec.start_time ? new Date(sec.start_time) : null;
+          const end = sec.end_time ? new Date(sec.end_time) : null;
+
+          const withinWindow = start && (start <= now) && (!end || end > now);
+
+          if (isMarkedLive || withinWindow) {
+            foundActive = sec;
+            break;
+          }
+
+          // compute next upcoming start
+          if (start && start > now) {
+            if (!next || start < next) next = start;
+          }
+        }
+      }
+
+      if (foundActive) {
+        setIsLive(true);
+        setActiveVideoUrl(getYouTubeEmbedUrl(foundActive.content));
+        setNextLiveAt(null);
+      } else {
+        setIsLive(false);
+        setActiveVideoUrl(null);
+        setNextLiveAt(next);
+      }
+    } catch (e) {
+      console.error('[Live] compute liveSections error', e);
+    }
+  }, [liveSections]);
 
   // Fetch messages from Supabase
   const fetchMessages = useCallback(async () => {
@@ -247,7 +292,7 @@ const Live: React.FC = () => {
                 <iframe
                   width="100%"
                   height="100%"
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"
+                  src={activeVideoUrl ?? "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"}
                   title="Messe en direct"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -299,6 +344,12 @@ const Live: React.FC = () => {
                   <p className="text-muted-foreground">
                     Rejoignez-nous pour cette messe solennelle en direct. Un moment de prière et de recueillement en famille.
                   </p>
+                  {!isLive && nextLiveAt && (
+                    <p className="text-sm text-muted-foreground mt-2">Prochain live prévu le {nextLiveAt.toLocaleString('fr-FR')}</p>
+                  )}
+                  {!isLive && !nextLiveAt && (
+                    <p className="text-sm text-muted-foreground mt-2">Aucun live programmé pour le moment.</p>
+                  )}
                 </div>
                 <button className="text-muted-foreground hover:text-foreground transition-colors p-2">
                   <MoreVertical className="w-6 h-6" />

@@ -14,6 +14,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
 import { useHeaderConfig } from "@/hooks/useHeaderConfig";
 import useRoleCheck from '@/hooks/useRoleCheck';
+import useUnreadNotifications from '@/hooks/useUnreadNotifications';
+import useUnreadMessages from '@/hooks/useUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HeaderProps {
@@ -28,8 +30,6 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
   
   const location = useLocation();
   const authMode = new URLSearchParams(location.search).get("mode") === "register" ? "register" : "login";
@@ -38,6 +38,8 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const { profile } = useUser();
   const { isAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
+  const { unreadCount: unreadNotificationsCount, markAllAsRead: markAllAsReadNotifications } = useUnreadNotifications();
+  const { unreadCount: unreadMessagesCount, markAllAsRead } = useUnreadMessages();
 
   // Favicon effect
   useEffect(() => {
@@ -81,50 +83,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
     setIsAuthModalOpen(location.hash === '#auth');
   }, [location.hash]);
 
-  // Load unread counts ONLY if user is logged in
-  useEffect(() => {
-    if (!user || !profile) {
-      setUnreadMessagesCount(0);
-      setUnreadNotificationsCount(0);
-      return;
-    }
 
-    const loadCounts = async () => {
-      try {
-        const { count: notifCount } = await supabase
-          .from('notifications')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', profile.id)
-          .eq('is_read', false);
-
-        setUnreadNotificationsCount(notifCount || 0);
-
-        if (profile.last_read_messages_at) {
-          const { count: msgCount } = await supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .gt('created_at', profile.last_read_messages_at)
-            .neq('sender_id', profile.id);
-
-          setUnreadMessagesCount(msgCount || 0);
-        } else {
-          const d = new Date();
-          d.setDate(d.getDate() - 7);
-          const { count: msgCount } = await supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .gt('created_at', d.toISOString())
-            .neq('sender_id', profile.id);
-
-          setUnreadMessagesCount(msgCount || 0);
-        }
-      } catch (e) {
-        // silent
-      }
-    };
-
-    loadCounts();
-  }, [user, profile]);
 
   // Loading skeleton
   if (headerLoading) {
@@ -232,7 +191,10 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate('/live')}
+                  onClick={async () => {
+                    await markAllAsRead();
+                    navigate('/live');
+                  }}
                   className="text-muted-foreground hover:text-foreground"
                   title="Chat en direct"
                 >
@@ -252,7 +214,10 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate('/notifications')}
+                  onClick={async () => {
+                    await markAllAsReadNotifications();
+                    navigate('/notifications');
+                  }}
                   className="text-muted-foreground hover:text-foreground"
                   title="Notifications"
                 >
