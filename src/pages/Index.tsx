@@ -1,7 +1,10 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, BookOpen, Bell, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
+
+// Capture the pathname at module evaluation (i.e. initial page load)
+const __INITIAL_PATHNAME = typeof window !== 'undefined' ? window.location.pathname : '/';
 // Header/Footer provided by Layout
 import HomepageHero from "@/components/HomepageHero";
 import SectionTitle from "@/components/SectionTitle";
@@ -52,10 +55,11 @@ function getYouTubeEmbedUrl(input?: string) {
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const { user } = useAuth();
   const { profile } = useUser();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [showAdPopup, setShowAdPopup] = useState(true);
+  const [showAdPopup, setShowAdPopup] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [homilies, setHomilies] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -69,45 +73,88 @@ const Index = () => {
   
   // Déterminer le lien des événements selon le rôle
   const eventsLink = isAdmin ? '/admin/events' : '/evenements';
+
+  // Get latest advertisement early so effects can use it
+  const { latestAd } = useAdvertisements();
   
-  // 🔹 WELCOME MODAL LOGIC - Auto-display on initial page load
-  // This useEffect runs ONCE when the component mounts (initial page load)
-  // It checks if:
-  // 1. This is a "hard navigation" (full page reload) via performance API
-  // 2. The user hasn't seen the modal in this session (sessionStorage)
+  // 🔹 WELCOME MODAL LOGIC - Strict: show ONLY on real page load or reload
+  // Runs once on component mount; detection combines Performance API, referrer,
+  // history length and sessionStorage. This reduces false positives on SPA navigation.
   useEffect(() => {
-    const SESSION_STORAGE_KEY = 'hasSeenHomepageWelcomeModal';
-    
-    // Check if user has already seen the modal in this session
-    const hasSeenModal = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    
-    if (!hasSeenModal) {
-      // Get navigation timing data to detect if this is a "hard" or "soft" navigation
-      const navEntries = performance.getEntriesByType('navigation');
-      
-      if (navEntries.length > 0) {
-        const navEntry = navEntries[0] as PerformanceNavigationTiming;
-        
-        // Only show modal on "navigate" (hard refresh/direct URL) or "reload"
-        // Do NOT show on "back_forward" (browser back/forward buttons)
-        if (navEntry.type === 'navigate' || navEntry.type === 'reload') {
-          console.log(`[WelcomeModal] Hard navigation detected (${navEntry.type}). Showing modal.`);
-          setShowWelcomeModal(true);
-          // Mark that user has seen the modal in this session
-          sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
-        } else {
-          console.log(`[WelcomeModal] Soft navigation detected (${navEntry.type}). Modal not shown.`);
-        }
-      } else {
-        // Fallback: if no navigation entries available, assume it's a hard load and show modal
-        console.log('[WelcomeModal] No navigation entries. Assuming hard load, showing modal.');
-        setShowWelcomeModal(true);
-        sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+    const SESSION_KEY = 'homepage_popup_shown';
+
+    try {
+      const isOnHome = location.pathname === '/';
+      if (!isOnHome) return;
+
+      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      const navEntry = navEntries && navEntries[0];
+      const navType = navEntry?.type ?? (performance && (performance as any).navigation?.type === 1 ? 'reload' : 'navigate');
+      const isReload = navType === 'reload';
+
+      // If React Router reports a PUSH navigation (link click), do not show
+      // Also skip POP (browser back/forward) when the app wasn't initially loaded on '/'
+      if (navigationType === 'PUSH' || (navigationType === 'POP' && __INITIAL_PATHNAME !== '/')) {
+        console.log('[WelcomeModal] Internal navigation (PUSH/POP) — skipping modal. navigationType=', navigationType);
+        return;
       }
-    } else {
-      console.log('[WelcomeModal] User already saw modal in this session. Not showing.');
+
+      const hasSeen = !!sessionStorage.getItem(SESSION_KEY);
+
+      // Consider referrer: if empty or external, more likely a true direct access
+      const isExternalReferrer = !document.referrer || !document.referrer.startsWith(location.origin);
+
+      // Short history often means a direct tab open
+      const isHistoryShort = window.history.length <= 1;
+
+      const shouldShow = (
+        // Always show on explicit reload
+        isReload ||
+        // Otherwise show only if not already seen AND likely a direct access
+        (!hasSeen && (isExternalReferrer || isHistoryShort))
+      );
+
+      if (shouldShow) {
+        console.log(`[WelcomeModal] Showing modal (navType=${navType}, referrer=${document.referrer || 'none'}, history=${window.history.length})`);
+        setShowWelcomeModal(true);
+        sessionStorage.setItem(SESSION_KEY, 'true');
+      } else {
+        console.log(`[WelcomeModal] Not showing modal (navType=${navType}, hasSeen=${hasSeen}, referrer=${document.referrer || 'none'}, history=${window.history.length})`);
+      }
+    } catch (e) {
+      console.error('[WelcomeModal] detection error', e);
     }
-  }, []); // Empty dependency array: runs only once on component mount
+  }, []);
+
+  // Advertisement popup: only show on initial page load (or reload) and if ad not seen
+  useEffect(() => {
+    if (!latestAd) return;
+
+    try {
+      const AD_SEEN_KEY = `ad-seen-${latestAd.id}`;
+      const hasSeenAd = !!localStorage.getItem(AD_SEEN_KEY);
+
+      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      const navEntry = navEntries && navEntries[0];
+      const navType = navEntry?.type ?? (performance && (performance as any).navigation?.type === 1 ? 'reload' : 'navigate');
+      const isReload = navType === 'reload';
+
+      if (navigationType === 'PUSH' || (navigationType === 'POP' && __INITIAL_PATHNAME !== '/')) {
+        console.log('[AdvertisementPopup] Internal navigation (PUSH/POP) — skipping ad modal. navigationType=', navigationType);
+        setShowAdPopup(false);
+        return;
+      }
+
+      // Show ad only on initial load of '/', or on explicit reload, and if not seen
+      if (!hasSeenAd && (isReload || __INITIAL_PATHNAME === '/')) {
+        setShowAdPopup(true);
+      } else {
+        setShowAdPopup(false);
+      }
+    } catch (e) {
+      console.error('[AdvertisementPopup] detection error', e);
+    }
+  }, [latestAd]);
   
   const handleWelcomeModalClose = () => {
     console.log('[WelcomeModal] Modal closed by user.');
@@ -124,11 +171,8 @@ const Index = () => {
     sections,
   } = useHomepageContent();
   
-  // Get latest advertisement
-  const { latestAd } = useAdvertisements();
-  
+  // Get latest advertisement (moved earlier)
   const queryClient = useQueryClient();
-
   // Debug: Log when latestAd changes
   useEffect(() => {
     if (latestAd) {
