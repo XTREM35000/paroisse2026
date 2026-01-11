@@ -1,4 +1,4 @@
-# 🎬 Résumé Complet - Optimisation Page Vidéos Faith Flix
+# 🎬 Résumé Complet - Optimisation Page VidéosMédia Paroissiale
 
 ## ✨ Ce qui a été réalisé
 

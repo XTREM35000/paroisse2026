@@ -1,4 +1,4 @@
-# Guide: Page Vidéos Optimisée - Faith Flix
+# Guide: Page Vidéos Optimisée -Média Paroissiale
 
 ## 🎬 Vue d'ensemble
 

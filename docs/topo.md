@@ -1,4 +1,4 @@
-# 📚 Guide d'Administration - Faith Flix
+# 📚 Guide d'Administration -Média Paroissiale
 
 Bienvenue! Ce guide te permet d'administrer complètement le site **Faith Flix**. Ne t'inquiète pas, c'est simple et intuitif! 😊
 
@@ -463,7 +463,7 @@ Tout fonctionne aussi bien sur téléphone! 📱
 
 ## 🚀 Bravo!
 
-Tu es maintenant **un administrateur complet** de Faith Flix! 🎉
+Tu es maintenant **un administrateur complet** deMédia Paroissiale! 🎉
 
 Tu peux :
 
@@ -491,4 +491,4 @@ Nous sommes là pour t'aider! 👍
 
 **Dernière mise à jour** : Janvier 2026  
 **Version** : 1.0  
-**Réalisé pour** : Faith Flix - Gestion d'Église
+**Réalisé pour** :Média Paroissiale - Gestion d'Église

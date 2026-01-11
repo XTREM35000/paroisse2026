@@ -1,4 +1,4 @@
-# Rapport pour les clients — Avancement Faith Flix
+# Rapport pour les clients — AvancementMédia Paroissiale
 
 ## Mission (en une phrase)
 

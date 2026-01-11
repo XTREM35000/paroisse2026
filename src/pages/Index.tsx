@@ -11,6 +11,7 @@ import EventCard from "@/components/EventCard";
 // AuthModal is now controlled globally in Header
 import VideoPlayerModal from "@/components/VideoPlayerModal";
 import AdvertisementPopup from "@/components/AdvertisementPopup";
+import WelcomeModal from "@/components/WelcomeModal";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
 import { useAdvertisements } from "@/hooks/useAdvertisements";
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,6 +56,7 @@ const Index = () => {
   const { profile } = useUser();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [showAdPopup, setShowAdPopup] = useState(true);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [homilies, setHomilies] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
@@ -67,6 +69,50 @@ const Index = () => {
   
   // Déterminer le lien des événements selon le rôle
   const eventsLink = isAdmin ? '/admin/events' : '/evenements';
+  
+  // 🔹 WELCOME MODAL LOGIC - Auto-display on initial page load
+  // This useEffect runs ONCE when the component mounts (initial page load)
+  // It checks if:
+  // 1. This is a "hard navigation" (full page reload) via performance API
+  // 2. The user hasn't seen the modal in this session (sessionStorage)
+  useEffect(() => {
+    const SESSION_STORAGE_KEY = 'hasSeenHomepageWelcomeModal';
+    
+    // Check if user has already seen the modal in this session
+    const hasSeenModal = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    
+    if (!hasSeenModal) {
+      // Get navigation timing data to detect if this is a "hard" or "soft" navigation
+      const navEntries = performance.getEntriesByType('navigation');
+      
+      if (navEntries.length > 0) {
+        const navEntry = navEntries[0] as PerformanceNavigationTiming;
+        
+        // Only show modal on "navigate" (hard refresh/direct URL) or "reload"
+        // Do NOT show on "back_forward" (browser back/forward buttons)
+        if (navEntry.type === 'navigate' || navEntry.type === 'reload') {
+          console.log(`[WelcomeModal] Hard navigation detected (${navEntry.type}). Showing modal.`);
+          setShowWelcomeModal(true);
+          // Mark that user has seen the modal in this session
+          sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+        } else {
+          console.log(`[WelcomeModal] Soft navigation detected (${navEntry.type}). Modal not shown.`);
+        }
+      } else {
+        // Fallback: if no navigation entries available, assume it's a hard load and show modal
+        console.log('[WelcomeModal] No navigation entries. Assuming hard load, showing modal.');
+        setShowWelcomeModal(true);
+        sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+      }
+    } else {
+      console.log('[WelcomeModal] User already saw modal in this session. Not showing.');
+    }
+  }, []); // Empty dependency array: runs only once on component mount
+  
+  const handleWelcomeModalClose = () => {
+    console.log('[WelcomeModal] Modal closed by user.');
+    setShowWelcomeModal(false);
+  };
   
   // Get all dynamic content from the hook
   const {
@@ -181,6 +227,11 @@ const Index = () => {
       {/* Header provided by Layout */}
 
       {/* AuthModal moved to Header to avoid duplicate modals */}
+
+      {/* Welcome Modal - Shows on initial page load */}
+      {showWelcomeModal && (
+        <WelcomeModal onClose={handleWelcomeModalClose} />
+      )}
 
       <VideoPlayerModal
         video={selectedVideo}

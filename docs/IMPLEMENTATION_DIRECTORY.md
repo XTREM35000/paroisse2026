@@ -2,7 +2,7 @@
 
 ## 📝 Résumé exécutif
 
-Une **page Annuaire complète et professionnelle** a été créée pour Faith Flix. Elle permet de :
+Une **page Annuaire complète et professionnelle** a été créée pourMédia Paroissiale. Elle permet de :
 
 - **Voir** les services, clergé et membres de la paroisse
 - **Rechercher** par nom, description, email

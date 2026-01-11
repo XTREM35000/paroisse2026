@@ -1,4 +1,4 @@
-# Améliorations - Faith Flix
+# Améliorations -Média Paroissiale
 
 ## 📋 Résumé des modifications
 

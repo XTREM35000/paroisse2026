@@ -4,7 +4,7 @@
 
 ### ✅ Page "/directory" complète et professionnelle
 
-Une plateforme de répertoire complet pour afficher et gérer les services, clergé et membres de la paroisse Faith Flix.
+Une plateforme de répertoire complet pour afficher et gérer les services, clergé et membres de la paroisseMédia Paroissiale.
 
 ## 📊 Bilan
 
