@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, BookOpen } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import useRoleCheck from '@/hooks/useRoleCheck';
@@ -196,6 +196,25 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
                   </NavLink>
                 ))
               )}
+
+              {/* Documentation (mobile-only) */}
+              <div className="mb-4 md:hidden">
+                <div className="px-2 text-xs text-muted-foreground uppercase mb-2 font-semibold">
+                  Documentation
+                </div>
+                <div className="flex flex-col gap-1">
+                  <NavLink
+                    to="/lexique"
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      'flex items-center gap-3 px-3 py-2 rounded transition-colors ' + (isActive ? 'bg-accent/60 text-accent-foreground' : 'hover:bg-accent/50')
+                    }
+                  >
+                    {renderIcon(BookOpen)}
+                    <span>Lexique</span>
+                  </NavLink>
+                </div>
+              </div>
 
               <div className="mt-4 border-t pt-4">
                 {user ? (

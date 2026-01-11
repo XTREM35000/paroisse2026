@@ -194,6 +194,24 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
               <Search className="h-5 w-5" />
             </Button>
 
+            {/* Lexique quick link (icon only, accessible to all) */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                try {
+                  navigate('/lexique?mobile=1');
+                } catch (e) {
+                  // fallback: set location
+                  window.location.href = '/lexique?mobile=1';
+                }
+              }}
+              className="text-muted-foreground hover:text-foreground"
+              title="Lexique"
+            >
+              <BookOpen className="h-5 w-5" />
+            </Button>
+
             {/* Chat icon with badge - Only if logged in */}
             {user && (
               <div className="relative">
