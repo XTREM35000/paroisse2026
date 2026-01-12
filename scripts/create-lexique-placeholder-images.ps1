@@ -4,15 +4,6 @@
 # Importer System.Drawing
 Add-Type -AssemblyName System.Drawing
 
-# Couleurs par catégorie
-$categoryColors = @{
-  'interface'  = [System.Drawing.Color]::FromArgb(59, 130, 246)      # Bleu
-  'navigation' = [System.Drawing.Color]::FromArgb(16, 185, 129)      # Vert/Emerald
-  'content'    = [System.Drawing.Color]::FromArgb(245, 158, 11)         # Ambre
-  'actions'    = [System.Drawing.Color]::FromArgb(244, 63, 94)          # Rose
-  'admin'      = [System.Drawing.Color]::FromArgb(147, 51, 234)           # Violet
-}
-
 # Dossiers à traiter
 $baseDir = "C:\axe\faith-flix\public\images\lexique"
 

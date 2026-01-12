@@ -14,7 +14,24 @@ interface UserProfile {
 
 export function useUser() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  // Try to initialize from localStorage to avoid refetch/flash on remount
+  const getCachedProfile = (): UserProfile | null => {
+    try {
+      const raw = localStorage.getItem('ff_profile_cache');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { data: UserProfile; cachedAt: number };
+      // TTL: 10 minutes
+      if (Date.now() - (parsed.cachedAt || 0) > 10 * 60 * 1000) {
+        localStorage.removeItem('ff_profile_cache');
+        return null;
+      }
+      return parsed.data || null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const [profile, setProfile] = useState<UserProfile | null>(getCachedProfile());
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -27,8 +44,10 @@ export function useUser() {
     // Utiliser une variable pour tracker le montage et éviter les mises à jour après unmount
     let isMounted = true;
 
+    const hasCache = !!profile;
+
     const fetchProfile = async () => {
-      setIsLoading(true);
+      if (!hasCache) setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -40,15 +59,19 @@ export function useUser() {
 
         if (error) {
           console.error('Erreur lors de la récupération du profil:', error);
-          setProfile({
+          const fallback = {
             id: user.id,
             email: user.email || '',
-          });
+          };
+          setProfile(fallback);
+          try { localStorage.setItem('ff_profile_cache', JSON.stringify({ data: fallback, cachedAt: Date.now() })); } catch (e) {}
         } else {
-          setProfile((data as UserProfile) || {
+          const real = (data as UserProfile) || {
             id: user.id,
             email: user.email || '',
-          });
+          };
+          setProfile(real);
+          try { localStorage.setItem('ff_profile_cache', JSON.stringify({ data: real, cachedAt: Date.now() })); } catch (e) {}
         }
       } catch (err) {
         console.error('Erreur lors de la récupération du profil:', err);
@@ -57,6 +80,7 @@ export function useUser() {
             id: user.id,
             email: user.email || '',
           });
+          try { localStorage.setItem('ff_profile_cache', JSON.stringify({ data: { id: user.id, email: user.email || '' }, cachedAt: Date.now() })); } catch (e) {}
         }
       } finally {
         if (isMounted) {

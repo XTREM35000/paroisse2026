@@ -58,6 +58,7 @@ export const MENU_GROUPS = [
       { label: 'En Ligne', href: '/admin/live', icon: Video },
       { label: 'Notifications', href: '/admin/notifications', icon: Bell },
       { label: 'Publicité', href: '/admin/ads', icon: Image },
+      { label: 'Tutoriels', href: '/admin/tutoriels', icon: Video },
       { label: 'Utilisateurs', href: '/admin/users', icon: Users },
       { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },
       { label: 'Annuaire', href: '/admin/directory', icon: Users },

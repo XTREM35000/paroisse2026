@@ -48,8 +48,10 @@ import HelpPage from './pages/HelpPage';
 import Unauthorized from './pages/Unauthorized';
 import NotificationProvider from '@/components/ui/notification-system';
 import MembersPage from './pages/MembersPage';
+import AdminTutorielsPage from './pages/AdminTutorielsPage';
 import LexiquePage from './pages/LexiquePage';
 import Notifications from './pages/Notifications';
+import { ToastProvider } from '@/contexts/ToastContext';
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,7 @@ const App = () => (
       <NotificationProvider>
         <ThemeProvider>
         <AuthProvider>
+        <ToastProvider>
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
@@ -151,6 +154,7 @@ const App = () => (
             <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><Layout><AdminUsers /></Layout></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><Layout><AdminSettings /></Layout></ProtectedRoute>} />
             <Route path="/admin/ads" element={<ProtectedRoute requiredRole="admin"><Layout><AdminAds /></Layout></ProtectedRoute>} />
+            <Route path="/admin/tutoriels" element={<ProtectedRoute requiredRole="admin"><Layout><AdminTutorielsPage /></Layout></ProtectedRoute>} />
             <Route path="/admin/directory" element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>} />
             <Route path="/admin/members" element={
               <ProtectedRoute requiredRole="admin">
@@ -167,6 +171,7 @@ const App = () => (
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
         </BrowserRouter>
+        </ToastProvider>
         </AuthProvider>
         </ThemeProvider>
       </NotificationProvider>

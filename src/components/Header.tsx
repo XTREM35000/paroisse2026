@@ -175,6 +175,17 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 <BookOpen className="h-4 w-4" />
                 <span>Lexique</span>
               </Link>
+              {/* Tutoriels Link - only for admins */}
+              {isAdmin && (
+                <Link
+                  to="/admin/tutoriels"
+                  className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  title="Tutoriels"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Tutoriels</span>
+                </Link>
+              )}
             </nav>
           </div>
 
