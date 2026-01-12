@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -75,12 +75,55 @@ export interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const { profile, isAdmin, isModerator } = useRoleCheck();
+  const navRef = useRef<HTMLElement>(null);
+
+  // Save scroll position to localStorage on every scroll
+  const handleNavScroll = () => {
+    if (navRef.current) {
+      try {
+        localStorage.setItem('sidebar_scroll_pos', String(navRef.current.scrollTop));
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    }
+  };
+
+  // Restore scroll position from localStorage after navigation and DOM render
+  useEffect(() => {
+    const restoreScroll = () => {
+      if (navRef.current) {
+        try {
+          const saved = localStorage.getItem('sidebar_scroll_pos');
+          if (saved) {
+            const pos = parseInt(saved, 10);
+            // Use requestAnimationFrame twice: first to ensure DOM is ready, second to apply scroll
+            requestAnimationFrame(() => {
+              if (navRef.current) {
+                navRef.current.scrollTop = pos;
+              }
+            });
+          }
+        } catch (e) {
+          // ignore localStorage errors
+        }
+      }
+    };
+
+    // Restore on mount and when location changes
+    restoreScroll();
+
+    // Also restore after a small delay to ensure DOM is fully rendered
+    const timer = setTimeout(restoreScroll, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <aside
       className={`fixed left-0 top-16 bottom-0 bg-card border-r border-border transition-all duration-300 overflow-y-auto z-40 ${
         isCollapsed ? 'w-16' : 'w-64'
       }`}
+      ref={navRef}
+      onScroll={handleNavScroll}
     >
       <div className="p-4 flex items-center justify-between border-b">
         {!isCollapsed && <h3 className="text-lg font-semibold">Paroisse</h3>}
