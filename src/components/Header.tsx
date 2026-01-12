@@ -97,36 +97,53 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
         <div className="flex items-center justify-between h-16">
           {/* Logo + Title + Navigation Menu */}
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-              {/* Logo dynamique */}
-              {headerConfig?.logo_url ? (
-                <img
-                  src={headerConfig.logo_url}
-                  alt={headerConfig.logo_alt_text ?? 'Logo'}
-                  className={`h-${
-                    (headerConfig.logo_size ?? 'sm') === 'sm' ? '8' :
-                    (headerConfig.logo_size ?? 'sm') === 'md' ? '10' :
-                    '12'
-                  } w-auto object-contain`}
-                />
-              ) : (
-                <AnimatedLogo size={(headerConfig?.logo_size ?? 'sm') as any} />
-              )}
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
+              {/* Logo dynamique avec animation 3D + étoiles dorées */}
+              <div className="relative animate-star-rotate-3d" style={{ perspective: '1000px' }}>
+                {headerConfig?.logo_url ? (
+                    <>
+                      <img
+                        src={headerConfig.logo_url}
+                        alt={headerConfig.logo_alt_text ?? 'Logo'}
+                        className={
+                          (headerConfig.logo_size ?? 'sm') === 'sm'
+                            ? 'h-10 md:h-12 w-auto object-contain animate-sparkle'
+                            : (headerConfig.logo_size ?? 'sm') === 'md'
+                            ? 'h-12 md:h-14 w-auto object-contain animate-sparkle'
+                            : 'h-16 md:h-20 w-auto object-contain animate-sparkle'
+                        }
+                      />
+                      {/* Étoiles décoratives animées autour du logo (plus visibles) */}
+                      <div className="absolute -top-2 -right-2 text-sm md:text-base animate-pulse-slow opacity-90">⭐</div>
+                      <div className="absolute -bottom-2 -left-2 text-sm md:text-base animate-pulse-slow opacity-80" style={{ animationDelay: '0.9s' }}>✨</div>
+                    </>
+                  ) : (
+                    <div className="animate-sparkle">
+                      <AnimatedLogo size={(headerConfig?.logo_size ?? 'sm') as any} />
+                    </div>
+                  )}
+              </div>
               
-              {/* Titres dynamiques */}
+              {/* Titres dynamiques - avec animations */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
-                className="hidden sm:block"
+                className="hidden sm:block relative"
               >
                 {headerConfig?.main_title && (
-                  <h1 className="text-sm lg:text-base font-semibold text-foreground leading-tight">
-                    {headerConfig.main_title}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-sm lg:text-base font-semibold text-foreground leading-tight animate-glow-text">
+                      {headerConfig.main_title}
+                    </h1>
+                    {/* Badge de statut animé */}
+                    <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white animate-badge-color-shift shadow-md">
+                      Actif
+                    </span>
+                  </div>
                 )}
                 {headerConfig?.subtitle && (
-                  <p className="text-xs text-muted-foreground -mt-0.5">
+                  <p className="text-xs text-muted-foreground -mt-0.5 animate-float-soft">
                     {headerConfig.subtitle}
                   </p>
                 )}
@@ -228,7 +245,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   <MessageCircle className="h-5 w-5" />
                 </Button>
                 {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-destructive rounded-full">
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-gradient-to-r from-rose-500 to-rose-600 rounded-full animate-badge-pulse shadow-lg">
                     {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
                   </span>
                 )}
@@ -251,7 +268,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   <Bell className="h-5 w-5" />
                 </Button>
                 {unreadNotificationsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-rose-600 rounded-full">
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-gradient-to-r from-amber-500 to-orange-600 rounded-full animate-badge-pulse shadow-lg">
                     {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
                   </span>
                 )}

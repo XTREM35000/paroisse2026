@@ -126,6 +126,55 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.5" },
         },
+        // ===== HERO BANNER ANIMATION PACKAGES =====
+        // Package 1: "Subtle Glow" - Very subtle opacity pulse for logo
+        "glow-subtle": {
+          "0%, 100%": { opacity: "0.92" },
+          "50%": { opacity: "1" },
+        },
+        // Package 2: "Text Shimmer Gold" - Golden text shimmer for title
+        "text-shimmer-gold": {
+          "0%": { backgroundPosition: "-200% center" },
+          "100%": { backgroundPosition: "200% center" },
+        },
+        // Package 3: "Soft Float" - Gentle upward float for subtitle
+        "float-soft": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        // Package 1 Alternative: "Pulse Slow" - Ultra-slow pulse for logo
+        "pulse-slow": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.85" },
+        },
+        // Package 2 Alternative: "Glow Text" - Subtle text glow effect
+        "glow-text": {
+          "0%, 100%": { filter: "drop-shadow(0 0 6px rgba(251,191,36,0.25))" },
+          "50%": { filter: "drop-shadow(0 0 16px rgba(251,191,36,0.45))" },
+        },
+        // ===== BADGES & DECORATIVE ANIMATIONS =====
+        // Badge: Rainbow pulse effect
+        "badge-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(251, 191, 36, 0.7)" },
+          "50%": { boxShadow: "0 0 0 6px rgba(251, 191, 36, 0)" },
+        },
+        // Badge: Color rotation for gradient badges
+        "badge-color-shift": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
+        // Logo: 3D star rotation effect
+        "star-rotate-3d": {
+          "0%": { transform: "rotateX(0deg) rotateY(0deg) rotateZ(0deg)" },
+          "50%": { transform: "rotateX(10deg) rotateY(15deg) rotateZ(5deg)" },
+          "100%": { transform: "rotateX(0deg) rotateY(0deg) rotateZ(0deg)" },
+        },
+        // Logo: Gentle sparkle/twinkle effect
+        "sparkle": {
+          "0%, 100%": { opacity: "1", filter: "drop-shadow(0 0 0px rgba(251, 191, 36, 0.5))" },
+          "50%": { opacity: "0.8", filter: "drop-shadow(0 0 8px rgba(251, 191, 36, 0.8))" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -138,6 +187,17 @@ export default {
         shimmer: "shimmer 3s infinite",
         "slide-in-right": "slide-in-right 0.4s ease-out",
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        // ===== HEADER ANIMATIONS =====
+        "glow-subtle": "glow-subtle 4s ease-in-out infinite",
+        "text-shimmer-gold": "text-shimmer-gold 8s ease-in-out infinite",
+        "float-soft": "float-soft 6s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 5s ease-in-out infinite",
+        "glow-text": "glow-text 4s ease-in-out infinite",
+        // ===== BADGE & DECORATIVE ANIMATIONS =====
+        "badge-pulse": "badge-pulse 2s infinite",
+        "badge-color-shift": "badge-color-shift 6s ease infinite",
+        "star-rotate-3d": "star-rotate-3d 6s ease-in-out infinite",
+        sparkle: "sparkle 3s ease-in-out infinite",
       },
     },
   },
