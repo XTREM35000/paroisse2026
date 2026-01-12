@@ -172,14 +172,14 @@ const HeroBanner = ({
                   Découvrir nos vidéos
                   <ChevronRight className="ml-2 h-3 w-3 md:h-4 md:w-4" />
                 </Link>
-              </Button>
               <Button
                 asChild
                 variant="outline"
-                size="sm"
-                className="border-white text-white hover:bg-white/20 backdrop-blur-sm hover:border-white/50 md:size-lg"
+                size="lg"
+                className="border-primary-foreground/30 bg-white/90 text-black dark:bg-slate-900/70 dark:text-white hover:bg-primary-foreground/10 backdrop-blur-sm font-semibold"
               >
                 <Link to="/evenements">Voir les événements</Link>
+              </Button>
               </Button>
             </motion.div>
           )}

@@ -184,7 +184,7 @@ const HeroBanner = ({
                 asChild
                 variant="outline"
                 size="lg"
-                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 backdrop-blur-sm"
+                className="border-primary-foreground/30 bg-white/90 text-black dark:bg-slate-900/70 dark:text-white hover:bg-primary-foreground/10 backdrop-blur-sm font-semibold"
               >
                 <Link to="/evenements">Voir les événements</Link>
               </Button>
