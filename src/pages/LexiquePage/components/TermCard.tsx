@@ -179,6 +179,131 @@ export function TermCard({ term, onRelatedTermClick }: TermCardProps) {
         </div>
       )}
 
+      {/* 🎨 SECTION GALERIE : Galerie des boutons d'action */}
+      {term.id === 'boutons-action' && term.additionalImages && term.additionalImages.length > 0 && (
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20">
+          <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span className="text-lg">🎨</span>
+            Tous les boutons d'action
+          </h4>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {term.additionalImages.map((image, idx) => {
+              const imageSrc = `/images/lexique/${image.path}.png`;
+              return (
+                <motion.div
+                  key={idx}
+                  whileHover={{ scale: 1.05 }}
+                  className="flex flex-col items-center gap-2 group"
+                >
+                  <div className="relative w-full aspect-square rounded-lg border-2 border-rose-200 dark:border-rose-800 overflow-hidden bg-white dark:bg-slate-800 group-hover:border-rose-400 dark:group-hover:border-rose-600 transition-colors">
+                    <img
+                      src={imageSrc}
+                      alt={image.label}
+                      className="w-full h-full object-contain p-2"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center');
+                        e.currentTarget.parentElement!.innerHTML += '<span class="text-2xl">📷</span>';
+                      }}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      {image.label}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {image.description}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 📊 SECTION TABLEAU : Tableau de référence des actions */}
+      {term.id === 'boutons-action' && term.actionReference && term.actionReference.length > 0 && (
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700">
+          <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span className="text-lg">📊</span>
+            Tableau de référence des actions
+          </h4>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b-2 border-gray-300 dark:border-slate-600">
+                  <th className="text-left py-2 px-3 font-semibold text-gray-900 dark:text-white">
+                    Bouton
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-gray-900 dark:text-white">
+                    Couleur
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-gray-900 dark:text-white">
+                    Usage
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {term.actionReference.map((action, idx) => {
+                  // Déterminer la classe de couleur basée sur la valeur 'couleur'
+                  const colorMap: { [key: string]: string } = {
+                    'vert': 'bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500',
+                    'bleu': 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500',
+                    'jaune': 'bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500',
+                    'rouge': 'bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500',
+                    'gris': 'bg-gray-100 dark:bg-gray-700 border-l-4 border-gray-500',
+                    'orange': 'bg-orange-100 dark:bg-orange-900/30 border-l-4 border-orange-500',
+                  };
+                  
+                  const rowClass = colorMap[action.couleur] || 'bg-gray-50 dark:bg-slate-700/50';
+
+                  return (
+                    <tr
+                      key={idx}
+                      className={`border-b border-gray-200 dark:border-slate-700 transition-colors hover:${rowClass.split(' ')[0].replace('bg-', 'hover:bg-')} ${rowClass}`}
+                    >
+                      <td className="py-3 px-3">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {action.bouton}
+                        </span>
+                        <div className="text-xl mt-1">{action.icone}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold capitalize
+                          ${action.couleur === 'vert' && 'bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100'}
+                          ${action.couleur === 'bleu' && 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100'}
+                          ${action.couleur === 'jaune' && 'bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100'}
+                          ${action.couleur === 'rouge' && 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100'}
+                          ${action.couleur === 'gris' && 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'}
+                          ${action.couleur === 'orange' && 'bg-orange-200 dark:bg-orange-800 text-orange-900 dark:text-orange-100'}
+                        `}>
+                          {action.couleur}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-gray-700 dark:text-gray-300">
+                        {action.usage}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Légende des couleurs */}
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+            <p className="text-sm text-blue-900 dark:text-blue-200">
+              <span className="font-semibold">💡 Conseil :</span> Chaque action est codée par couleur pour une meilleure compréhension visuelle. 
+              Les boutons <strong>rouges</strong> comme "Supprimer" demandent généralement une confirmation pour éviter les erreurs.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Contenu */}
       <div className="p-4 space-y-4">
         {/* Qu'est-ce que c'est? */}

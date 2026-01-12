@@ -233,21 +233,117 @@ export const LEXIQUE_TERMS: LexiqueTerm[] = [
 
   // ========== ACTIONS ==========
   {
-    id: 'action-CRUD',
-    term: 'Bouton CRUD',
-    synonyms: ['Bouton de gestion', 'Bouton d\'édition', 'Fonctions CRUD'],
+    id: 'boutons-action',
+    term: 'Boutons d\'Action',
+    synonyms: ['Boutons CRUD', 'Boutons de formulaire', 'Boutons interactifs'],
     category: 'actions',
-    icon: '⚙️',
+    icon: '🔄',
     definition: {
-      what: 'Boutons permettant Create, Read, Update et Delete sur un élément.',
-      purpose: ['Gérer le contenu', 'Opérations d\'administration'],
-      location: 'Panneaux d\'administration',
-      usage: { admin: 'Utilisez pour gérer les éléments.' },
+      what: 'Les boutons d\'action sont les éléments interactifs qui permettent d\'effectuer des opérations sur le site. Ils se divisent en trois grandes familles.',
+      purpose: [
+        'CRUD : Créer, Consulter, Modifier, Supprimer du contenu',
+        'Formulaires : Valider, Annuler, Téléverser des données',
+        'Confirmations : Confirmer des actions importantes ou critiques',
+        'Guider l\'utilisateur dans ses actions principales'
+      ],
+      location: 'Partout sur le site : formulaires, tableaux, modales, cartes de contenu',
+      usage: {
+        admin: 'Utilisez ces boutons pour gérer le contenu du site. Attention : "Supprimer" est souvent irréversible.',
+        user: 'Cliquez sur ces boutons pour interagir avec le contenu. Lisez bien les libellés avant de cliquer.'
+      },
     },
     imagePath: 'actions/crud',
-    imageCaption: 'Exemples de boutons CRUD.',
-    relatedTerms: ['bouton', 'formulaire', 'tableau'],
-    difficulty: 'intermediate',
+    imageCaption: 'Exemples des principaux boutons d\'action utilisés sur le Site Paroissial',
+    additionalImages: [
+      {
+        label: 'Téléverser',
+        path: 'actions/televerser',
+        description: 'Pour envoyer un fichier depuis votre ordinateur'
+      },
+      {
+        label: 'Télécharger',
+        path: 'actions/telecharger',
+        description: 'Pour récupérer un fichier sur votre appareil'
+      },
+      {
+        label: 'Valider',
+        path: 'actions/valider',
+        description: 'Pour soumettre un formulaire ou confirmer une action'
+      },
+      {
+        label: 'Annuler',
+        path: 'actions/annuler',
+        description: 'Pour abandonner une action en cours'
+      },
+      {
+        label: 'Supprimer',
+        path: 'actions/supprimer',
+        description: 'Pour effacer définitivement un élément (avec confirmation)'
+      },
+      {
+        label: 'Confirmer',
+        path: 'actions/confirmer',
+        description: 'Pour valider une action critique dans une fenêtre modale'
+      }
+    ],
+    actionReference: [
+      {
+        bouton: '📝 Créer / Ajouter',
+        couleur: 'vert',
+        icone: '➕',
+        usage: 'Ajouter un nouvel élément (vidéo, événement, utilisateur)'
+      },
+      {
+        bouton: '👁️ Consulter / Voir',
+        couleur: 'bleu',
+        icone: '👁️',
+        usage: 'Afficher les détails d\'un élément sans modification'
+      },
+      {
+        bouton: '✏️ Modifier',
+        couleur: 'jaune',
+        icone: '✏️',
+        usage: 'Éditer les informations d\'un élément existant'
+      },
+      {
+        bouton: '🗑️ Supprimer',
+        couleur: 'rouge',
+        icone: '🗑️',
+        usage: 'Effacer définitivement un élément (demande confirmation)'
+      },
+      {
+        bouton: '📤 Téléverser / Upload',
+        couleur: 'bleu',
+        icone: '📤',
+        usage: 'Envoyer un fichier depuis votre appareil vers le site'
+      },
+      {
+        bouton: '⬇️ Télécharger',
+        couleur: 'bleu',
+        icone: '⬇️',
+        usage: 'Récupérer un fichier du site sur votre appareil'
+      },
+      {
+        bouton: '✅ Valider',
+        couleur: 'vert',
+        icone: '✅',
+        usage: 'Soumettre un formulaire ou terminer une action'
+      },
+      {
+        bouton: '❌ Annuler',
+        couleur: 'gris',
+        icone: '❌',
+        usage: 'Abandonner l\'action en cours sans sauvegarder'
+      },
+      {
+        bouton: '✔️ Confirmer',
+        couleur: 'orange',
+        icone: '✔️',
+        usage: 'Valider une action critique dans une fenêtre de confirmation'
+      }
+    ],
+    relatedTerms: ['bouton', 'formulaire', 'modal', 'tableau', 'televerser', 'telecharger', 'valider', 'annuler', 'supprimer', 'confirmer'],
+    difficulty: 'beginner',
   },
 
   {
@@ -536,7 +632,116 @@ export const LEXIQUE_TERMS: LexiqueTerm[] = [
     },
     imagePath: 'admin/dashboard',
     imageCaption: 'Tableau de bord administrateur.',
-    relatedTerms: ['section-admin', 'action-CRUD'],
+    relatedTerms: ['section-admin', 'boutons-action'],
     difficulty: 'intermediate',
+  },
+
+  // ========== NOUVEAUX BOUTONS D\'ACTION ==========
+  {
+    id: 'televerser',
+    term: 'Téléverser / Upload',
+    synonyms: ['Envoyer un fichier', 'Upload', 'Charger un fichier'],
+    category: 'actions',
+    icon: '📤',
+    definition: {
+      what: 'Action permettant d\'envoyer un fichier depuis votre ordinateur vers le site.',
+      purpose: ['Partager des documents', 'Ajouter des contenus', 'Importer des données'],
+      location: 'Formulaires, sections d\'administration',
+      usage: { admin: 'Utilisez pour importer des fichiers ou des données.' },
+    },
+    imagePath: 'actions/televerser',
+    imageCaption: 'Bouton de téléversement (Upload).',
+    relatedTerms: ['boutons-action', 'formulaire', 'telecharger'],
+    difficulty: 'beginner',
+  },
+
+  {
+    id: 'telecharger',
+    term: 'Télécharger / Download',
+    synonyms: ['Récupérer un fichier', 'Download', 'Sauvegarder localement'],
+    category: 'actions',
+    icon: '⬇️',
+    definition: {
+      what: 'Action permettant de récupérer et sauvegarder un fichier du site sur votre appareil.',
+      purpose: ['Récupérer des documents', 'Exporter des données', 'Sauvegarder localement'],
+      location: 'Listes, tableaux, sections de contenu',
+      usage: { user: 'Cliquez pour télécharger le fichier.' },
+    },
+    imagePath: 'actions/telecharger',
+    imageCaption: 'Bouton de téléchargement (Download).',
+    relatedTerms: ['boutons-action', 'televerser'],
+    difficulty: 'beginner',
+  },
+
+  {
+    id: 'valider',
+    term: 'Valider / Soumettre',
+    synonyms: ['Soumettre', 'Confirmer', 'Envoyer', 'Submit'],
+    category: 'actions',
+    icon: '✅',
+    definition: {
+      what: 'Action permettant de soumettre un formulaire ou de confirmer une action.',
+      purpose: ['Envoyer des données', 'Terminer une action', 'Confirmer un choix'],
+      location: 'Formulaires, modales, dialogues',
+      usage: { user: 'Cliquez quand vous avez terminé de remplir le formulaire.' },
+    },
+    imagePath: 'actions/valider',
+    imageCaption: 'Bouton de validation (Submit).',
+    relatedTerms: ['boutons-action', 'formulaire', 'annuler'],
+    difficulty: 'beginner',
+  },
+
+  {
+    id: 'annuler',
+    term: 'Annuler / Fermer',
+    synonyms: ['Quitter', 'Fermer sans sauvegarder', 'Abandonner', 'Cancel'],
+    category: 'actions',
+    icon: '❌',
+    definition: {
+      what: 'Action permettant d\'abandonner une opération en cours sans sauvegarder.',
+      purpose: ['Quitter un formulaire', 'Fermer une modale', 'Annuler une action'],
+      location: 'Formulaires, modales, dialogues',
+      usage: { user: 'Cliquez pour fermer sans enregistrer.' },
+    },
+    imagePath: 'actions/annuler',
+    imageCaption: 'Bouton d\'annulation (Cancel).',
+    relatedTerms: ['boutons-action', 'formulaire', 'valider'],
+    difficulty: 'beginner',
+  },
+
+  {
+    id: 'supprimer',
+    term: 'Supprimer / Effacer',
+    synonyms: ['Effacer', 'Enlever', 'Détruire', 'Delete', 'Remove'],
+    category: 'actions',
+    icon: '🗑️',
+    definition: {
+      what: 'Action permettant d\'effacer définitivement un élément du site.',
+      purpose: ['Enlever du contenu', 'Nettoyer les données', 'Gérer l\'espace'],
+      location: 'Listes, tableaux, sections d\'administration',
+      usage: { admin: 'Attention : cette action est généralement irréversible. Une confirmation sera demandée.' },
+    },
+    imagePath: 'actions/supprimer',
+    imageCaption: 'Bouton de suppression (Delete).',
+    relatedTerms: ['boutons-action', 'confirmer'],
+    difficulty: 'intermediate',
+  },
+
+  {
+    id: 'confirmer',
+    term: 'Confirmer / Valider définitivement',
+    synonyms: ['Valider', 'Approuver', 'Accepter', 'OK', 'Confirm'],
+    category: 'actions',
+    icon: '✔️',
+    definition: {
+      what: 'Action permettant de valider une opération critique ou importante dans une fenêtre de confirmation.',
+      purpose: ['Valider les suppressions', 'Confirmer les actions majeures', 'Sécuriser les opérations'],
+      location: 'Fenêtres de confirmation (modales), dialogues critiques',
+      usage: { admin: 'Utilisez pour confirmer les suppressions ou actions majeures.' },
+    },
+    imagePath: 'actions/confirmer',
+    imageCaption: 'Bouton de confirmation (OK).',
+    relatedTerms: ['boutons-action', 'modal', 'supprimer'],
+    difficulty: 'beginner',
   },
 ];

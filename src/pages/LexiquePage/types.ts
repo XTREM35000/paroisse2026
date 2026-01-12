@@ -31,6 +31,19 @@ export interface ImageAnnotation {
   position: { x: number; y: number }; // pourcentages 0-100
 }
 
+export interface AdditionalImage {
+  label: string;
+  path: string; // ex: "actions/televerser" (sans extension)
+  description: string;
+}
+
+export interface ActionReference {
+  bouton: string;
+  couleur: string; // 'vert', 'rouge', 'bleu', 'jaune', 'gris', 'orange'
+  icone: string;
+  usage: string;
+}
+
 export interface LexiqueUsage {
   admin?: string; // Instructions pour les administrateurs
   user?: string; // Instructions pour les visiteurs
@@ -49,11 +62,15 @@ export interface LexiqueTerm {
     location: string; // Où le trouver?
     usage: LexiqueUsage; // Comment l'utiliser?
   };
-  screenshot?: LexiqueScreenshot; // Capture optionnelle
-  // Nouveau champs pour mapping d'images
+  screenshot?: LexiqueScreenshot; // Capture optionnelle (héritage)
+  // Nouveaux champs pour mapping d'images
   imagePath?: string; // ex: "interface/banner" (sans extension)
   imageCaption?: string;
   imageAnnotations?: ImageAnnotation[];
+  // Champs pour galerie d'images supplémentaires (ex: "Boutons d'Action")
+  additionalImages?: AdditionalImage[];
+  // Tableau de référence pour les actions (ex: "Boutons d'Action")
+  actionReference?: ActionReference[];
   relatedTerms: string[]; // IDs des termes liés
   difficulty?: 'beginner' | 'intermediate' | 'advanced'; // Niveau de complexité
 }
