@@ -114,27 +114,33 @@ const MembersPage: React.FC = () => {
     if (!deleteConfirmId) return;
     try {
       console.debug('Deleting member', { memberId: deleteConfirmId });
-      // Delete directly using Supabase SDK
-      // RLS policy on profiles table will allow this if user is admin
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', deleteConfirmId);
+      
+      // Supprimer le profil - la RPC function gère les dépendances
+      const { data, error } = await supabase.rpc('delete_member_with_cascade', {
+        member_id: deleteConfirmId,
+      });
 
       if (error) {
-        console.error('Supabase delete error', { error, status: (error as any).status, details: (error as any).details });
-        if ((error as any).status === 403 || error.message.includes('permission')) {
-          throw new Error(`Permission refusée: Vous ne disposez pas des droits suffisants. ${error.message}`);
-        }
-        throw error;
+        console.error('RPC delete error', { error, message: error.message });
+        throw new Error(error.message || 'Impossible de supprimer ce membre');
+      }
+
+      if (!data) {
+        throw new Error('La suppression a échoué. Ce membre peut avoir des données associées non supprimables.');
       }
 
       await fetchMembers();
       toast({ title: 'Succès', description: 'Membre supprimé avec succès' });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue lors de la suppression';
-      console.error('Erreur delete member', { error: err, message: errorMsg });
-      toast({ title: 'Erreur', description: `Suppression échouée: ${errorMsg}`, variant: 'destructive' });
+      console.error('Erreur delete member', { error: err });
+      toast({ 
+        title: 'Erreur suppression', 
+        description: errorMsg.includes('still referenced') 
+          ? 'Ce membre ne peut pas être supprimé car il a des données associées (donations, messages, etc.). Veuillez d\'abord supprimer ces données ou contacter un administrateur.'
+          : `Erreur: ${errorMsg}`, 
+        variant: 'destructive' 
+      });
     } finally {
       setDeleteConfirmId(null);
     }

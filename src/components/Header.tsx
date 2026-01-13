@@ -99,7 +99,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
         <div className="flex items-center justify-between h-16">
           {/* Logo + Title + Navigation Menu */}
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
+            <Link to={isAdmin ? "/admin" : "/"} className="flex items-center gap-2 flex-shrink-0 group">
               {/* Logo dynamique avec animation 3D + étoiles dorées */}
               <div className="relative animate-star-rotate-3d" style={{ perspective: '1000px' }}>
                 {headerConfig?.logo_url ? (
