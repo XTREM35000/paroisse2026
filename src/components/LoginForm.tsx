@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { EmailFieldPro } from '@/components/ui/email-field-pro';
 import PasswordField from '@/components/ui/password-field';
 import { ensureProfileExists } from '@/utils/ensureProfileExists';
+import { Facebook } from 'lucide-react';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -90,11 +92,36 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
 
       <div className="flex gap-2 pt-1">
         <Button type="submit" disabled={loading} className="flex-1 h-8 text-xs">{loading ? 'Connexion...' : 'Se connecter'}</Button>
-        <Button variant="outline" type="button" onClick={() => signInWithProvider('google')} className="h-8 text-xs">Google</Button>
+      </div>
+
+      <Separator className="my-2" />
+
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-muted-foreground text-center">Ou continuer avec</p>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={() => signInWithProvider('facebook')} 
+            className="flex-1 h-8 text-xs flex items-center justify-center gap-1"
+            disabled={loading}
+          >
+            <Facebook className="w-4 h-4" />
+            Facebook
+          </Button>
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={() => signInWithProvider('google')} 
+            className="flex-1 h-8 text-xs"
+            disabled={loading}
+          >
+            Google
+          </Button>
+        </div>
       </div>
     </form>
   );
 };
 
 export default LoginForm;
-*** End Patch

@@ -56,6 +56,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import EmailConfirmedPage from './pages/EmailConfirmedPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import DataDeletionPage from './pages/DataDeletionPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/data-deletion" element={<DataDeletionPage />} />
+            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             <Route path="/videos" element={<Layout><VideosPage /></Layout>} />
             <Route path="/videos/:id" element={<Layout><VideoDetail /></Layout>} />
             <Route path="/galerie" element={<Layout><GalleryPage /></Layout>} />

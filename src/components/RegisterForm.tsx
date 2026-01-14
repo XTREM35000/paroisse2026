@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera } from "lucide-react";
+import { Camera, Facebook } from "lucide-react";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import PasswordField from '@/components/ui/password-field';
 import PhoneInputWithCountry from "@/components/PhoneInputWithCountry";
@@ -17,7 +18,7 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin }) => {
-  const { register } = useAuth();
+  const { register, signInWithProvider } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
@@ -260,6 +261,33 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         <Button type="submit" disabled={loading} className="flex-1 h-8 text-xs">
           {loading ? "Création..." : "Créer mon compte"}
         </Button>
+      </div>
+
+      <Separator className="my-2" />
+
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-muted-foreground text-center">Ou continuer avec</p>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={() => signInWithProvider('facebook')} 
+            className="flex-1 h-8 text-xs flex items-center justify-center gap-1"
+            disabled={loading}
+          >
+            <Facebook className="w-4 h-4" />
+            Facebook
+          </Button>
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={() => signInWithProvider('google')} 
+            className="flex-1 h-8 text-xs"
+            disabled={loading}
+          >
+            Google
+          </Button>
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground text-center py-1">

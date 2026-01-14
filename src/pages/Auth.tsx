@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import LoginForm from "@/components/LoginForm";
 import RegisterForm from "@/components/RegisterForm";
+import ForgotPasswordForm from "@/components/ForgotPasswordForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type AuthPageProps = {
-  initialMode?: "login" | "register";
+  initialMode?: "login" | "register" | "forgot-password";
 };
 
 const AuthPage: React.FC<AuthPageProps> = ({ initialMode = "login" }) => {
-  const [mode, setMode] = useState<"login" | "register">(initialMode);
+  const [activeTab, setActiveTab] = useState<"login" | "register" | "forgot-password">(initialMode);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -20,15 +22,34 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = "login" }) => {
         </div>
 
         <div className="w-full md:w-2/3">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-semibold">{mode === "login" ? "Connexion" : "Inscription"}</h1>
-            <div className="space-x-2">
-              <button onClick={() => setMode("login")} className={`px-3 py-1 rounded ${mode === "login" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>Connexion</button>
-              <button onClick={() => setMode("register")} className={`px-3 py-1 rounded ${mode === "register" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>Inscription</button>
-            </div>
-          </div>
+          <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as typeof activeTab)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="login" className="text-xs">Connexion</TabsTrigger>
+              <TabsTrigger value="register" className="text-xs">Inscription</TabsTrigger>
+              <TabsTrigger value="forgot-password" className="text-xs">Mot de passe</TabsTrigger>
+            </TabsList>
 
-          {mode === "login" ? <LoginForm /> : <RegisterForm />}
+            <TabsContent value="login" className="mt-4">
+              <LoginForm 
+                onSuccess={() => setActiveTab("login")} 
+                onForgotPassword={() => setActiveTab("forgot-password")}
+              />
+            </TabsContent>
+
+            <TabsContent value="register" className="mt-4">
+              <RegisterForm 
+                onSuccess={() => setActiveTab("register")} 
+                onSwitchToLogin={() => setActiveTab("login")}
+              />
+            </TabsContent>
+
+            <TabsContent value="forgot-password" className="mt-4">
+              <ForgotPasswordForm 
+                onSuccess={() => setActiveTab("login")} 
+                onSwitchToLogin={() => setActiveTab("login")}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

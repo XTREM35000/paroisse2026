@@ -12,8 +12,9 @@ type AuthContextValue = {
     password: string,
     metadata?: Record<string, string>
   ) => Promise<unknown>;
-  signInWithProvider: (provider: "google" | "github") => Promise<unknown>;
+  signInWithProvider: (provider: "google" | "github" | "facebook") => Promise<unknown>;
   signOut: () => Promise<unknown>;
+  resetPassword: (email: string) => Promise<unknown>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -117,8 +118,20 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
     }
   };
 
-  const signInWithProvider = async (provider: "google" | "github") => {
+  const signInWithProvider = async (provider: "google" | "github" | "facebook") => {
     await supabase.auth.signInWithOAuth({ provider });
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const res = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (res.error) throw res.error;
+      return res;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const signOut = async () => {
@@ -135,7 +148,7 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
     }
   };
 
-  const value: AuthContextValue = { user, loading, login, register, signInWithProvider, signOut };
+  const value: AuthContextValue = { user, loading, login, register, signInWithProvider, signOut, resetPassword };
 
   return (
     <AuthContext.Provider value={value}>

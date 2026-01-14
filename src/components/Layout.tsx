@@ -3,6 +3,7 @@ import Header from './Header';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
 import { useAuth } from '@/hooks/useAuth';
+import { useEnsureOAuthProfile } from '@/hooks/useEnsureOAuthProfile';
 import { SetupProvider, useSetup } from '@/contexts/SetupContext';
 import useFirstLaunch from '@/hooks/useFirstLaunch';
 import SetupWizardModal from './SetupWizardModal';
@@ -18,6 +19,9 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   }, [sidebarCollapsed]);
 
   const { user } = useAuth();
+  // Appliquer le hook pour assurer que le profil existe après OAuth
+  useEnsureOAuthProfile();
+  
   const { isFirstLaunch, loading: firstLaunchLoading } = useFirstLaunch();
 
   // consume setup context to check completed flag
