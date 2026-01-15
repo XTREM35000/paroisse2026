@@ -128,7 +128,8 @@ const Index = () => {
     }
   }, [navigationType]);
 
-  // Advertisement popup: only show on initial page load (or reload) and if ad not seen
+  // Advertisement popup: show AFTER welcome modal is closed (not on initial load)
+  // Only show if welcome modal has been closed and ad hasn't been seen
   useEffect(() => {
     if (!latestAd) return;
 
@@ -136,11 +137,12 @@ const Index = () => {
       const AD_SEEN_KEY = `ad-seen-${latestAd.id}`;
       const hasSeenAd = !!localStorage.getItem(AD_SEEN_KEY);
 
-      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      const navEntry = navEntries && navEntries[0];
-      const perfNav2 = (performance as unknown as Record<string, unknown>)?.navigation as Record<string, unknown> | undefined;
-      const navType = navEntry?.type ?? (perfNav2?.type === 1 ? 'reload' : 'navigate');
-      const isReload = navType === 'reload';
+      // Do not show ad if welcome modal is still visible
+      if (showWelcomeModal) {
+        console.log('[AdvertisementPopup] Welcome modal is visible, delaying ad display');
+        setShowAdPopup(false);
+        return;
+      }
 
       if (navigationType === 'PUSH' || (navigationType === 'POP' && __INITIAL_PATHNAME !== '/')) {
         console.log('[AdvertisementPopup] Internal navigation (PUSH/POP) — skipping ad modal. navigationType=', navigationType);
@@ -148,8 +150,8 @@ const Index = () => {
         return;
       }
 
-      // Show ad only on initial load of '/', or on explicit reload, and if not seen
-      if (!hasSeenAd && (isReload || __INITIAL_PATHNAME === '/')) {
+      // Show ad only after welcome modal is closed and if not seen
+      if (!hasSeenAd && !showWelcomeModal) {
         setShowAdPopup(true);
       } else {
         setShowAdPopup(false);
@@ -157,11 +159,13 @@ const Index = () => {
     } catch (e) {
       console.error('[AdvertisementPopup] detection error', e);
     }
-  }, [latestAd, navigationType]);
+  }, [latestAd, navigationType, showWelcomeModal]);
   
   const handleWelcomeModalClose = () => {
-    console.log('[WelcomeModal] Modal closed by user.');
+    console.log('[WelcomeModal] Modal closed by user. Advertisement can now be shown.');
     setShowWelcomeModal(false);
+    // The advertisement will now show because showWelcomeModal is false
+    // and the useEffect for advertisement will be triggered
   };
 
   const handleWelcomeOpenAuth = (mode: 'login' | 'register') => {
