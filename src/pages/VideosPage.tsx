@@ -6,9 +6,11 @@ import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import VideoCard from '@/components/VideoCard';
 import VideoModalForm from '@/components/VideoModalForm';
+import VideoPlayerModal from '@/components/VideoPlayerModal';
 import { useVideos } from '@/hooks/useVideos';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
+import type { Video } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +36,8 @@ const VideosPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Record<string, unknown> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedVideoForPlayback, setSelectedVideoForPlayback] = useState<Video | null>(null);
+  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const { user } = useAuth();
   const { profile } = useUser();
   const { videos, loading, createVideo, updateVideo, deleteVideo, refreshVideos } = useVideos(
@@ -95,6 +99,18 @@ const VideosPage = () => {
     console.debug('📹 Closing video modal');
     setIsModalOpen(false);
     setEditingVideo(null);
+  };
+
+  const handleOpenPlayerModal = (video: Video) => {
+    console.debug('📹 Opening player modal for video:', video.id);
+    setSelectedVideoForPlayback(video);
+    setIsPlayerModalOpen(true);
+  };
+
+  const handleClosePlayerModal = () => {
+    console.debug('📹 Closing player modal');
+    setIsPlayerModalOpen(false);
+    setSelectedVideoForPlayback(null);
   };
 
   return (
@@ -202,9 +218,7 @@ const VideosPage = () => {
                       >
                         <VideoCard
                           video={video}
-                          onOpen={() => {
-                            /* ouvrir lecteur ou page vidéo */
-                          }}
+                          onOpen={() => handleOpenPlayerModal(video)}
                           onDeleted={() => refreshVideos?.()}
                         />
                         {/* Admin actions overlay */}
@@ -309,6 +323,13 @@ const VideosPage = () => {
         onSave={handleSaveVideo}
         onDelete={handleDeleteVideo}
         isLoading={isSaving}
+      />
+
+      {/* Modal de lecteur vidéo */}
+      <VideoPlayerModal
+        video={selectedVideoForPlayback}
+        isOpen={isPlayerModalOpen}
+        onClose={handleClosePlayerModal}
       />
 
       {/* Footer provided by Layout */}

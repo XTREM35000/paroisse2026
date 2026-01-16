@@ -60,12 +60,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
       }
     } catch (err: unknown) {
       console.error('Login error', err);
-      try {
-        const errorMsg = (err as Record<string, unknown>).message || 'Erreur lors de la connexion';
-        alert(errorMsg);
-      } catch {
-        // Silently ignore error message parsing
-      }
+      const errorMsg = (err as Record<string, unknown>)?.message || 'Erreur lors de la connexion';
+      toast({
+        title: '❌ Erreur de connexion',
+        description: String(errorMsg),
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Trash2, Eye, AlertCircle, CheckCircle } from 'lucide-react';
+import { Trash2, Eye, AlertCircle, CheckCircle, Play } from 'lucide-react';
 import { useState } from 'react';
 import type { Video } from '@/types/database';
 import { useUser } from '@/hooks/useUser';
@@ -101,7 +101,7 @@ const VideoCard = ({ video, onOpen, onDeleted }: VideoCardProps) => {
           className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
         />
         {/* Play icon overlay */}
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 rounded-full bg-primary/80 flex items-center justify-center backdrop-blur-sm group-hover:bg-primary transition-colors">
             <div className="w-0 h-0 border-l-8 border-l-primary-foreground border-t-4 border-t-transparent border-b-4 border-b-transparent ml-1" />
           </div>
@@ -140,6 +140,21 @@ const VideoCard = ({ video, onOpen, onDeleted }: VideoCardProps) => {
           </motion.button>
         </div>
       )}
+
+      {/* Play button (visible on hover) */}
+      <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen?.();
+          }}
+          className="w-10 h-10 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center backdrop-blur-sm transition-colors"
+          title="Lire"
+        >
+          <Play className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
+        </motion.button>
+      </div>
 
       {/* Info footer */}
       <div className="p-3 bg-card border-t border-border/50">

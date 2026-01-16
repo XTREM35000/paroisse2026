@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, AlertCircle, CheckCircle, Video as VideoIcon, Plus } from 'lucide-react';
-import BaseModal from './base-modal';
+import DraggableModal from './DraggableModal';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadFile } from '@/lib/supabase/storage';
 import { useNotification } from './ui/notification-system';
@@ -302,7 +302,7 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
   return (
     <AnimatePresence>
       {open && (
-        <BaseModal open={open} onClose={onClose}>
+        <DraggableModal open={open} onClose={onClose}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -621,7 +621,7 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
               </div>
             </div>
           </motion.div>
-        </BaseModal>
+        </DraggableModal>
       )}
     </AnimatePresence>
   );
