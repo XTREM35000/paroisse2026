@@ -78,7 +78,7 @@ const Index = () => {
   // Get latest advertisement early so effects can use it
   const { latestAd } = useAdvertisements();
   
-  // 🔹 WELCOME MODAL LOGIC - Strict: show ONLY on real page load or reload
+  // 🔹 WELCOME MODAL LOGIC - Strict: show ONLY on real page load or reload AND if user is NOT logged in
   // Runs once on component mount; detection combines Performance API, referrer,
   // history length and sessionStorage. This reduces false positives on SPA navigation.
   useEffect(() => {
@@ -87,6 +87,13 @@ const Index = () => {
     try {
       const isOnHome = window.location.pathname === '/';
       if (!isOnHome) return;
+
+      // Do not show welcome modal if user is already logged in
+      if (user) {
+        console.log('[WelcomeModal] User is logged in, skipping welcome modal');
+        setShowWelcomeModal(false);
+        return;
+      }
 
       const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       const navEntry = navEntries && navEntries[0];
@@ -126,7 +133,7 @@ const Index = () => {
     } catch (e) {
       console.error('[WelcomeModal] detection error', e);
     }
-  }, [navigationType]);
+  }, [navigationType, user]);
 
   // Advertisement popup: show AFTER welcome modal is closed (not on initial load)
   // Only show if welcome modal has been closed and ad hasn't been seen
