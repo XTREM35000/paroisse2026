@@ -221,34 +221,6 @@ const VideosPage = () => {
                           onOpen={() => handleOpenPlayerModal(video)}
                           onDeleted={() => refreshVideos?.()}
                         />
-                        {/* Admin actions overlay */}
-                        {isAdmin && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            whileHover={{ opacity: 1 }}
-                            className="absolute inset-0 bg-black/70 rounded-lg p-3 flex flex-col gap-2 justify-end z-10"
-                          >
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="gap-2"
-                              onClick={() => handleOpenModal(video as Record<string, unknown>)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                              Modifier
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="gap-2"
-                              onClick={() => handleDeleteVideo(video.id)}
-                              disabled={isSaving}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Supprimer
-                            </Button>
-                          </motion.div>
-                        )}
                         {!video.published && (
                           <Badge variant="secondary" className="absolute top-2 right-2 z-5">
                             Brouillon

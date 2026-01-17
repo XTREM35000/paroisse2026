@@ -51,7 +51,7 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
             onDragStart={() => setIsDragging(true)}
             onDragEnd={() => setIsDragging(false)}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-2xl max-h-[95vh] bg-black rounded-xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing flex flex-col"
+            className="relative w-full max-w-lg max-h-[90vh] bg-black rounded-xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing flex flex-col"
           >
             {/* Close button */}
             <button

@@ -85,7 +85,7 @@ export function TermCard({ term, onRelatedTermClick }: TermCardProps) {
                   src={imageSrc}
                   alt={term.imageCaption || `Capture du ${term.term}`}
                   className="w-full h-auto max-h-64 object-contain"
-                  loading="lazy"
+                  loading="eager"
                   onLoad={() => setImageLoading(false)}
                   onError={() => {
                     setImageLoading(false);
@@ -201,7 +201,7 @@ export function TermCard({ term, onRelatedTermClick }: TermCardProps) {
                       src={imageSrc}
                       alt={image.label}
                       className="w-full h-full object-contain p-2"
-                      loading="lazy"
+                      loading="eager"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center');

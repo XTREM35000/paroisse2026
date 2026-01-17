@@ -122,38 +122,52 @@ const VideoCard = ({ video, onOpen, onDeleted }: VideoCardProps) => {
         </div>
       </div>
 
-      {/* Delete button */}
-      {isAdmin && (
-        <div className="absolute top-3 left-3">
+      {/* Action buttons container - visible on hover at bottom */}
+      <div className="absolute bottom-4 left-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 items-center">
+        {/* Watch button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen?.();
+          }}
+          className="flex-1 h-10 rounded-lg bg-primary hover:bg-primary/90 flex items-center justify-center gap-2 backdrop-blur-sm transition-colors text-sm font-medium text-primary-foreground"
+          title="Regarder"
+        >
+          <Play className="w-4 h-4 fill-primary-foreground" />
+          <span>Regarder</span>
+        </motion.button>
+
+        {/* Edit button (admin only) */}
+        {isAdmin && (
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="h-10 w-10 rounded-lg bg-blue-500/80 hover:bg-blue-600 flex items-center justify-center backdrop-blur-sm transition-colors flex-shrink-0"
+            title="Modifier"
+          >
+            <span className="text-white text-lg font-bold">✎</span>
+          </motion.button>
+        )}
+
+        {/* Delete button (admin only) */}
+        {isAdmin && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
             onClick={handleDelete}
             disabled={isDeleting}
-            className={`w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${
-              showDeleteConfirm 
-                ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
+            className={`h-10 w-10 rounded-lg flex items-center justify-center backdrop-blur-sm transition-colors flex-shrink-0 ${
+              showDeleteConfirm
+                ? 'bg-red-600 hover:bg-red-700 animate-pulse'
                 : 'bg-destructive/80 hover:bg-destructive disabled:opacity-50'
             }`}
             title={showDeleteConfirm ? 'Cliquer à nouveau pour confirmer' : 'Supprimer'}
           >
             <Trash2 className={`w-4 h-4 ${showDeleteConfirm ? 'text-white' : 'text-destructive-foreground'}`} />
           </motion.button>
-        </div>
-      )}
-
-      {/* Play button (visible on hover) */}
-      <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen?.();
-          }}
-          className="w-10 h-10 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center backdrop-blur-sm transition-colors"
-          title="Lire"
-        >
-          <Play className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
-        </motion.button>
+        )}
       </div>
 
       {/* Info footer */}
