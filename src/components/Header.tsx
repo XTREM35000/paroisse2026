@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, User, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, BookOpen } from "lucide-react";
+import { Search, User, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, BookOpen, FileText } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
 import AuthModal from "./AuthModal";
 import ForgotPasswordModal from "./ForgotPasswordModal";
@@ -177,17 +177,15 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                 <BookOpen className="h-4 w-4" />
                 <span>Lexique</span>
               </Link>
-              {/* Tutoriels Link - only for admins */}
-              {isAdmin && (
-                <Link
-                  to="/admin/tutoriels"
-                  className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  title="Tutoriels"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Tutoriels</span>
-                </Link>
-              )}
+              {/* Prospect Link - Accessible à tous */}
+              <Link 
+                to="/prospect"
+                className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                title="Prospect"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Prospect</span>
+              </Link>
             </nav>
           </div>
 

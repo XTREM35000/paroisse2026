@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen } from 'lucide-react';
+import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen, FileText } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
 
@@ -10,6 +10,7 @@ export const MENU_GROUPS = [
     items: [
       { label: 'Vue d\'ensemble', href: '/dashboard', icon: Home },
       { label: 'Lexique', href: '/lexique', icon: BookOpen },
+      { label: 'Prospect', href: '/prospect', icon: FileText },
     ],
   },
   // NOTE: this group should be admin-only (same visibility as Administration)

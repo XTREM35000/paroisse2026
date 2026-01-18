@@ -57,6 +57,7 @@ import EmailConfirmedPage from './pages/EmailConfirmedPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import DataDeletionPage from './pages/DataDeletionPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import DocProjetPage from './pages/DocProjetPage';
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ const App = () => (
             <Route path="/a-propos" element={<Layout><AboutPage /></Layout>} />
             <Route path="/help" element={<Layout><HelpPage /></Layout>} />
             <Route path="/lexique" element={<Layout><LexiquePage /></Layout>} />
+            <Route path="/prospect" element={<Layout><DocProjetPage /></Layout>} />
             <Route
               path="/profil"
               element={
