@@ -3,87 +3,254 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useNotification } from '@/components/ui/notification-system';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Heart, ThumbsUp, Smile } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-  sender_id: string;
-  likes_count: number;
-  sender?: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-  };
+// Composants chat
+import {
+  ConversationList,
+  ChatHeader,
+  MessageBubble,
+  MessageInput,
+} from '@/components/chat';
+
+// Types Supabase
+import type { ChatRoom, ChatMessage, Profile } from '@/types/database';
+import { cn } from '@/lib/utils';
+
+// Extension du type ChatRoom avec métadonnées locales
+interface ExtendedChatRoom extends ChatRoom {
+  lastMessage?: string;
+  unreadCount?: number;
+  lastMessageTime?: Date;
+}
+
+// Type pour les messages avec infos d'envoyeur
+interface ExtendedChatMessage extends ChatMessage {
+  sender?: Profile | null;
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // États principaux
+  const [rooms, setRooms] = useState<ExtendedChatRoom[]>([]);
+  const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
-  const { user } = useAuth();
-  const { profile } = useUser();
-  const { notifyError } = useNotification();
+
+  // États de chargement
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  // États d'erreur
+  const [error, setError] = useState<string | null>(null);
+
+  // Références
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Hooks
+  const { user } = useAuth();
+  const { profile } = useUser();
+  const { notifyError, notifySuccess } = useNotification();
+
+
+  // ====================================
+  // Effet: Initialisation au chargement
+  // ====================================
   useEffect(() => {
     if (user) {
-      fetchMessages();
-      const unsub = subscribeToMessages();
-      return () => unsub?.();
+      fetchChatRooms();
+      subscribeToRoomsUpdates();
     }
   }, [user]);
 
+  // ====================================
+  // Effet: Chargement des messages
+  // ====================================
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (selectedRoomId) {
+      fetchMessages(selectedRoomId);
+      subscribeToMessageUpdates(selectedRoomId);
+    }
+  }, [selectedRoomId]);
+
+  // ====================================
+  // Effet: Auto-scroll vers les nouveaux messages
+  // ====================================
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
-  const fetchMessages = async () => {
+  // ====================================
+  // Récupération des salles de chat
+  // ====================================
+  const fetchChatRooms = async () => {
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles(id, full_name, avatar_url)
-        `)
-        .order('created_at', { ascending: true })
-        .limit(100);
+      setLoadingRooms(true);
+      setError(null);
 
-      if (error) throw error;
-      setMessages(data || []);
-      setLoading(false);
+      const { data, error: err } = await supabase
+        .from('chat_rooms')
+        .select('*')
+        .eq('is_private', false)
+        .order('last_message_at', { ascending: false, nullsFirst: false });
+
+      if (err) throw err;
+
+      // Enrichir les salles avec les derniers messages
+      const enrichedRooms = await Promise.all(
+        (data || []).map(async room => {
+          const { data: lastMsg } = await supabase
+            .from('chat_messages')
+            .select('content, created_at')
+            .eq('room_id', room.id)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          return {
+            ...room,
+            lastMessage: lastMsg?.content || undefined,
+            lastMessageTime: lastMsg?.created_at ? new Date(lastMsg.created_at) : undefined,
+            unreadCount: 0, // À implémenter selon votre logique de lecture
+          } as ExtendedChatRoom;
+        })
+      );
+
+      setRooms(enrichedRooms);
+
+      // Sélectionner la première salle par défaut
+      if (enrichedRooms.length > 0 && !selectedRoomId) {
+        setSelectedRoomId(enrichedRooms[0].id);
+      }
     } catch (err: any) {
-      console.error('Erreur lors de la récupération des messages:', err);
-      notifyError('Erreur', 'Impossible de charger les messages');
-      setLoading(false);
+      console.error('Erreur lors de la récupération des salles:', err);
+      setError('Impossible de charger les conversations');
+      notifyError('Erreur', 'Impossible de charger les conversations');
+    } finally {
+      setLoadingRooms(false);
     }
   };
 
-  const subscribeToMessages = () => {
+  // ====================================
+  // Récupération des messages d'une salle
+  // ====================================
+  const fetchMessages = async (roomId: string) => {
+    try {
+      setLoadingMessages(true);
+      setError(null);
+
+      const { data, error: err } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('room_id', roomId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (err) throw err;
+
+      if (data && data.length > 0) {
+        // Récupérer les profils des envoyeurs
+        const senderIds = [...new Set(data.map(m => m.sender_id))];
+        const { data: profiles, error: profilesErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', senderIds);
+
+        if (profilesErr) throw profilesErr;
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const enrichedMessages = data.map(msg => ({
+          ...msg,
+          sender: profileMap.get(msg.sender_id) || null,
+        })) as ExtendedChatMessage[];
+
+        setMessages(enrichedMessages);
+      } else {
+        setMessages([]);
+      }
+
+      // Marquer les messages comme lus
+      if (user?.id) {
+        await supabase
+          .from('profiles')
+          .update({ last_read_messages_at: new Date().toISOString() })
+          .eq('id', user.id);
+      }
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération des messages:', err);
+      setError('Impossible de charger les messages');
+      notifyError('Erreur', 'Impossible de charger les messages');
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  // ====================================
+  // Envoi d'un message
+  // ====================================
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !user || !selectedRoomId) return;
+
+    try {
+      setSendingMessage(true);
+
+      const { data, error: err } = await supabase
+        .from('chat_messages')
+        .insert([
+          {
+            room_id: selectedRoomId,
+            sender_id: user.id,
+            content: newMessage.trim(),
+            type: 'text',
+            is_deleted: false,
+            is_edited: false,
+          },
+        ])
+        .select('*')
+        .single();
+
+      if (err) throw err;
+
+      // Mettre à jour last_message_at de la salle
+      await supabase
+        .from('chat_rooms')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', selectedRoomId);
+
+      setNewMessage('');
+      notifySuccess('Succès', 'Message envoyé');
+    } catch (err: any) {
+      console.error('Erreur lors de l\'envoi du message:', err);
+      notifyError('Erreur', 'Impossible d\'envoyer le message');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // ====================================
+  // Subscription: Mises à jour des salles
+  // ====================================
+  const subscribeToRoomsUpdates = () => {
     const channel = supabase
-      .channel('messages-realtime')
+      .channel('public:chat_rooms:updates')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_rooms',
+        },
         (payload) => {
-          fetchMessageWithSender(payload.new.id);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messages' },
-        (payload) => {
-          setMessages(prev =>
-            prev.map(msg => msg.id === payload.new.id ? { ...msg, likes_count: payload.new.likes_count } : msg)
-          );
+          // Rafraîchir les salles
+          fetchChatRooms();
         }
       )
       .subscribe();
@@ -93,186 +260,208 @@ export default function ChatPage() {
     };
   };
 
-  const fetchMessageWithSender = async (messageId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles(id, full_name, avatar_url)
-        `)
-        .eq('id', messageId)
-        .single();
+  // ====================================
+  // Subscription: Mises à jour des messages
+  // ====================================
+  const subscribeToMessageUpdates = (roomId: string) => {
+    const channel = supabase
+      .channel(`public:chat_messages:room_${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `room_id=eq.${roomId}`,
+        },
+        async (payload) => {
+          // Récupérer les infos du profil du nouvel envoyeur
+          const newMsg = payload.new as any;
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', newMsg.sender_id)
+            .single();
 
-      if (error) throw error;
-      setMessages(prev => [...prev, data]);
-    } catch (err) {
-      console.error('Erreur lors de la récupération du nouveau message:', err);
-    }
+          const enrichedMessage: ExtendedChatMessage = {
+            ...newMsg,
+            sender: senderProfile,
+          };
+
+          setMessages(prev => [...prev, enrichedMessage]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          const updatedMsg = payload.new as any;
+          setMessages(prev =>
+            prev.map(msg => (msg.id === updatedMsg.id ? { ...msg, ...updatedMsg } : msg))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          const deletedMsg = payload.old as any;
+          setMessages(prev => prev.filter(msg => msg.id !== deletedMsg.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !user) return;
-
-    try {
-      const { error } = await supabase
-        .from('messages')
-        .insert([{ 
-          content: newMessage, 
-          sender_id: user.id,
-          likes_count: 0
-        }]);
-
-      if (error) throw error;
-      setNewMessage('');
-    } catch (err: any) {
-      console.error('Erreur lors de l\'envoi:', err);
-      notifyError('Erreur', "Impossible d'envoyer le message");
-    }
+  // ====================================
+  // Gestion des clics sur les conversations
+  // ====================================
+  const handleSelectConversation = (roomId: string) => {
+    setSelectedRoomId(roomId);
+    setError(null);
   };
 
-  const toggleLike = async (messageId: string, currentLikes: number) => {
-    if (likedMessages.has(messageId)) {
-      const newSet = new Set(likedMessages);
-      newSet.delete(messageId);
-      setLikedMessages(newSet);
-    } else {
-      setLikedMessages(new Set(likedMessages).add(messageId));
-    }
-
-    try {
-      const { error } = await supabase
-        .from('messages')
-        .update({ likes_count: currentLikes + (likedMessages.has(messageId) ? -1 : 1) })
-        .eq('id', messageId);
-
-      if (error) throw error;
-    } catch (err) {
-      console.error('Erreur lors du like:', err);
-      const newSet = new Set(likedMessages);
-      likedMessages.has(messageId) ? newSet.add(messageId) : newSet.delete(messageId);
-      setLikedMessages(newSet);
-    }
-  };
-
+  // ====================================
+  // Rendu: États d'erreur ou de non-authentification
+  // ====================================
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Connectez-vous</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-2 text-foreground">Chat</h2>
           <p className="text-muted-foreground">Vous devez être connecté pour accéder au chat</p>
         </div>
       </div>
     );
   }
 
+  const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+
+  // ====================================
+  // Rendu: Layout WhatsApp-like
+  // ====================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex flex-col">
-      {/* Header */}
-      <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-foreground">Chat de la communauté</h1>
-          <p className="text-sm text-muted-foreground">Connecté en tant que {profile?.full_name}</p>
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Layout principal: Sidebar + Chat */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Conversations (masqué sur mobile si une conversation est sélectionnée) */}
+        <div
+          className={cn(
+            'w-full lg:w-[30%] flex flex-col transition-all duration-300',
+            selectedRoomId && 'hidden lg:flex'
+          )}
+        >
+          <ConversationList
+            conversations={rooms}
+            selectedRoomId={selectedRoomId || undefined}
+            onSelectConversation={handleSelectConversation}
+            isLoading={loadingRooms}
+          />
         </div>
-      </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4 overflow-y-auto">
-        <div className="container mx-auto space-y-4 max-w-3xl">
-          <AnimatePresence>
-            {messages.map((message) => {
-              const isOwnMessage = message.sender_id === user?.id;
-              const initials = message.sender?.full_name
-                ?.split(' ')
-                .map(n => n[0])
-                .join('')
-                .toUpperCase() || '?';
-
-              return (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`flex gap-3 max-w-sm ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={message.sender?.avatar_url} alt={message.sender?.full_name} />
-                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                    </Avatar>
-
-                    <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                      <p className="text-xs text-muted-foreground mb-1 px-3">
-                        {message.sender?.full_name}
-                      </p>
-                      
-                      <div
-                        className={`rounded-2xl px-4 py-2.5 break-words ${
-                          isOwnMessage
-                            ? 'bg-primary text-primary-foreground rounded-br-none'
-                            : 'bg-muted text-foreground rounded-bl-none'
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {new Date(message.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-
-                      {/* Like and React Buttons */}
-                      <div className="flex gap-1 mt-1">
-                        <button
-                          onClick={() => toggleLike(message.id, message.likes_count)}
-                          className={`p-1.5 rounded-full transition-all ${
-                            likedMessages.has(message.id)
-                              ? 'bg-red-500/20 text-red-500'
-                              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                          }`}
-                          title="J'aime"
-                        >
-                          <Heart className="w-3.5 h-3.5 fill-current" />
-                        </button>
-                        {message.likes_count > 0 && (
-                          <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-full">
-                            {message.likes_count} ❤️
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Message Input */}
-      <div className="bg-card border-t border-border p-4 sticky bottom-0">
-        <div className="container mx-auto max-w-3xl">
-          <form onSubmit={sendMessage} className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Tapez votre message..."
-              className="flex-1"
-              disabled={loading}
+        {/* Zone de chat principale */}
+        {selectedRoom ? (
+          <div className="flex-1 flex flex-col overflow-hidden bg-background">
+            {/* En-tête de la conversation */}
+            <ChatHeader
+              room={selectedRoom}
+              memberCount={selectedRoom.member_count || 0}
+              showBackButton={true}
+              onBack={() => setSelectedRoomId(null)}
             />
-            <Button
-              type="submit"
-              disabled={!newMessage.trim() || loading}
-              size="icon"
-              className="rounded-full"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </div>
+
+            {/* Erreur - affichée sous l'en-tête si présente */}
+            {error && (
+              <div className="bg-destructive/10 border-b border-destructive/20 p-3 flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            {/* Zone de messages */}
+            {loadingMessages ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Chargement des messages...</p>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Aucun message pour le moment</p>
+                </div>
+              </div>
+            ) : (
+              <ScrollArea className="flex-1 overflow-hidden">
+                <div className="h-full flex flex-col p-4 max-w-4xl mx-auto w-full">
+                  <AnimatePresence mode="popLayout">
+                    {messages.map((message, index) => {
+                      const isOwn = message.sender_id === user?.id;
+                      const senderName = message.sender?.full_name || 'Utilisateur inconnu';
+                      const senderAvatar = message.sender?.avatar_url;
+
+                      return (
+                        <motion.div
+                          key={message.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <MessageBubble
+                            content={message.content}
+                            isOwn={isOwn}
+                            senderName={senderName}
+                            senderAvatar={senderAvatar}
+                            timestamp={new Date(message.created_at)}
+                            showAvatar={true}
+                          />
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            )}
+
+            {/* Zone de saisie */}
+            <MessageInput
+              value={newMessage}
+              onChange={setNewMessage}
+              onSend={handleSendMessage}
+              isLoading={sendingMessage}
+              disabled={loadingMessages}
+              placeholder="Écrivez votre message..."
+            />
+          </div>
+        ) : (
+          /* Affichage par défaut si aucune conversation n'est sélectionnée */
+          <div className="flex-1 hidden lg:flex items-center justify-center bg-gradient-to-br from-muted/50 to-background">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Sélectionnez une conversation
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Choisissez une conversation à gauche pour commencer à discuter
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
