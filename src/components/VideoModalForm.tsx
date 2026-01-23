@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, AlertCircle, CheckCircle, Video as VideoIcon, Plus } from 'lucide-react';
 import DraggableModal from './DraggableModal';
 import { supabase } from '@/integrations/supabase/client';
-import { uploadFile } from '@/lib/supabase/storage';
+import { uploadFile, uploadVideoFile } from '@/lib/supabase/storage';
 import { useNotification } from './ui/notification-system';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,20 +169,19 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
 
       // Upload vidéo avec timestamp pour éviter les conflits
       const fileName = file.name.replace(/\s+/g, '-');
-      const uploadPath = `videos/${Date.now()}_${fileName}`;
-      console.log('📤 Tentative upload vers:', uploadPath);
+      console.log('📤 Tentative upload vidéo vers video-files bucket');
 
-      console.log('⏳ Appel uploadFile...');
+      console.log('⏳ Appel uploadVideoFile...');
       let uploadedVideo;
       try {
-        uploadedVideo = await uploadFile(file, uploadPath);
-        console.log('✅ uploadFile() retourné:', uploadedVideo);
+        uploadedVideo = await uploadVideoFile(file);
+        console.log('✅ uploadVideoFile() retourné:', uploadedVideo);
       } catch (uploadErr) {
-        console.error('❌ uploadFile() a lancé une exception:', uploadErr);
+        console.error('❌ uploadVideoFile() a lancé une exception:', uploadErr);
         throw uploadErr;
       }
 
-      console.log('📦 Réponse uploadFile complète:', { uploadedVideo, type: typeof uploadedVideo, keys: uploadedVideo ? Object.keys(uploadedVideo) : 'null' });
+      console.log('📦 Réponse uploadVideoFile complète:', { uploadedVideo, type: typeof uploadedVideo, keys: uploadedVideo ? Object.keys(uploadedVideo) : 'null' });
 
       if (!uploadedVideo?.key) {
         console.error('❌ Pas de clé retournée. uploadedVideo:', uploadedVideo);
@@ -486,19 +485,45 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
                       <label className="block text-sm font-medium mb-4">Vidéo locale</label>
                       <div className="space-y-3">
                         <input
+                          key={`video-input-${Date.now()}`}
                           ref={videoInputRef}
                           type="file"
                           accept="video/*"
+                          onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                            const target = e.currentTarget as HTMLInputElement;
+                            console.log('📹 onInput triggered:', { 
+                              filesCount: target.files?.length,
+                              fileName: target.files?.[0]?.name,
+                              fileSize: target.files?.[0]?.size
+                            });
+                            if (target.files?.[0]) {
+                              console.log('📹 File selected, calling handleVideoUpload');
+                              handleVideoUpload(target.files[0]);
+                              // Reset input pour permettre de sélectionner le même fichier à nouveau
+                              target.value = '';
+                            }
+                          }}
                           onChange={(e) => {
+                            console.log('📹 onChange triggered:', { 
+                              filesCount: e.target.files?.length,
+                              fileName: e.target.files?.[0]?.name,
+                              fileSize: e.target.files?.[0]?.size
+                            });
                             if (e.target.files?.[0]) {
+                              console.log('📹 File selected, calling handleVideoUpload');
                               handleVideoUpload(e.target.files[0]);
+                              // Reset input pour permettre de sélectionner le même fichier à nouveau
+                              e.target.value = '';
                             }
                           }}
                           className="hidden"
                         />
                         <Button
                           type="button"
-                          onClick={() => videoInputRef.current?.click()}
+                          onClick={() => {
+                            console.log('📹 Button clicked, opening file picker');
+                            videoInputRef.current?.click();
+                          }}
                           disabled={loading}
                           className="w-full"
                           variant="outline"

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import HeroBanner from '@/components/HeroBanner';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
+import { useNotification } from '@/components/ui/notification-system';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Download, Radio, Clock } from 'lucide-react';
 import SaveButton from '@/components/SaveButton';
@@ -29,9 +30,10 @@ const Podcasts: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const { notifyError } = useNotification();
 
-  // live stream URL (placeholder)
-  const LIVE_STREAM_URL = '/media/live/stream.mp3';
+  // live stream URL - Stream MP3 public gratuit pour test
+  const LIVE_STREAM_URL = 'https://media-ssl.podbean.com/pb/d5a87c02e4e88f9f35d46b857e8c9f31/653c7dd9e1f99c11446db5bb/stream.m3u8';
   const [isLivePlaying, setIsLivePlaying] = useState(false);
 
   // restore saved episode (if user previously saved one)
@@ -176,25 +178,48 @@ const Podcasts: React.FC = () => {
   };
 
   const playLive = () => {
+    console.log('🎙️ Tentative de lecture du stream:', LIVE_STREAM_URL);
+    
     // stop episode if playing
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
     }
-    const live = new Audio(LIVE_STREAM_URL);
+    
+    const live = new Audio();
+    live.crossOrigin = 'anonymous';
+    live.src = LIVE_STREAM_URL;
     audioRef.current = live;
-    live.play().then(() => {
-      setIsLivePlaying(true);
-      setIsPlaying(false);
-      setCurrent(null);
-    }).catch(() => {
-      setIsLivePlaying(false);
-    });
+    
+    live.play()
+      .then(() => {
+        console.log('✅ Stream en lecture');
+        setIsLivePlaying(true);
+        setIsPlaying(false);
+        setCurrent(null);
+      })
+      .catch((err) => {
+        console.error('❌ Erreur lecture stream:', err);
+        setIsLivePlaying(false);
+        setError(`Erreur: ${err.message}`);
+        notifyError('Erreur', `Impossible de lire le stream: ${err.message}`);
+      });
+    
     // wire events for live stream progress
-    live.onloadedmetadata = () => setDuration(live.duration || 0);
+    live.onloadedmetadata = () => {
+      console.log('📊 Métadonnées chargées');
+      setDuration(live.duration || 0);
+    };
+    
     live.ontimeupdate = () => {
       setCurrentTime(live.currentTime || 0);
       setProgress(live.duration ? (live.currentTime / live.duration) * 100 : 0);
+    };
+    
+    live.onerror = (err) => {
+      console.error('🔴 Erreur stream:', err);
+      setIsLivePlaying(false);
+      setError('Impossible de lire le stream. Vérifiez l\'URL.');
     };
   };
 

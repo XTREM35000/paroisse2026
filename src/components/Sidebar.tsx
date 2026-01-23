@@ -13,14 +13,12 @@ export const MENU_GROUPS = [
       { label: 'Prospect', href: '/prospect', icon: FileText },
     ],
   },
-  // NOTE: this group should be admin-only (same visibility as Administration)
   {
     title: 'Médias',
     items: [
       { label: 'Vidéos', href: '/videos', icon: Video },
       { label: 'Photos', href: '/galerie', icon: Image },
       { label: 'Podcasts', href: '/podcasts', icon: MessageSquare },
-      { label: 'Documents', href: '/documents', icon: Video },
     ],
   },
   {
@@ -64,6 +62,7 @@ export const MENU_GROUPS = [
       { label: 'Annuaire', href: '/admin/directory', icon: Users },
       { label: 'Page d\'accueil', href: '/admin/homepage', icon: Settings },
       { label: 'Événements', href: '/admin/events', icon: Calendar },
+      { label: 'Documents', href: '/documents', icon: FileText },
     ],
   },
 ];

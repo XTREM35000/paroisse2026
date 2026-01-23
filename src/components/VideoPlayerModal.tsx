@@ -22,10 +22,20 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
   // Construire l'URL vidéo : priorité aux vidéos locales, sinon URL externe
   const getVideoUrl = () => {
     if (video.video_storage_path) {
-      // URL publique pour les vidéos stockées dans Supabase Storage
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://wxlmcuafbjxofihhcwho.supabase.co";
-      return `${supabaseUrl}/storage/v1/object/public/videos/${video.video_storage_path}`;
+      // URL publique pour les vidéos stockées dans Supabase Storage (bucket video-files)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://cghwsbkxcjsutqwzdbwe.supabase.co";
+      
+      // Nettoyer le chemin pour enlever "videos/" du début si présent
+      let path = video.video_storage_path;
+      if (path.startsWith('videos/')) {
+        path = path.substring(7); // Enlever "videos/"
+      }
+      
+      const fullUrl = `${supabaseUrl}/storage/v1/object/public/video-files/${path}`;
+      console.log('🎥 Video URL (Supabase Storage):', fullUrl);
+      return fullUrl;
     }
+    console.log('🎥 Video URL (External):', video.video_url);
     return video.video_url || "";
   };
 

@@ -83,8 +83,15 @@ const VideoPlayer: React.FC<Props> = ({ url, poster }) => {
 
   // fallback to HTML5 video for direct src (mp4, webm)
   return (
-    <video controls poster={poster} className="w-full max-h-[70vh] bg-black">
-      <source src={url} />
+    <video 
+      controls 
+      poster={poster} 
+      className="w-full max-h-[70vh] bg-black"
+      crossOrigin="anonymous"
+      preload="metadata"
+    >
+      <source src={url} type="video/mp4" />
+      <source src={url.replace('.mp4', '.webm')} type="video/webm" />
       Votre navigateur ne supporte pas la lecture vidéo.
     </video>
   );

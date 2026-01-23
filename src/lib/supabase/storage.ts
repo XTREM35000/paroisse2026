@@ -1,13 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function uploadVideoFile(file: File, path?: string) {
-  const key = path ?? `videos/${Date.now()}_${file.name}`;
-  const { data, error } = await supabase.storage.from("videos").upload(key, file, {
+  const key = path ?? `${Date.now()}_${file.name}`;
+  const { data, error } = await supabase.storage.from("video-files").upload(key, file, {
     cacheControl: "3600",
     upsert: false,
   });
   if (error) throw error;
-  const { data: publicData } = supabase.storage.from("videos").getPublicUrl(key);
+  const { data: publicData } = supabase.storage.from("video-files").getPublicUrl(key);
   return { key: data.path, publicUrl: publicData.publicUrl };
 }
 
@@ -73,6 +73,7 @@ export async function createVideoRecord(record: {
   title: string;
   description?: string;
   video_url?: string;
+  video_storage_path?: string;
   thumbnail_url?: string;
   duration?: number;
   author_id?: string;
