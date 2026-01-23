@@ -9,6 +9,7 @@ interface ConversationItemProps {
     lastMessage?: string;
     unreadCount?: number;
     lastMessageTime?: Date;
+    avatar_url?: string;
   };
   isSelected?: boolean;
   onClick: () => void;
@@ -56,7 +57,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
         {/* Avatar */}
         <div className="flex-shrink-0">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={undefined} alt={room.name} />
+            <AvatarImage src={room.avatar_url || ''} alt={room.name} />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
               {getInitials(room.name)}
             </AvatarFallback>
