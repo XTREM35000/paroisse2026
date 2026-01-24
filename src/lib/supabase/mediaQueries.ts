@@ -200,3 +200,126 @@ export async function fetchRecentImages(limit = 12) {
   if (error) throw error;
   return data as Media[];
 }
+
+// =====================================================
+// LIVE STREAMS
+// =====================================================
+
+export interface LiveStream {
+  id: string;
+  title: string;
+  stream_url: string;
+  stream_type: 'tv' | 'radio';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Fetch the active live stream (most recent if multiple)
+ */
+export async function fetchActiveLiveStream() {
+  const { data, error } = await supabase
+    .from('live_streams')
+    .select('*')
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as LiveStream | null;
+}
+
+/**
+ * Fetch all live streams (for admin dashboard)
+ */
+export async function fetchAllLiveStreams(options?: {
+  limit?: number;
+  offset?: number;
+}) {
+  let query = supabase
+    .from('live_streams')
+    .select('*', { count: 'exact' });
+
+  query = query.order('updated_at', { ascending: false });
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  if (options?.offset) {
+    query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { data: data as LiveStream[], count };
+}
+
+/**
+ * Create or update a live stream
+ */
+export async function upsertLiveStream(stream: Omit<LiveStream, 'created_at' | 'updated_at'> & { id?: string }) {
+  if (stream.id) {
+    // Update existing - include all fields
+    const payload = {
+      title: stream.title,
+      stream_url: stream.stream_url,
+      stream_type: stream.stream_type,
+      is_active: stream.is_active,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('live_streams')
+      .update(payload)
+      .eq('id', stream.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as LiveStream;
+  } else {
+    // Create new - exclude id to let PostgreSQL generate UUID
+    const { title, stream_url, stream_type, is_active } = stream;
+    const payload = {
+      title,
+      stream_url,
+      stream_type,
+      is_active,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('live_streams')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as LiveStream;
+  }
+}
+
+/**
+ * Delete a live stream
+ */
+export async function deleteLiveStream(id: string) {
+  const { error } = await supabase.from('live_streams').delete().eq('id', id);
+  if (error) throw error;
+  return true;
+}
+
+/**
+ * Deactivate all other live streams (only one active at a time)
+ */
+export async function deactivateOtherLiveStreams(activeId: string) {
+  const { error } = await supabase
+    .from('live_streams')
+    .update({ is_active: false })
+    .neq('id', activeId);
+
+  if (error) throw error;
+  return true;
+}
