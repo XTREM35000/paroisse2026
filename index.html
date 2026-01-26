@@ -24,10 +24,18 @@
 
     <!-- Configuration Facebook OAuth (pour tracking et analytics si nécessaire) -->
     <script>
+      // CORRECTION MOBILE: Attendre que le document soit prêt et Supabase initialisé
       window.fbAsyncInit = function() {
         // La configuration réelle (ID App et version) est gérée par Supabase
         // Cette initialisation est optionnelle pour les analytics Facebook
-        console.log('Facebook SDK initialized');
+        console.log('✅ Facebook SDK initialized');
+        
+        // Sur mobile, s'assurer que le SDK est pleinement prêt
+        if (typeof FB !== 'undefined') {
+          FB.getLoginStatus(function(response) {
+            console.log('📱 Facebook login status:', response.status);
+          });
+        }
       };
 
       // Charger le SDK Facebook (optionnel avec Supabase OAuth)
@@ -35,9 +43,21 @@
         var js, fjs = d.getElementsByTagName(s)[0];
         if (d.getElementById(id)) return;
         js = d.createElement(s); js.id = id;
-        js.src = 'https://connect.facebook.net/fr_FR/sdk.js#xfbml=1&version=v24.0&appId=3041743659361307';
+        // CORRECTION MOBILE: Ajouter les paramètres pour une meilleure compatibilité mobile
+        js.src = 'https://connect.facebook.net/fr_FR/sdk.js#xfbml=1&version=v24.0&appId=3041743659361307&asynchronous=true';
+        js.async = true;
         fjs.parentNode.insertBefore(js, fjs);
       }(document, 'script', 'facebook-jssdk'));
+      
+      // CORRECTION MOBILE: Ajouter un fallback d'initialisation en cas de retard du SDK
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          if (typeof FB === 'undefined') {
+            console.warn('⚠️ Facebook SDK n\'est pas chargé. Tentative de rechargement...');
+            window.fbAsyncInit();
+          }
+        }, 2000);
+      }, false);
     </script>
   </body>
 </html>

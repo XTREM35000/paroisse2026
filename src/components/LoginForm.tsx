@@ -73,7 +73,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   };
 
   // Gestion sécurisée de la connexion Facebook via Supabase OAuth
+  // CORRECTION MOBILE: Ajouter un log pour déboguer les problèmes de clic sur mobile
   const handleFacebookLogin = async () => {
+    console.log('🔵 Facebook login button clicked');
+    
+    // Sur mobile, vérifier que le SDK est prêt
+    if (typeof FB !== 'undefined') {
+      FB.getLoginStatus((response: any) => {
+        console.log('📱 Facebook status before login:', response?.status);
+      });
+    }
+    
     setFacebookLoading(true);
     try {
       // Supabase gère la vérification du token et la création du profil
@@ -157,8 +167,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
           <Button 
             type="button" 
             onClick={handleFacebookLogin} 
-            className="flex-1 h-8 text-xs flex items-center justify-center gap-1 bg-blue-600 text-white hover:bg-blue-700"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleFacebookLogin();
+            }}
+            className="flex-1 h-11 min-h-[44px] text-xs flex items-center justify-center gap-1 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 cursor-pointer touch-none"
             disabled={facebookLoading || loading}
+            style={{
+              minWidth: '44px',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+            }}
           >
             <Facebook className="w-4 h-4" />
             {facebookLoading ? 'Connexion...' : 'Facebook'}
