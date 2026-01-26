@@ -21,5 +21,23 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Configuration Facebook OAuth (pour tracking et analytics si nécessaire) -->
+    <script>
+      window.fbAsyncInit = function() {
+        // La configuration réelle (ID App et version) est gérée par Supabase
+        // Cette initialisation est optionnelle pour les analytics Facebook
+        console.log('Facebook SDK initialized');
+      };
+
+      // Charger le SDK Facebook (optionnel avec Supabase OAuth)
+      (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = 'https://connect.facebook.net/fr_FR/sdk.js#xfbml=1&version=v24.0&appId=3041743659361307';
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+    </script>
   </body>
 </html>
