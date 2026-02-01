@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Search, Plus, Trash2, Edit2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import HeroBanner from '@/components/HeroBanner';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
@@ -8,6 +9,9 @@ import VideoCard from '@/components/VideoCard';
 import VideoModalForm from '@/components/VideoModalForm';
 import VideoPlayerModal from '@/components/VideoPlayerModal';
 import { useVideos } from '@/hooks/useVideos';
+import FileUploadZone from '@/components/FileUploadZone';
+import ArchiveCard from '@/components/ArchiveCard';
+import useArchives from '@/hooks/useArchives';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import type { Video } from '@/types/database';
@@ -47,6 +51,7 @@ const VideosPage = () => {
 
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  const queryClient = useQueryClient();
 
   const isAdmin = profile?.role === 'admin' || (user as any)?.user_metadata?.role === 'admin';
   console.debug('📹 VideosPage rendered:', { userId: user?.id, profileRole: profile?.role, authRole: (user as any)?.user_metadata?.role, isAdmin });
@@ -254,6 +259,30 @@ const VideosPage = () => {
             )}
           </div>
         </section>
+
+        {/* Archives partagées (OBS sync) */}
+        <section className="py-8">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Upload zone (admins only) */}
+              <div className="flex-1">
+                {(isAdmin) ? (
+                  <FileUploadZone mediaType="videos" onUploaded={() => queryClient.invalidateQueries({ queryKey: ['archives', 'videos'] })} />
+                ) : (
+                  <div className="p-4 text-sm text-muted-foreground">Seuls les administrateurs peuvent téléverser des archives ZIP.</div>
+                )}
+              </div>
+
+              {/* Latest archives list */}
+              <div className="md:w-1/2">
+                <h3 className="text-lg font-medium mb-4">Archives partagées</h3>
+                {/* We'll use a simple fetch for now */}
+                <ArchivesList mediaType="videos" />
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="py-12 lg:py-16 bg-muted/30 border-t border-border/50">
           <div className="container mx-auto px-4">
             <motion.div
@@ -311,5 +340,22 @@ const VideosPage = () => {
     </div>
   );
 };
+
+function ArchivesList({ mediaType }: { mediaType?: string }) {
+  const { useList } = useArchives();
+  const { data: archives, isLoading } = useList(mediaType);
+
+  if (isLoading) return <div>Chargement des archives...</div>;
+
+  return (
+    <div className="space-y-3">
+      {archives?.length ? (
+        (archives as any[]).map((a) => <ArchiveCard key={a.id} archive={a} />)
+      ) : (
+        <div className="text-sm text-muted-foreground">Aucune archive partagée pour le moment.</div>
+      )}
+    </div>
+  );
+}
 
 export default VideosPage;

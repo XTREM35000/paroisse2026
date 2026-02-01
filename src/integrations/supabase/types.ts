@@ -527,6 +527,47 @@ export type Database = {
           },
         ]
       }
+      shared_archives: {
+        Row: {
+          id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          description: string | null
+          uploaded_by: string | null
+          created_at: string
+          media_type: string | null
+        }
+        Insert: {
+          id?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          description?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+          media_type?: string | null
+        }
+        Update: {
+          id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          description?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+          media_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_archives_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       header_config: {
         Row: {
           id: string

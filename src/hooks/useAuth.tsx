@@ -123,15 +123,11 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
   };
 
   const resetPassword = async (email: string) => {
-    try {
-      const res = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (res.error) throw res.error;
-      return res;
-    } catch (error) {
-      throw error;
-    }
+    const res = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (res.error) throw res.error;
+    return res;
   };
 
   const signOut = async () => {

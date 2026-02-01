@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart, MessageCircle, Maximize2, Trash2, Clock, CheckCircle } from 'lucide-react';
+import { Heart, MessageCircle, Maximize2, Trash2, Clock, CheckCircle, Download } from 'lucide-react';
 import { useState } from 'react';
 import type { GalleryImage } from '@/types/database';
 import { useUser } from '@/hooks/useUser';
@@ -7,6 +7,7 @@ import { deleteGalleryImage } from '@/lib/supabase/galleryQueries';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
+import useFileManager from '@/hooks/useFileManager';
 
 interface GalleryCardProps {
   image?: GalleryImage | null;
@@ -22,6 +23,7 @@ const GalleryCard = ({ image, onOpen, onDeleted }: GalleryCardProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = profile?.role === 'admin';
+  const { downloadMedia } = useFileManager();
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -171,9 +173,58 @@ const GalleryCard = ({ image, onOpen, onDeleted }: GalleryCardProps) => {
               <span>{comments}</span>
             </span>
           </div>
+
+          {/* Prominent download button (bottom-left) */}
+          <div className="absolute bottom-4 left-4 z-40">
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  // Prefer storage download if path exists
+                  if (image.image_url && !image.image_url.startsWith('http')) {
+                    await downloadMedia(image.image_url, image.title || image.file_name || 'image');
+                    return;
+                  }
+
+                  // Attempt to fetch remote resource and force download (works around cross-origin behavior when possible)
+                  const targetUrl = image.image_url && image.image_url.startsWith('http')
+                    ? image.image_url
+                    : image.thumbnail_url && image.thumbnail_url.startsWith('http')
+                    ? image.thumbnail_url
+                    : undefined;
+
+                  if (targetUrl) {
+                    const res = await fetch(targetUrl);
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = image.title || image.file_name || 'image';
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    a.remove();
+                    return;
+                  }
+
+                  throw new Error('Aucun fichier téléchargeable trouvé');
+                } catch (err) {
+                  console.error('Download image error', err);
+                  try { toast({ title: 'Erreur', description: 'Impossible de télécharger l\'image', variant: 'destructive' }); } catch (e) { /* silent */ }
+                }
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg shadow-md"
+              title="Télécharger"
+              aria-label="Télécharger"
+            >
+              <Download className="w-4 h-4" />
+              <span className="text-sm">📥 Télécharger</span>
+            </button>
+          </div>
         </div>
 
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
           <motion.div whileHover={{ scale: 1.1 }} className="w-8 h-8 rounded-full bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
             <Maximize2 className="w-4 h-4 text-primary-foreground" />
           </motion.div>

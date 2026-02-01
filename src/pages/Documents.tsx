@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRoleCheck } from '@/hooks/useRoleCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import usePageHero from '@/hooks/usePageHero';
 import HeroBanner from '@/components/HeroBanner';
 import SectionTitle from '@/components/SectionTitle';
@@ -31,6 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import FileUploadZone from '@/components/FileUploadZone';
+import ArchiveCard from '@/components/ArchiveCard';
+import useArchives from '@/hooks/useArchives';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface Document {
@@ -61,6 +65,7 @@ export default function Documents() {
   const { toast } = useToast();
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  const queryClient = useQueryClient();
 
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocs, setFilteredDocs] = useState<Document[]>([]);
@@ -276,6 +281,23 @@ export default function Documents() {
     return [...documents].sort((a, b) => (b.download_count || 0) - (a.download_count || 0)).slice(0, 6);
   }, [documents]);
 
+function DocumentsArchivesList({ mediaType }: { mediaType?: string }) {
+  const { useList } = useArchives();
+  const { data: archives, isLoading } = useList(mediaType);
+
+  if (isLoading) return <div>Chargement des archives...</div>;
+
+  return (
+    <div className="space-y-3">
+      {archives?.length ? (
+        (archives as any[]).map((a) => <ArchiveCard key={a.id} archive={a} />)
+      ) : (
+        <div className="text-sm text-muted-foreground">Aucune archive partagée pour le moment.</div>
+      )}
+    </div>
+  );
+}
+
   return (
     <div className="min-h-screen bg-background">
       <HeroBanner
@@ -382,6 +404,24 @@ export default function Documents() {
             )}
           </div>
         </motion.section>
+
+        {/* Archives partagées (synchronisation OBS) */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-4">Archives partagées</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              {(isAdmin) ? (
+                <FileUploadZone mediaType="documents" onUploaded={() => queryClient.invalidateQueries({ queryKey: ['archives', 'documents'] })} />
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground">Seuls les administrateurs peuvent téléverser des archives ZIP.</div>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-medium mb-4">Dernières archives</h3>
+              <DocumentsArchivesList mediaType="documents" />
+            </div>
+          </div>
+        </section>
 
         {/* Documents récents */}
         {recentDocs.length > 0 && (

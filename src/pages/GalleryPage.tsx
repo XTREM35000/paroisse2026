@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import HeroBanner from "@/components/HeroBanner";
+import { Input } from "@/components/ui/input";import { useQueryClient } from '@tanstack/react-query';import HeroBanner from "@/components/HeroBanner";
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import { useGalleryImages } from "@/hooks/useGalleryImages";
 import { useAuth } from '@/hooks/useAuth';
 import GalleryCard from "@/components/GalleryCard";
 import GalleryGrid from "@/components/GalleryGrid";
+import FileUploadZone from '@/components/FileUploadZone';
+import ArchiveCard from '@/components/ArchiveCard';
+import useArchives from '@/hooks/useArchives';
 import type { GalleryImage } from '@/types/database';
 
 const GalleryPage = () => {
@@ -50,8 +52,26 @@ const GalleryPage = () => {
     });
   }, [images, searchTerm, selectedCategory, isAdmin, user?.id]);
 
+function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
+  const { useList } = useArchives();
+  const { data: archives, isLoading } = useList(mediaType);
+
+  if (isLoading) return <div>Chargement des archives...</div>;
+
+  return (
+    <div className="space-y-3">
+      {archives?.length ? (
+        (archives as any[]).map((a) => <ArchiveCard key={a.id} archive={a} />)
+      ) : (
+        <div className="text-sm text-muted-foreground">Aucune archive partagée pour le moment.</div>
+      )}
+    </div>
+  );
+}
+
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  const queryClient = useQueryClient();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -117,6 +137,23 @@ const GalleryPage = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Upload zone & archives (admins) */}
+        <div className="mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              {(isAdmin) ? (
+                <FileUploadZone mediaType="images" onUploaded={() => queryClient.invalidateQueries({ queryKey: ['archives', 'images'] })} />
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground">Seuls les administrateurs peuvent téléverser des archives ZIP.</div>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-medium mb-4">Archives partagées</h3>
+              <GalleryArchivesList mediaType="images" />
+            </div>
+          </div>
+        </div>
 
         {/* Gallery Grid */}
         <GalleryGrid

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Trash2, Eye, AlertCircle, CheckCircle, Play, Clock } from 'lucide-react';
+import { Trash2, Eye, AlertCircle, CheckCircle, Play, Clock, Download } from 'lucide-react';
 import { useState } from 'react';
 import type { Video } from '@/types/database';
 import { useUser } from '@/hooks/useUser';
@@ -7,6 +7,8 @@ import { deleteVideo } from '@/lib/supabase/videoQueries';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import DownloadButton from '@/components/DownloadButton';
+import useFileManager from '@/hooks/useFileManager';
 
 interface VideoCardProps {
   video?: Video | null;
@@ -20,6 +22,7 @@ const VideoCard = ({ video, onOpen, onDeleted }: VideoCardProps) => {
   const { profile } = useUser();
   const { toast } = useToast();
   const isAdmin = profile?.role === 'admin';
+  const fm = useFileManager();
 
   // Vérification critique - afficher un placeholder si vidéo est undefined/null
   if (!video) {
@@ -143,7 +146,80 @@ const VideoCard = ({ video, onOpen, onDeleted }: VideoCardProps) => {
       </div>
 
       {/* Action buttons container - visible on hover at bottom */}
-      <div className="absolute bottom-4 left-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 items-center">
+      <div className="absolute bottom-4 left-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 items-center">
+        {/* Download button (prominent) */}
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            const isYouTube = (url?: string) => !!(url && /(youtube\.com|youtu\.be)/i.test(url));
+            try {
+              if (video.video_storage_path) {
+                try {
+                  await fm.downloadMedia(video.video_storage_path, video.title || video.file_name || 'video', 'video-files');
+                  try { toast({ title: 'Téléchargement lancé', description: 'Le téléchargement va démarrer.' }); } catch (e) { /* silent */ }
+                  return;
+                } catch (storageErr: any) {
+                  console.warn('Storage download failed, will attempt fallback', storageErr);
+                  // If external YouTube link exists, open it instead and notify
+                  if (video.video_url && isYouTube(video.video_url)) {
+                    window.open(video.video_url, '_blank');
+                    toast({ title: 'Vidéo accessible sur Youtube pour le téléchargement', description: 'Ouverture sur YouTube' });
+                    return;
+                  }
+                  // otherwise continue to try external URL
+                }
+              }
+
+              if (video.video_url && video.video_url.startsWith('http')) {
+                // For YouTube links prefer opening the page
+                if (isYouTube(video.video_url)) {
+                  window.open(video.video_url, '_blank');
+                  toast({ title: 'Vidéo accessible sur Youtube pour le téléchargement', description: 'Ouverture sur YouTube' });
+                  return;
+                }
+
+                try {
+                  const res = await fetch(video.video_url);
+                  if (res.ok) {
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = video.title || video.file_name || 'video';
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    a.remove();
+                    try { toast({ title: 'Téléchargement lancé', description: 'Le téléchargement va démarrer.' }); } catch (e) { /* silent */ }
+                    return;
+                  }
+                } catch (fetchErr) {
+                  console.warn('Fetch of external video failed', fetchErr);
+                  // open in new tab as a fallback
+                  window.open(video.video_url, '_blank');
+                  toast({ title: 'Ouverture', description: 'Impossible de télécharger; ouverture du lien externe.' });
+                  return;
+                }
+              }
+
+              // Fallback: open whatever link we have
+              if (video.video_url) {
+                window.open(video.video_url, '_blank');
+              } else {
+                toast({ title: 'Erreur', description: 'Aucun fichier disponible à télécharger', variant: 'destructive' });
+              }
+            } catch (err) {
+              console.error('Error handling download fallback:', err);
+              toast({ title: 'Erreur', description: 'Impossible de télécharger la vidéo', variant: 'destructive' });
+            }
+          }}
+          className="inline-flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg shadow-md z-40"
+          title="Télécharger la vidéo"
+        >
+          <Download className="w-4 h-4" />
+          <span className="text-sm">📥 Télécharger</span>
+        </button>
+
         {/* Watch button */}
         <motion.button
           whileHover={{ scale: 1.05 }}
