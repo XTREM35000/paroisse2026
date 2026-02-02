@@ -50,6 +50,23 @@ function getYouTubeId(input: string): string {
   return id || '';
 }
 
+/**
+ * Détermine la source vidéo à partir de l'URL
+ */
+function determineVideoSource(url: string): 'youtube' | 'api_video' | 'unknown' {
+  if (!url) return 'unknown';
+  
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    return 'youtube';
+  }
+  
+  if (url.includes('embed.api.video') || url.includes('api.video')) {
+    return 'api_video';
+  }
+  
+  return 'unknown';
+}
+
 const Live: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
@@ -291,20 +308,59 @@ const Live: React.FC = () => {
 
             <div className="w-full space-y-4">
               {liveStream.stream_type === 'tv' ? (
-                // YouTube Player for TV
-                <div className="w-full bg-black rounded-lg overflow-hidden">
-                  <div className="aspect-video w-full">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src={`https://www.youtube.com/embed/${getYouTubeId(liveStream.stream_url)}?autoplay=1&rel=0&modestbranding=1`}
-                      title={liveStream.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="border-0"
-                    />
-                  </div>
-                </div>
+                // SWITCH POUR LES SOURCES VIDÉO (priorise `provider`, fallback sur détection d'URL)
+                (() => {
+                  const videoSource = (liveStream.provider as 'youtube' | 'api_video' | 'radio_stream') ?? determineVideoSource(liveStream.stream_url);
+                  
+                  switch(videoSource) {
+                    case 'youtube':
+                      return (
+                        <div className="w-full bg-black rounded-lg overflow-hidden">
+                          <div className="aspect-video w-full">
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src={`https://www.youtube.com/embed/${getYouTubeId(liveStream.stream_url)}?autoplay=1&rel=0&modestbranding=1`}
+                              title={liveStream.title}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="border-0"
+                            />
+                          </div>
+                        </div>
+                      );
+
+                    case 'api_video':
+                      return (
+                        <div className="w-full bg-black rounded-lg overflow-hidden">
+                          <div className="aspect-video w-full">
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              src={liveStream.stream_url} // URL d'embed api.video
+                              title={liveStream.title}
+                              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                              allowFullScreen
+                              className="border-0"
+                              // Note: api.video nécessite parfois un token d'authentification
+                              // Si besoin, ajoutez: `?token=${VOTRE_TOKEN}`
+                            />
+                          </div>
+                        </div>
+                      );
+
+                    default:
+                      return (
+                        <div className="text-center py-12 bg-muted rounded-lg">
+                          <Tv className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-foreground font-medium">Source vidéo non prise en charge</p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {liveStream.stream_url}
+                          </p>
+                        </div>
+                      );
+                  }
+                })()
               ) : (
                 // Audio Player for Radio
                 <div className="w-full bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg p-8 flex flex-col items-center justify-center">

@@ -35,6 +35,7 @@ const AdminLiveEditor = () => {
     title: '',
     stream_url: '',
     stream_type: 'tv' as 'tv' | 'radio',
+    provider: 'youtube' as 'youtube' | 'api_video' | 'radio_stream',
     is_active: false,
   });
 
@@ -72,9 +73,10 @@ const AdminLiveEditor = () => {
       title: '',
       stream_url: '',
       stream_type: 'tv',
+      provider: 'youtube',
       is_active: false,
     });
-  };
+  }; 
 
   // Open dialog for adding
   const handleAddNew = () => {
@@ -89,10 +91,11 @@ const AdminLiveEditor = () => {
       title: stream.title,
       stream_url: stream.stream_url,
       stream_type: stream.stream_type,
+      provider: stream.provider ?? (stream.stream_type === 'tv' ? 'youtube' : 'radio_stream'),
       is_active: stream.is_active,
     });
     setIsDialogOpen(true);
-  };
+  }; 
 
   // Save stream (create or update)
   const handleSaveStream = async () => {
@@ -108,6 +111,22 @@ const AdminLiveEditor = () => {
     try {
       setSaving(true);
 
+      // Validate provider for stream type
+      if (!formData.provider) {
+        toast({ title: 'Erreur', description: 'Veuillez sélectionner un fournisseur', variant: 'destructive' });
+        return;
+      }
+
+      if (formData.stream_type === 'tv' && formData.provider === 'radio_stream') {
+        toast({ title: 'Erreur', description: 'Un flux TV ne peut pas avoir le fournisseur "Radio Stream"', variant: 'destructive' });
+        return;
+      }
+
+      if (formData.stream_type === 'radio' && formData.provider !== 'radio_stream') {
+        toast({ title: 'Erreur', description: 'Un flux Radio doit utiliser le fournisseur "Radio Stream"', variant: 'destructive' });
+        return;
+      }
+
       // If activating this stream, deactivate others
       if (formData.is_active) {
         if (editingStream?.id) {
@@ -120,6 +139,7 @@ const AdminLiveEditor = () => {
         title: formData.title,
         stream_url: formData.stream_url,
         stream_type: formData.stream_type,
+        provider: formData.provider,
         is_active: formData.is_active,
       });
 
@@ -182,13 +202,14 @@ const AdminLiveEditor = () => {
         title: stream.title,
         stream_url: stream.stream_url,
         stream_type: stream.stream_type,
+        provider: stream.provider ?? (stream.stream_type === 'tv' ? 'youtube' : 'radio_stream'),
         is_active: !stream.is_active,
       });
 
       toast({
         title: 'Succès',
         description: result.is_active ? 'Direct activé' : 'Direct désactivé',
-      });
+      }); 
 
       await loadLiveStreams();
     } catch (e) {
@@ -278,10 +299,10 @@ const AdminLiveEditor = () => {
             {/* Stream Type */}
             <div className="space-y-2">
               <Label htmlFor="type">Type de diffusion</Label>
-              <Select value={formData.stream_type} onValueChange={(value) => setFormData({ ...formData, stream_type: value as 'tv' | 'radio' })}>
+              <Select value={formData.stream_type} onValueChange={(value) => setFormData({ ...formData, stream_type: value as 'tv' | 'radio', provider: value === 'tv' ? (formData.provider ?? 'youtube') : 'radio_stream' })}>
                 <SelectTrigger id="type">
                   <SelectValue />
-                </SelectTrigger>
+                </SelectTrigger> 
                 <SelectContent>
                   <SelectItem value="tv">
                     <div className="flex items-center gap-2">
@@ -317,8 +338,32 @@ const AdminLiveEditor = () => {
               </p>
             </div>
 
+            {/* Provider */}
+            <div className="space-y-2">
+              <Label htmlFor="provider">Fournisseur (provider)</Label>
+              <Select value={formData.provider} onValueChange={(value) => setFormData({ ...formData, provider: value as 'youtube' | 'api_video' | 'radio_stream' })}>
+                <SelectTrigger id="provider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="youtube">
+                    YouTube
+                  </SelectItem>
+                  <SelectItem value="api_video">
+                    api.video
+                  </SelectItem>
+                  <SelectItem value="radio_stream">
+                    Radio Stream (Audio)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choisissez le fournisseur du flux. Pour la TV: YouTube ou api.video. Pour la Radio: Radio Stream.
+              </p>
+            </div>
+
             {/* Active Status */}
-            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between rounded-lg border border-border p-3"> 
               <div>
                 <Label className="text-base font-medium">Activer ce direct</Label>
                 <p className="text-xs text-muted-foreground">Les autres directs seront désactivés</p>
@@ -394,6 +439,10 @@ const AdminLiveEditor = () => {
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground">URL</p>
                       <p className="text-sm break-all text-foreground line-clamp-2">{stream.stream_url}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground">Fournisseur</p>
+                      <p className="text-sm text-foreground">{stream.provider ?? (stream.stream_type === 'tv' ? 'youtube' : 'radio_stream')}</p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground">Statut</p>

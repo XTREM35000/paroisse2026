@@ -210,10 +210,11 @@ export interface LiveStream {
   title: string;
   stream_url: string;
   stream_type: 'tv' | 'radio';
+  provider?: 'youtube' | 'api_video' | 'radio_stream';
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
+} 
 
 /**
  * Fetch the active live stream (most recent if multiple)
@@ -287,6 +288,7 @@ export async function upsertLiveStream(stream: Omit<LiveStream, 'created_at' | '
       title,
       stream_url,
       stream_type,
+      provider: stream.provider ?? 'youtube',
       is_active,
       updated_at: new Date().toISOString(),
     };
