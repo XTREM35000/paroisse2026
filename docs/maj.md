@@ -61,3 +61,21 @@ Synthèse des travaux effectués sur les pages **Vidéos**, **Galerie** et **Doc
 ---
 
 Pour toute intervention (exécution de scripts ou application de policies), je peux prendre en charge les étapes sur demande — fournis les **SUPABASE_URL** et **SUPABASE_SERVICE_KEY** en sécurité si tu veux que je lance les opérations de copy/normalize.
+
+---
+
+## Événements : slug, SEO et pages détaillées 🗓️
+
+- Ajouté un utilitaire `slugify` (`src/lib/slugify.ts`) pour générer des slugs lisibles.
+- `EventModalForm` mis à jour (nouvel onglet **SEO & Contenu**) : champs `slug`, `seo_title`, `seo_description`, `content`.
+- Slug auto‑généré à partir du titre si l'utilisateur ne renseigne rien (possibilité d'éditer manuellement).
+- `useEvents` : génération côté client d'un slug unique avant insertion (fallback serveur possible).
+- `EventCard` utilise désormais `slug` si disponible pour créer l'URL `/evenements/:slug`.
+- Nouvelle page `src/pages/EventDetail.tsx` rend la page d'événement dynamique (recherche par `slug`, fallback sur `id`).
+- Script d'aide `scripts/generate-event-slugs.ts` pour backfill des événements existants sans `slug`.
+- Migration SQL ajoutée : `supabase/migrations/20260202_add_events_slug_seo_content.sql` —
+  ajoute les colonnes `slug`, `seo_title`, `seo_description`, `content`, backfill les slugs existants en garantissant l'unicité et applique la contrainte UNIQUE + NOT NULL sur `slug`.
+
+> ⚠️ Exécuter la migration en staging d'abord (backup conseillé). La migration effectue le backfill et rend `slug` non-null et unique ; si vous voulez, je peux lancer la migration et vérifier le résultat (besoin du **SUPABASE_SERVICE_KEY** pour l'environnement cible).
+
+---

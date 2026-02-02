@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import type { Video } from "@/types/database";
+import EventDetailModal from '@/components/EventDetailModal';
 
 // Pas de données mockées en dur pour la galerie — utiliser le contenu dynamique
 
@@ -190,6 +191,30 @@ const Index = () => {
     isLoading,
     sections,
   } = useHomepageContent();
+
+  // Modal for event detail when route contains /evenements/:slug
+  const [modalEventSlug, setModalEventSlug] = useState<string | null>(null);
+  const [isEventModalOpen, setEventModalOpen] = useState(false);
+
+  useEffect(() => {
+    const match = location.pathname.match(/^\/evenements\/(.+)$/);
+    if (match) {
+      setModalEventSlug(match[1]);
+      setEventModalOpen(true);
+    } else {
+      setEventModalOpen(false);
+      setModalEventSlug(null);
+    }
+  }, [location.pathname]);
+
+  const closeEventModal = () => {
+    // Close modal and navigate explicitly to the events listing page
+    navigate('/evenements');
+    setEventModalOpen(false);
+    setModalEventSlug(null);
+  };
+
+
   
   // Get latest advertisement (moved earlier)
   const queryClient = useQueryClient();
@@ -318,6 +343,7 @@ const Index = () => {
         {/* Last Live Video Section */}
         {sections && sections.length > 0 && (() => {
           const liveSection = sections.find((s: any) => s.section_key === 'live_sections');
+
           if (liveSection && liveSection.content) {
             try {
               const parsed = typeof liveSection.content === 'string' ? JSON.parse(liveSection.content as string) : liveSection.content;
@@ -349,8 +375,14 @@ const Index = () => {
               console.error('Error parsing live sections:', e);
             }
           }
+
           return null;
         })()}
+
+        {/* Event detail modal opened from route */}
+        {isEventModalOpen && modalEventSlug && (
+          <EventDetailModal slugOrId={modalEventSlug} open={isEventModalOpen} onClose={closeEventModal} />
+        )}
 
         {/* Photo Gallery Section */}
         <section className="py-12 lg:py-16">
@@ -431,8 +463,7 @@ const Index = () => {
                   return (
                     <EventCard
                       key={String(event.id)}
-                      id={String(event.id)}
-                      title={String(event.title || '')}
+                      id={String(event.id)}                      slug={String((event as any).slug || '')}                      title={String(event.title || '')}
                       description={String(event.description || '')}
                       date={String(event.start_date || '')}
                       time={startDate && !isNaN(startDate.getTime()) ? startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}

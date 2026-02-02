@@ -36,6 +36,25 @@ export const useEvents = (limit = 10) => {
   const [error, setError] = useState<string | null>(null);
   const { notifySuccess, notifyError } = useNotification();
 
+  // ensure slug uniqueness helper
+  const ensureUniqueSlug = async (base: string) => {
+    let candidate = base;
+    let idx = 1;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client = sb as any;
+    while (true) {
+      const { data, error } = await client.from('events').select('id').eq('slug', candidate).limit(1);
+      if (error) {
+        console.warn('Erreur lors de la vérification du slug:', error);
+        break;
+      }
+      if (!data || data.length === 0) return candidate;
+      candidate = `${base}-${idx++}`;
+    }
+    return candidate;
+  };
+
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,7 +96,26 @@ export const useEvents = (limit = 10) => {
         end_date: eventData.end_date,
         location: eventData.location,
         image_url: eventData.image_url,
+        // Support additional fields if present
+        ...(eventData.slug ? { slug: eventData.slug } : {}),
+        ...(eventData.seo_title ? { seo_title: eventData.seo_title } : {}),
+        ...(eventData.seo_description ? { seo_description: eventData.seo_description } : {}),
+        ...(eventData.content ? { content: eventData.content } : {}),
       };
+
+      // If slug not provided, generate one server-side by sending the raw string; backend may have constraint
+      // Ensure a slug exists and is unique before inserting
+      try {
+        if (!insertData.slug) {
+          const baseSlug = (insertData.title || '').toString().slice(0, 220).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ensure = await ensureUniqueSlug(baseSlug as any);
+          // @ts-ignore
+          insertData.slug = ensure;
+        }
+      } catch (err) {
+        console.warn('Erreur génération slug:', err);
+      }
 
       const { data, error } = await sb
         .from('events')
@@ -115,9 +153,13 @@ export const useEvents = (limit = 10) => {
         console.warn('⚠️ Impossible de récupérer l\'utilisateur avant update:', authErr);
       }
 
+      const updatePayload = {
+        ...(updates as any),
+      };
+
       const { data, error } = await sb
         .from('events')
-        .update(updates as never)
+        .update(updatePayload as never)
         .eq('id', id)
         .select()
         .maybeSingle();

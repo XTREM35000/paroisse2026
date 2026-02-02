@@ -21,6 +21,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminHomepageEditor from "./pages/AdminHomepageEditor";
 import AdminEvents from "./pages/AdminEvents";
+import EventDetail from './pages/EventDetail';
 import AdminAboutEditor from './pages/AdminAboutEditor';
 import AdminDirectoryEditor from './pages/AdminDirectoryEditor';
 import AdminLiveEditor from './pages/AdminLiveEditor';
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="/videos/:id" element={<Layout><VideoDetail /></Layout>} />
             <Route path="/galerie" element={<Layout><GalleryPage /></Layout>} />
             <Route path="/evenements" element={<Layout><EventsPage /></Layout>} />
+            <Route path="/evenements/:slug" element={<Layout><Index /></Layout>} />
             <Route path="/a-propos" element={<Layout><AboutPage /></Layout>} />
             <Route path="/help" element={<Layout><HelpPage /></Layout>} />
             <Route path="/lexique" element={<Layout><LexiquePage /></Layout>} />

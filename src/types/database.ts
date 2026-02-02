@@ -156,6 +156,11 @@ export interface Event {
   registration_required: boolean;
   registration_deadline: string | null;
   status: ContentStatus;
+  // Optional SEO and content fields added for event detail pages
+  slug?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  content?: string | null;
   created_at: string;
   updated_at: string;
   // Relations

@@ -148,6 +148,7 @@ const EventsPage = () => {
               >
                 <EventCard
                   id={event.id}
+                  slug={(event as any).slug}
                   title={event.title}
                   description={event.description || ""}
                   date={event.start_date || event.date || ""}

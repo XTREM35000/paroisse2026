@@ -7,6 +7,7 @@ import { uploadFile } from '@/lib/supabase/storage';
 import { useNotification } from './ui/notification-system';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import slugify from '@/lib/slugify';
 
 interface EditingEvent {
   id: string;
@@ -36,6 +37,11 @@ interface FormData {
   end_time: string;
   location: string;
   image_url: string;
+  // New fields
+  slug?: string;
+  seo_title?: string;
+  seo_description?: string;
+  content?: string;
 }
 
 type TabType = 'basic' | 'datetime' | 'location' | 'preview';
@@ -81,6 +87,11 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
         end_time: endDateTime ? endDateTime.toTimeString().slice(0, 5) : '17:00',
         location: editingEvent.location || '',
         image_url: editingEvent.image_url || '',
+        // New fields populated if editing
+        slug: (editingEvent as any).slug || undefined,
+        seo_title: (editingEvent as any).seo_title || undefined,
+        seo_description: (editingEvent as any).seo_description || undefined,
+        content: (editingEvent as any).content || editingEvent.description || undefined,
       });
       setActiveTab('basic');
     } else {
@@ -94,6 +105,10 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
         end_time: '17:00',
         location: '',
         image_url: '',
+        slug: undefined,
+        seo_title: undefined,
+        seo_description: undefined,
+        content: undefined,
       });
     }
   }, [editingEvent, open]);
@@ -105,6 +120,15 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
       [name]: value,
     }));
   };
+
+  // Auto-générer slug à partir du titre si slug vide
+  useEffect(() => {
+    if (!formData.slug && formData.title) {
+      setFormData((prev) => ({ ...prev, slug: slugify(prev.title) }));
+    }
+    // only run when title changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.title]);
 
   const handleImageUpload = async (file: File) => {
     try {
@@ -166,6 +190,11 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
         end_date: end_datetime,
         location: formData.location || null,
         image_url: formData.image_url || null,
+        // New fields
+        slug: formData.slug || undefined,
+        seo_title: formData.seo_title || undefined,
+        seo_description: formData.seo_description || undefined,
+        content: formData.content || formData.description || undefined,
       };
 
       if (editingEvent) {
@@ -235,7 +264,7 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
 
             {/* Tabs */}
             <div className="flex gap-1 px-6 pt-6 pb-4 border-b border-border">
-              {(['basic', 'datetime', 'location', 'preview'] as TabType[]).map((tab) => (
+              {(['basic', 'datetime', 'location', 'seo', 'preview'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -249,6 +278,7 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
                   {tab === 'basic' && 'Infos de base'}
                   {tab === 'datetime' && 'Date & Heure'}
                   {tab === 'location' && 'Localisation'}
+                  {tab === 'seo' && 'SEO & Contenu'}
                   {tab === 'preview' && 'Aperçu'}
                 </button>
               ))}
@@ -398,6 +428,63 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
                           <Upload className="w-4 h-4 mr-2" />
                           {loading ? 'Téléversement...' : 'Téléverser une image'}
                         </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB: SEO & CONTENT */}
+                {activeTab === 'seo' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Slug (optionnel)</label>
+                      <Input
+                        type="text"
+                        name="slug"
+                        value={formData.slug || ''}
+                        onChange={handleChange}
+                        placeholder="Ex: celebration-de-noel"
+                        className="w-full"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Laisser vide pour le générer automatiquement à partir du titre.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">SEO title</label>
+                      <Input
+                        type="text"
+                        name="seo_title"
+                        value={formData.seo_title || ''}
+                        onChange={handleChange}
+                        placeholder="Titre pour SEO / partage"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">SEO description</label>
+                      <Input
+                        type="text"
+                        name="seo_description"
+                        value={formData.seo_description || ''}
+                        onChange={handleChange}
+                        placeholder="Description pour SEO / partage"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Contenu détaillé</label>
+                      <textarea
+                        name="content"
+                        value={formData.content || ''}
+                        onChange={handleChange}
+                        placeholder="Contenu de la page événement (texte enrichi ou markdown)"
+                        className="w-full h-32 px-3 py-2 border border-input rounded-md bg-background"
+                      />
+                    </div>
+                  </div>
+                )}
 
                         {formData.image_url && (
                           <div className="relative w-full h-48 rounded-lg overflow-hidden bg-muted">
@@ -408,10 +495,6 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
                             />
                           </div>
                         )}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* TAB: PREVIEW */}
                 {activeTab === 'preview' && (
