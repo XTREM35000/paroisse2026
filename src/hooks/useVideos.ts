@@ -45,10 +45,57 @@ export const useVideos = (limit = 4, category?: string) => {
     try {
       /* eslint-disable @typescript-eslint/no-explicit-any */
       const client = sb;
-      const query = client
-        .from('videos')
-        .select('*')
-        .order('created_at', { ascending: false });
+
+      // Préparer l'utilisateur courant (si connecté)
+      let currentUser: any = null;
+      try {
+        const { data: authData } = await (supabase as any).auth.getUser();
+        currentUser = (authData as any)?.user || null;
+      } catch (e) {
+        // pas bloquant
+        currentUser = null;
+      }
+
+      // Récupérer d'abord les IDs de vidéos approuvées
+      const { data: approvedVids = [], error: approvedErr } = await client
+        .from('content_approvals')
+        .select('content_id')
+        .eq('content_type', 'video')
+        .eq('status', 'approved');
+
+      if (approvedErr) {
+        console.error('Erreur récupération approbations vidéos:', approvedErr);
+        throw approvedErr;
+      }
+
+      const approvedIds = (approvedVids || []).map((r: any) => r.content_id);
+
+      let query: any;
+
+      // Si aucun utilisateur -> afficher uniquement les vidéos approuvées
+      if (!currentUser) {
+        if (approvedIds.length === 0) {
+          setVideos([]);
+          return;
+        }
+        query = client.from('videos').select('*').in('id', approvedIds).order('created_at', { ascending: false });
+      } else {
+        const isAdmin = (currentUser?.user_metadata?.role === 'admin');
+        if (isAdmin) {
+          // Admin voit tout
+          query = client.from('videos').select('*').order('created_at', { ascending: false });
+        } else {
+          // Utilisateur connecté voit ses vidéos ET les vidéos approuvées
+          if (approvedIds.length > 0) {
+            // Utiliser or pour combiner les conditions
+            const idsList = approvedIds.join(',');
+            query = client.from('videos').select('*').or(`id.in.(${idsList}),user_id.eq.${currentUser.id}`).order('created_at', { ascending: false });
+          } else {
+            // Pas de vidéos approuvées: ne renvoyer que celles de l'utilisateur
+            query = client.from('videos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+          }
+        }
+      }
 
       const res = await query.limit(limit);
       const { data, error: fetchError } = res as { data: unknown[] | null; error: unknown };

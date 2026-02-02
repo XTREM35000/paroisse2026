@@ -29,41 +29,63 @@ export const useHomepageContent = () => {
     },
   });
 
-  // Récupérer les 4 dernières photos de la galerie
+  // Récupérer les 4 dernières photos de la galerie (préférer les images approuvées, sinon compléter avec les images publiques)
   const { data: latestPhotos = [], isLoading: photosLoading } = useQuery({
     queryKey: ['homepage-gallery'],
     queryFn: async ({ signal }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       try {
-        // Check if signal is aborted before making request
-        if (signal?.aborted) {
-          return [];
-        }
+        if (signal?.aborted) return [];
+        const sb = supabase as any;
 
-        const { data, error } = await (supabase.from('gallery_images') as any)
+        // IDs d'images approuvées (content_approvals)
+        const { data: approvedImgs = [], error: approvedErr } = await sb
+          .from('content_approvals')
+          .select('content_id')
+          .eq('content_type', 'gallery')
+          .eq('status', 'approved');
+
+        if (approvedErr) console.error('Erreur récupération approbations galerie:', approvedErr);
+        const approvedIds = (approvedImgs || []).map((r: any) => r.content_id);
+
+        // Récupérer les images publiques (is_public=true)
+        const { data: publicImgs = [], error: publicErr } = await sb
+          .from('gallery_images')
           .select('id, title, description, thumbnail_url, image_url, created_at')
           .eq('is_public', true)
           .order('created_at', { ascending: false })
           .limit(4);
 
-        // Check again after async operation
-        if (signal?.aborted) {
-          return [];
+        if (publicErr) console.error('Erreur galerie publique:', publicErr);
+
+        // Récupérer aussi les images référencées dans content_approvals
+        let approvedImgsData: any[] = [];
+        if (approvedIds.length > 0) {
+          const { data, error } = await sb
+            .from('gallery_images')
+            .select('id, title, description, thumbnail_url, image_url, created_at')
+            .in('id', approvedIds)
+            .order('created_at', { ascending: false });
+          if (error) console.error('Erreur galerie (approuvées):', error);
+          approvedImgsData = data || [];
         }
 
-        if (error) {
-          console.error('Erreur galerie:', error);
-          return [];
-        }
+        // Fusionner en unique, prioriser approuvées puis publiques, trier par date
+        const map = new Map<string, any>();
+        const push = (arr: any[]) => arr.forEach((it) => { if (it && it.id && !map.has(it.id)) map.set(it.id, it); });
+        push(approvedImgsData);
+        push(publicImgs);
+        const combined = Array.from(map.values())
+          .sort((a, b) => new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime())
+          .slice(0, 4);
 
-        return data || [];
+        return combined;
       } catch (e: unknown) {
-        // Ignore abort errors
         if (e && typeof e === 'object' && 'name' in e && e.name === 'AbortError') {
           console.log('Gallery query cancelled');
           return [];
         }
-        console.error('Exception galerie:', e);
+        console.error('Exception galerie combinée:', e);
         return [];
       }
     },
@@ -71,49 +93,97 @@ export const useHomepageContent = () => {
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
   });
 
-  // Récupérer les 4 dernières vidéos
+  // Récupérer les 4 dernières vidéos (combiner vidéos référencées comme approuvées, status 'approved' et flag 'published' si présents)
   const { data: latestVideos = [], isLoading: videosLoading } = useQuery({
     queryKey: ['homepage-videos'],
     queryFn: async ({ signal }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       try {
-        // Check if signal is aborted before making request
-        if (signal?.aborted) {
-          return [];
+        if (signal?.aborted) return [];
+        const sb = supabase as any;
+
+        // IDs de vidéos approuvées via content_approvals
+        const { data: approvedVids = [], error: approvedErr } = await sb
+          .from('content_approvals')
+          .select('content_id')
+          .eq('content_type', 'video')
+          .eq('status', 'approved');
+
+        if (approvedErr) console.error('Erreur récupération approbations vidéos:', approvedErr);
+        const approvedIds = (approvedVids || []).map((r: any) => r.content_id);
+
+        // Récupérer les vidéos explicitement référencées comme approuvées
+        let approvedData: any[] = [];
+        if (approvedIds.length > 0) {
+          const { data, error } = await sb
+            .from('videos')
+            .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
+            .in('id', approvedIds)
+            .order('created_at', { ascending: false });
+          if (error) console.error('Erreur vidéos (approuvées):', error);
+          approvedData = data || [];
         }
 
-        const { data, error } = await (supabase.from('videos') as any)
-          .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
-          .order('created_at', { ascending: false })
-          .limit(4);
-
-        // Check again after async operation
-        if (signal?.aborted) {
-          return [];
+        // Essayer aussi de récupérer les vidéos ayant status='approved' (si colonne disponible)
+        let statusData: any[] = [];
+        try {
+          const { data, error } = await sb
+            .from('videos')
+            .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
+            .eq('status', 'approved')
+            .order('created_at', { ascending: false });
+          if (!error) statusData = data || [];
+        } catch (err) {
+          // colonne 'status' inexistante ou autre erreur non bloquante
+          console.debug('status column not available for videos - skipping status query');
         }
 
-        if (error) {
-          // If a column is missing (42703), retry with a reduced selection
-          if (error.code === '42703') {
-            console.warn('videos: colonne manquante, retenter avec sélection réduite', error.message);
-            const { data: reduced } = await (supabase.from('videos') as any)
-              .select('id, title, description, thumbnail_url, created_at')
-              .order('created_at', { ascending: false })
-              .limit(4);
-            return reduced || [];
+        // Essayer aussi le flag 'published' si présent
+        let publishedData: any[] = [];
+        try {
+          const { data, error } = await sb
+            .from('videos')
+            .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
+            .eq('published', true)
+            .order('created_at', { ascending: false });
+          if (!error) publishedData = data || [];
+        } catch (err) {
+          // colonne 'published' inexistante ou autre erreur non bloquante
+          console.debug('published column not available for videos - skipping published query');
+        }
+
+        // Fusionner en unique, prioriser approuvées/status/published, trier par date
+        const map = new Map<string, any>();
+        const push = (arr: any[]) => arr.forEach((it) => { if (it && it.id && !map.has(it.id)) map.set(it.id, it); });
+        push(approvedData);
+        push(statusData);
+        push(publishedData);
+
+        let combined = Array.from(map.values())
+          .sort((a, b) => new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime())
+          .slice(0, 4);
+
+        // Fallback: si rien obtenu, récupérer les 4 vidéos les plus récentes
+        if (combined.length === 0) {
+          const { data, error } = await sb
+            .from('videos')
+            .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
+            .order('created_at', { ascending: false })
+            .limit(4);
+          if (error) {
+            console.error('Erreur fallback vidéos:', error);
+            return [];
           }
-          console.error('Erreur vidéos:', error);
-          return [];
+          return data || [];
         }
 
-        return data || [];
+        return combined;
       } catch (e: unknown) {
-        // Ignore abort errors
         if (e && typeof e === 'object' && 'name' in e && e.name === 'AbortError') {
           console.log('Videos query cancelled');
           return [];
         }
-        console.error('Exception vidéos:', e);
+        console.error('Exception vidéos combinée:', e);
         return [];
       }
     },
