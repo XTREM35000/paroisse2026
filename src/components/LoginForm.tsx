@@ -173,7 +173,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
               e.preventDefault();
               handleFacebookLogin();
             }}
-            className="flex-1 h-11 min-h-[44px] text-xs flex items-center justify-center gap-1 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 cursor-pointer touch-none"
+            className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 cursor-pointer touch-none"
             disabled={facebookLoading || loading}
             style={{
               minWidth: '44px',
@@ -193,9 +193,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
                 variant: 'default',
               });
             }}
-            className="flex-1 h-8 text-xs flex items-center justify-center gap-1 bg-red-500 text-white hover:bg-red-600"
+            className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600"
             disabled={loading}
           >
+            <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#EA4335" d="M24 9.5c3.9 0 7.1 1.4 9.2 3.1l6.8-6.8C36.7 2.7 30.9 0 24 0 14.7 0 6.8 5.6 3.1 13.6l7.9 6.1C12.9 15.1 18 9.5 24 9.5z"/>
+              <path fill="#34A853" d="M46.5 20.3c0 1.4-.1 2.8-.4 4.1H24v-8.9h12.7c-.5 2.9-2.6 5.6-5.2 7.1l.1.7 8.9 6.9C44.9 34.1 46.5 27.7 46.5 20.3z"/>
+              <path fill="#FBBC05" d="M10.9 28.8c-1.1-1.4-1.8-3.1-1.8-4.8s.6-3.4 1.8-4.8l-7.9-6.1C.9 14.9 0 17.4 0 20.1s.9 5.2 3 7.7l7.9-6.1z"/>
+              <path fill="#4285F4" d="M24 48c6.6 0 12.2-2.2 16.3-6l-8.9-6.9C29.1 34.9 26.7 36 24 36c-6 0-11.1-5.6-12-12.1L3.1 30.3C6.8 38.4 14.7 44 24 44z"/>
+            </svg>
             Google
           </Button>
         </div>

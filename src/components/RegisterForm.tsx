@@ -59,7 +59,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
       // Utiliser les valeurs canoniques françaises acceptées par la contrainte CHECK
       let assignedRole = 'membre';
       try {
-        const { data: countData, error: countErr, count } = await (supabase as any)
+        const { data: countData, error: countErr, count } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true });
 
@@ -72,11 +72,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
       }
 
       // 1) Créer l'utilisateur d'abord et récupérer la réponse
-      const registerRes: any = await register(email, password, {
+      type AuthSignUpRes = { data?: { user?: { id?: string } } | null };
+      const registerRes = (await register(email, password, {
         full_name: fullName,
         phone: fullPhone,
         role: assignedRole,
-      });
+      })) as unknown as AuthSignUpRes;
 
       // Essayer d'extraire l'utilisateur depuis la réponse
       let createdUser = registerRes?.data?.user ?? null;
@@ -166,7 +167,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         <div className="flex flex-col items-center space-y-1 flex-shrink-0">
           <div
             onClick={handleAvatarClick}
-            className="relative w-24 h-24 rounded-full border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer bg-muted/30 overflow-hidden group"
+            className="relative w-20 h-20 rounded-full border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer bg-muted/30 overflow-hidden group"
           >
             {avatarPreview ? (
               <img
@@ -176,7 +177,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Camera className="h-6 w-6 text-muted-foreground/50 group-hover:text-primary/70 transition-colors" />
+                <Camera className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary/70 transition-colors" />
               </div>
             )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -263,36 +264,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         </Button>
       </div>
 
-      <Separator className="my-2" />
-
-      <div className="flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground text-center">Ou continuer avec</p>
-        <div className="flex gap-2">
-          <Button 
-            type="button" 
-            onClick={() => signInWithProvider('facebook')} 
-            className="flex-1 h-8 text-xs flex items-center justify-center gap-1 bg-blue-600 text-white hover:bg-blue-700"
-            disabled={loading}
-          >
-            <Facebook className="w-4 h-4" />
-            Facebook
-          </Button>
-          <Button 
-            type="button" 
-            onClick={() => {
-              toast({
-                title: 'ℹ️ Information',
-                description: 'Provider sera implémenter sous peu...',
-                variant: 'default',
-              });
-            }}
-            className="flex-1 h-8 text-xs flex items-center justify-center gap-1 bg-red-500 text-white hover:bg-red-600"
-            disabled={loading}
-          >
-            Google
-          </Button>
-        </div>
-      </div>
+      {/* Providers removed for registration to simplify signup flow. */}
 
       <p className="text-xs text-muted-foreground text-center py-1">
         * Champs obligatoires

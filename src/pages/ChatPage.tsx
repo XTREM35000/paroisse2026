@@ -110,10 +110,24 @@ export default function ChatPage() {
   // Effet: Initialisation au chargement
   // ====================================
   useEffect(() => {
-    if (user) {
-      fetchChatRooms();
-      subscribeToRoomsUpdates();
-    }
+    if (!user) return;
+
+    let roomsCleanup: (() => void) | undefined;
+    let globalMsgsCleanup: (() => void) | undefined;
+
+    // initial load
+    fetchChatRooms();
+
+    // subscribe to room updates
+    roomsCleanup = subscribeToRoomsUpdates();
+
+    // subscribe to global message inserts to keep counters in sync
+    globalMsgsCleanup = subscribeToGlobalMessageInserts();
+
+    return () => {
+      if (roomsCleanup) roomsCleanup();
+      if (globalMsgsCleanup) globalMsgsCleanup();
+    };
   }, [user]);
 
   // ====================================
@@ -201,16 +215,42 @@ export default function ChatPage() {
                 .limit(1)
                 .maybeSingle();
 
-              // unread since user's last read
+              // unread since user's last read (fallback to total messages if last_read_messages_at is missing)
               let unreadCount = 0;
-              if (profile?.last_read_messages_at) {
-                const { count } = await supabase
+              try {
+                if (profile?.last_read_messages_at) {
+                  const { count } = await supabase
+                    .from('chat_messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('room_id', roomId)
+                    .eq('is_deleted', false)
+                    .gt('created_at', profile.last_read_messages_at);
+                  unreadCount = count || 0;
+                } else {
+                  // Fallback: if we don't have a last_read timestamp, consider all messages in the room as "unread"
+                  const { count } = await supabase
+                    .from('chat_messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('room_id', roomId)
+                    .eq('is_deleted', false);
+                  unreadCount = count || 0;
+                }
+              } catch (e) {
+                console.warn('fetchChatRooms: unread count fetch error', e);
+                unreadCount = 0;
+              }
+
+              // total message count in this room (useful for UI badges)
+              let messageCount = 0;
+              try {
+                const { count: totalCount } = await supabase
                   .from('chat_messages')
                   .select('id', { count: 'exact', head: true })
                   .eq('room_id', roomId)
-                  .eq('is_deleted', false)
-                  .gt('created_at', profile.last_read_messages_at);
-                unreadCount = count || 0;
+                  .eq('is_deleted', false);
+                messageCount = totalCount || 0;
+              } catch (e) {
+                console.warn('fetchChatRooms: total message count fetch error', e);
               }
 
               return {
@@ -219,6 +259,7 @@ export default function ChatPage() {
                 lastMessage: lastMsg?.content || r.lastMessage,
                 lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : r.lastMessageTime,
                 unreadCount: unreadCount,
+                messageCount,
               };
             }
           } catch (e) {
@@ -309,6 +350,13 @@ export default function ChatPage() {
           .update({ last_read_messages_at: new Date().toISOString() })
           .eq('id', user.id);
       }
+
+      // Reset local unread counter for this opened room for immediate feedback
+      try {
+        setRooms(prev => prev.map(r => (r.room_id === roomId ? { ...r, unreadCount: 0 } : r)));
+      } catch (e) {
+        console.warn('fetchMessages: failed to reset unreadCount', e);
+      }
     } catch (err: any) {
       console.error('Erreur lors de la récupération des messages:', err);
       setError('Impossible de charger les messages');
@@ -376,6 +424,24 @@ export default function ChatPage() {
         .eq('id', roomId);
 
       setNewMessage('');
+
+      // Update room counters optimistically so the sidebar reflects the change immediately
+      try {
+        setRooms(prev => prev.map(r => {
+          if (r.room_id === roomId) {
+            return {
+              ...r,
+              messageCount: (r.messageCount || 0) + 1,
+              lastMessage: messageContent,
+              lastMessageTime: new Date(),
+            } as ExtendedChatRoom;
+          }
+          return r;
+        }));
+      } catch (e) {
+        console.warn('handleSendMessage: failed to update room counters', e);
+      }
+
       notifySuccess('Succès', 'Message envoyé');
     } catch (err: any) {
       console.error('Erreur lors de l\'envoi du message:', err);
@@ -408,6 +474,51 @@ export default function ChatPage() {
     return () => {
       supabase.removeChannel(channel);
     };
+  };
+
+  // ====================================
+  // Subscription: Global message inserts (to keep unread/message counters in sync)
+  // ====================================
+  const subscribeToGlobalMessageInserts = () => {
+    const channel = supabase
+      .channel('public:chat_messages:inserts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          // If this message belongs to one of the rooms we display, update counters
+          setRooms(prevRooms => {
+            let updated = false;
+            const next = prevRooms.map(r => {
+              if ((r as any).room_id === newMsg.room_id) {
+                updated = true;
+                // Do not increment unread if message was sent by current user or if this room is currently open in the UI
+                const isActiveRoom = r.id === selectedRoomId;
+                const incrementUnread = newMsg.sender_id !== user?.id && !isActiveRoom;
+                return {
+                  ...r,
+                  unreadCount: incrementUnread ? ((r.unreadCount || 0) + 1) : (r.unreadCount || 0),
+                  messageCount: (r.messageCount || 0) + 1,
+                  lastMessage: newMsg.content || r.lastMessage,
+                  lastMessageTime: new Date(newMsg.created_at),
+                } as ExtendedChatRoom;
+              }
+              return r;
+            });
+
+            // If updated is false, no local room matched; ignore
+            return updated ? next : prevRooms;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   };
 
   // ====================================

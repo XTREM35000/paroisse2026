@@ -33,7 +33,8 @@ export default function WelcomeModal({ onClose, onOpenAuthModal }: WelcomeModalP
     if (onOpenAuthModal) {
       onOpenAuthModal('login');
     } else {
-      navigate('/#auth');
+      // Use fragment to open auth modal without causing a full navigation
+      window.location.hash = '#auth';
     }
   };
 

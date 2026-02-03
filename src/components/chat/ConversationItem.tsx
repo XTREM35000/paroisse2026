@@ -11,6 +11,7 @@ interface ConversationItemProps {
     unreadCount?: number;
     lastMessageTime?: Date;
     avatar_url?: string;
+    messageCount?: number;
   };
   isSelected?: boolean;
   onClick: () => void;
@@ -50,7 +51,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
     <div
       onClick={onClick}
       className={cn(
-        'p-3 border-b border-border cursor-pointer transition-colors hover:bg-muted/50',
+        'relative p-3 border-b border-border cursor-pointer transition-colors hover:bg-muted/50',
         isSelected && 'bg-muted'
       )}
     >
@@ -78,17 +79,22 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
           </div>
 
           {/* Last message */}
-          <p className="text-xs text-muted-foreground truncate mb-2">
+          <p className="text-xs text-muted-foreground truncate mb-1">
             {room.lastMessage || room.description || 'Aucun message'}
           </p>
 
-          {/* Unread badge */}
-          {room.unreadCount && room.unreadCount > 0 && (
-            <Badge variant="default" className="h-5 px-1.5 text-xs font-semibold">
-              {room.unreadCount > 99 ? '99+' : room.unreadCount}
-            </Badge>
+          {/* Total message count (subtle, at bottom) */}
+          {typeof room.messageCount === 'number' && (
+            <div className="text-xs text-muted-foreground">{room.messageCount} message{room.messageCount > 1 ? 's' : ''}</div>
           )}
         </div>
+
+        {/* Unread badge (small pink circle, top-right) */}
+        {room.unreadCount && room.unreadCount > 0 && (
+          <div className="absolute top-3 right-3 inline-flex items-center justify-center w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-semibold shadow-md">
+            {room.unreadCount > 99 ? '99+' : room.unreadCount}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -80,11 +80,18 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Handle auth modal
+  // Handle auth modal (tolerant to additional params after #auth)
   useEffect(() => {
-    setIsAuthModalOpen(location.hash === '#auth');
+    setIsAuthModalOpen(location.hash.includes('#auth'));
   }, [location.hash]);
 
+  // Also listen to raw hashchange events to ensure clicks that only update window.location.hash
+  // are handled immediately (some environments do not always propagate through react-router's location)
+  useEffect(() => {
+    const onHash = () => setIsAuthModalOpen(window.location.hash.includes('#auth'));
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
 
   // Loading skeleton
@@ -309,7 +316,8 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   if (user) {
                     setIsUserMenuOpen(!isUserMenuOpen);
                   } else {
-                    setIsAuthModalOpen(true);
+                    // Use fragment so the App's routing + Header hash listener open auth consistently
+                    window.location.hash = '#auth';
                   }
                 }}
                 className="text-muted-foreground hover:text-foreground overflow-hidden rounded-full"
@@ -433,8 +441,18 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
       {/* Auth Modal */}
       <AuthModal 
         isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)}
-        defaultMode="login"
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          // Si l'URL a '#auth', on l'enlève pour permettre de rouvrir proprement (click répété sur l'icône)
+          if (typeof window !== 'undefined' && window.location.hash.includes('#auth')) {
+            try {
+              navigate(window.location.pathname + window.location.search, { replace: true });
+            } catch (e) {
+              try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch { /* ignore */ }
+            }
+          }
+        }}
+        defaultMode={authMode}
         onForgotPassword={() => {
           setIsAuthModalOpen(false);
           setIsForgotPasswordOpen(true);

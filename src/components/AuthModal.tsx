@@ -29,24 +29,33 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
     };
   }, [isOpen]);
 
+  // Ajustements dynamiques selon le mode pour s'assurer que l'onglet Inscription voit tous les champs
+  // En mode 'register' : modal plus LARGE et fortement haute, mais largeur réduite pour éviter l'effet trop étiré
+  const maxWidthClass = mode === 'register' ? 'max-w-2xl md:max-w-3xl' : 'max-w-md md:max-w-2xl';
+  const maxHeightClass = mode === 'register' ? 'max-h-[110vh]' : 'max-h-[96vh]';
+  const formMinH = mode === 'register' ? 'min-h-[720px]' : 'min-h-[300px]';
+
   return (
-    <DraggableModal open={isOpen} onClose={onClose} initialY={260} draggableOnMobile={true} dragHandleOnly={false}>
+    <DraggableModal open={isOpen} onClose={onClose} draggableOnMobile={true} dragHandleOnly={false} center={true} verticalOnly={false} maxWidthClass={maxWidthClass}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+        initial={{ opacity: 0, scale: 0.98, y: 0 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        exit={{ opacity: 0, scale: 0.98, y: 0 }}
         transition={{ duration: 0.18 }}
-        className="relative w-full max-w-md md:max-w-2xl max-h-[90vh] bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border border-border/50 flex flex-col overflow-hidden"
+        className={`relative w-full ${maxHeightClass} bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border border-border/50 flex flex-col overflow-hidden`} 
       >
-        {/* Drag handle (visible) */}
-        <div data-drag-handle className="w-full flex items-center justify-center p-2 border-b border-border/30 cursor-move">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <GripVertical className="h-4 w-4" />
-            <span className="text-xs">Glisser pour déplacer</span>
+        {/* Drag handle (visible) - styled like Admin / Live editor */}
+        <div data-drag-handle className="flex items-center justify-between px-4 py-3 bg-amber-900 text-white rounded-t-lg cursor-grab select-none" role="button" aria-label="Poignée de déplacement">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-start mr-2">
+              <div className="w-14 h-1.5 bg-white/80 rounded-full shadow-sm mb-1" aria-hidden />
+              <div className="text-xs text-white/90">Déplacer</div>
+            </div>
+            <h2 className="text-base font-semibold">{mode === 'login' ? 'Connexion' : 'Inscription'}</h2>
           </div>
         </div>
 
-        {/* Close Button */}
+        {/* Close Button (redundant) */}
         <motion.button
           whileHover={{ rotate: 90 }}
           whileTap={{ scale: 0.9 }}
@@ -54,7 +63,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
           className="absolute top-4 right-4 p-1 rounded-lg hover:bg-muted transition-colors z-10"
           aria-label="Fermer"
         >
-          <X className="h-6 w-6 text-muted-foreground hover:text-foreground" />
+          <X className="h-6 w-6 text-white" />
         </motion.button>
 
         <div className="flex-1 px-4 py-4 md:px-6 md:py-6 overflow-hidden">
@@ -87,10 +96,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
             </div>
 
             {/* Form Section */}
-            <div className="w-full md:w-2/3 flex flex-col min-h-[300px]" style={{ minWidth: 280 }}>
+            <div className={`w-full md:w-2/3 flex flex-col ${formMinH} ${mode === 'register' ? ' text-sm' : ''}`} style={{ minWidth: 280 }}>
               {/* Tabs */}
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-xl font-semibold">{mode === 'login' ? 'Connexion' : 'Inscription'}</h1>
+              <div className="flex items-center justify-between mb-3">
+                <h1 className="text-lg font-semibold">{mode === 'login' ? 'Connexion' : 'Inscription'}</h1>
                 <div className="flex gap-2">
                   <motion.button
                     whileHover={{ scale: 1.05 }}

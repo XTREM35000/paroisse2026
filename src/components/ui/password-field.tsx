@@ -17,6 +17,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({ value, onChange, classNam
       <Input
         {...rest}
         type={visible ? 'text' : 'password'}
+        autoComplete={rest.autoComplete ?? 'current-password'}
         value={value}
         onChange={onChange}
         disabled={disabled}

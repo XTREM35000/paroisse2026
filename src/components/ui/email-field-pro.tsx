@@ -132,8 +132,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 					disabled={disabled}
 					aria-invalid={Boolean(error || internalError)}
 					aria-describedby={error || internalError ? errorId : undefined}
-					placeholder="nom.utilisateur"
-					className={cn('flex-1', (error || internalError) && 'border-red-500 focus-visible:ring-red-500', className)}
+					placeholder="nom.utilisateur"				autoComplete="email"					className={cn('flex-1', (error || internalError) && 'border-red-500 focus-visible:ring-red-500', className)}
 				/>
 				<span className="text-muted-foreground font-medium">@</span>
 				<select
