@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, User, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, BookOpen, FileText } from "lucide-react";
@@ -84,6 +84,27 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   useEffect(() => {
     setIsAuthModalOpen(location.hash.includes('#auth'));
   }, [location.hash]);
+
+  // User menu outside click / Escape handler
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!isUserMenuOpen) return;
+      const target = e.target as Node | null;
+      if (userMenuRef.current && target && !userMenuRef.current.contains(target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isUserMenuOpen]);
 
   // Also listen to raw hashchange events to ensure clicks that only update window.location.hash
   // are handled immediately (some environments do not always propagate through react-router's location)
@@ -308,7 +329,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
               <ThemeToggle />
 
             {/* User Menu / Auth Button */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <Button
                 variant="ghost"
                 size="icon"

@@ -81,7 +81,26 @@ export async function fetchGalleryImageById(id: string) {
       return null;
     }
 
-    return (data as any as GalleryImage) || null;
+    if (!data) return null;
+
+    // If approved/published/public, return it
+    if (data.status === 'approved' || data.published === true || data.is_public === true) return (data as any as GalleryImage);
+
+    // Otherwise require owner or admin
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const uid = authData?.user?.id;
+      if (!uid) return null;
+      if (data.user_id === uid) return (data as any as GalleryImage);
+
+      const { data: profileData } = await supabase.from('profiles').select('role').eq('id', uid).maybeSingle();
+      const role = (profileData as any)?.role as string | undefined;
+      if (role && role.toLowerCase() === 'admin') return (data as any as GalleryImage);
+    } catch (e) {
+      console.error('fetchGalleryImageById auth check error', e);
+    }
+
+    return null;
   } catch (e) {
     console.error('fetchGalleryImageById unexpected error', e);
     return null;

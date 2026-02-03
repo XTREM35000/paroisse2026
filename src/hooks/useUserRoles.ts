@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import type { AppRole } from '@/types/database';
 
 // Cache whether RPC is missing to avoid repeated 404s in the console
 let rpcMissing = false;
+// Ensure the user gets notified only once if RPC is missing / inaccessible
+let rpcMissingToastShown = false;
 
 export function useUserRoles(userId: string | undefined) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchRoles = useCallback(async () => {
     if (!userId) {
@@ -36,11 +40,31 @@ export function useUserRoles(userId: string | undefined) {
           throw { message: 'RPC missing (cached)' };
         }
       } catch (rpcErr: any) {
-        // If the RPC is not found in the schema (common in fresh projects), fallback to profiles table
+        // If the RPC is not found or network returns 404 (or other network issues), fallback to profiles table
         const msg = rpcErr?.message || String(rpcErr || '');
-        const code = rpcErr?.code || rpcErr?.status || null;
-        if (String(msg).includes('Could not find the function') || code === 'PGRST202' || code === 404 || String(msg).includes('RPC missing (cached)')) {
+        const code = rpcErr?.code || rpcErr?.status || rpcErr?.statusCode || null;
+
+        // Consider network errors / 404 as RPC missing to avoid repeated noisy requests
+        const isRpcMissing = String(msg).includes('Could not find the function') || code === 'PGRST202' || code === 404 || String(msg).includes('RPC missing (cached)') || String(msg).toLowerCase().includes('failed to fetch') || String(msg).toLowerCase().includes('failed to load') || String(msg).includes('404');
+
+        if (isRpcMissing) {
           rpcMissing = true;
+          console.debug('[useUserRoles] RPC get_user_roles missing or inaccessible, falling back to profiles', { msg, code });
+
+          // Show a single, user-facing toast to explain the fallback (avoid spamming)
+          try {
+            if (!rpcMissingToastShown) {
+              toast({
+                title: 'Rôles non disponibles',
+                description: 'La fonction RPC `get_user_roles` est manquante ou inaccessible. Vous êtes connecté en mode membre par défaut.',
+                variant: 'default',
+              });
+              rpcMissingToastShown = true;
+            }
+          } catch (e) {
+            // ignore toast errors in non-UI contexts
+          }
+
           try {
             const { data: profileData, error: profileErr } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
             if (profileErr) {

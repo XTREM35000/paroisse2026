@@ -1,7 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";import { ensureProfileExists } from '@/utils/ensureProfileExists';import type { User } from "@supabase/supabase-js";
 
 type AuthContextValue = {
   user: User | null;
@@ -41,14 +40,14 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       setUser(session?.user ?? null);
-      
+
       // Invalider le cache du profil quand l'authentification change
       try {
         localStorage.removeItem('ff_profile_cache');
       } catch (e) {
         console.error('Failed to invalidate profile cache:', e);
       }
-      
+
       // After auth state changes, ensure roles consistency (first user = admin)
       if (session?.user) {
         (async () => {
@@ -71,7 +70,67 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
             console.error('Erreur lors de la vérification des rôles:', err);
           }
         })();
+
+        // Close auth modal if it was opened via the '#auth' fragment
+        try {
+          if (typeof window !== 'undefined' && window.location.hash.includes('#auth')) {
+            // Setting hash to empty triggers hashchange events which Header listens to
+            window.location.hash = '';
+          }
+        } catch (e) { /* ignore */ }
+
+        // Ensure profile exists before deciding redirect to avoid race conditions
+        (async () => {
+          try {
+            // Create profile if missing so role lookup is reliable
+            await ensureProfileExists(session.user.id);
+
+            const { data: profileData } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+            const role = (profileData as any)?.role as string | null ?? null;
+            console.debug('[AuthProvider] redirect decision', { userId: session.user.id, role });
+
+            const desiredPath = role?.toLowerCase().includes('admin') ? '/admin' : '/dashboard';
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+            const lastRedirect = typeof window !== 'undefined' ? Number(sessionStorage.getItem('ff_last_redirect') || '0') : 0;
+            const now = Date.now();
+
+            // Avoid redirect if we're already on the correct page
+            if (currentPath === desiredPath || currentPath.startsWith(desiredPath)) {
+              console.debug('[AuthProvider] already on desired path, skipping redirect', { currentPath, desiredPath });
+              return;
+            }
+
+            // Prevent redirect storms by ensuring we don't redirect more often than every 5s
+            if (now - lastRedirect < 5000) {
+              console.debug('[AuthProvider] recent redirect detected, skipping to avoid loop', { lastRedirect, now });
+              return;
+            }
+
+            console.debug('[AuthProvider] redirecting to', desiredPath, 'for user', session.user.id);
+            try { sessionStorage.setItem('ff_last_redirect', String(now)); } catch (e) { /* ignore */ }
+
+            // Use SPA-safe redirect: store pending path and dispatch an event for a Router-aware handler to pick up
+            try {
+              try { sessionStorage.setItem('ff_pending_redirect', desiredPath); } catch (e) { /* ignore */ }
+              try {
+                window.dispatchEvent(new CustomEvent('ff:auth-redirect', { detail: { path: desiredPath } }));
+                console.debug('[AuthProvider] dispatched ff:auth-redirect event', desiredPath);
+              } catch (evtErr) {
+                console.warn('[AuthProvider] event dispatch failed, falling back to window.location.replace', evtErr);
+                try { window.location.replace(desiredPath); } catch (e) { try { window.location.href = desiredPath; } catch { /* ignore */ } }
+              }
+            } catch (err) {
+              // Final fallback
+              try { window.location.replace(desiredPath); } catch (e) { try { window.location.href = desiredPath; } catch { /* ignore */ } }
+            }
+          } catch (err) {
+            // If profile creation or role lookup fails, fallback to main dashboard
+            console.error('[AuthProvider] redirect failed, falling back to /dashboard', err);
+            try { window.location.replace('/dashboard'); } catch { try { window.location.href = '/dashboard'; } catch { /* ignore */ } }
+          }
+        })();
       }
+
       setLoading(false);
     });
 
