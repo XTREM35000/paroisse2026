@@ -223,6 +223,6 @@ const App = () => {
       </NotificationProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
-
+  );
+};
 export default App;
