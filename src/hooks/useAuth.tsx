@@ -178,7 +178,18 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
   };
 
   const signInWithProvider = async (provider: "google" | "github" | "facebook") => {
-    await supabase.auth.signInWithOAuth({ provider });
+    // For Facebook, explicitly request the email and public_profile scopes so Supabase receives the user's email
+    if (provider === 'facebook') {
+      return await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          scopes: 'email,public_profile',
+        },
+      });
+    }
+
+    // Default behavior for other providers
+    return await supabase.auth.signInWithOAuth({ provider });
   };
 
   const resetPassword = async (email: string) => {

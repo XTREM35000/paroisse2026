@@ -37,6 +37,7 @@ import Dashboard from './pages/Dashboard';
 import DashboardAnalytics from './pages/DashboardAnalytics';
 import Podcasts from './pages/Podcasts';
 import DevSupabaseDebug from './pages/DevSupabaseDebug';
+import PasswordResetTestPage from './pages/PasswordResetTestPage';
 import Documents from './pages/Documents';
 import Live from './pages/Live';
 import Homilies from './pages/Homilies';
@@ -188,6 +189,7 @@ const App = () => {
             <Route path="/documents" element={<Layout><Documents /></Layout>} />
             <Route path="/live" element={<Layout><Live /></Layout>} />
             <Route path="/dev/supabase-debug" element={<Layout><DevSupabaseDebug /></Layout>} />
+            <Route path="/dev/test-password-reset" element={<PasswordResetTestPage />} />
             <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
             <Route path="/homilies" element={<Layout><Homilies /></Layout>} />
             <Route path="/prayers" element={<Layout><Prayers /></Layout>} />

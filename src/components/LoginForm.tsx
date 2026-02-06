@@ -109,8 +109,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
     setFacebookLoading(true);
     try {
       // Supabase gère la vérification du token et la création du profil
-      await signInWithProvider('facebook');
-      
+      const res = await signInWithProvider('facebook') as any;
+      if (res?.error) {
+        console.error('Supabase OAuth initiation error (Facebook):', res.error);
+        toast({ title: '❌ Erreur Facebook', description: String(res.error.message || res.error), variant: 'destructive' });
+        return;
+      }
+
       // Attendre que l'utilisateur soit authentifié après le redirection OAuth
       setTimeout(async () => {
         try {

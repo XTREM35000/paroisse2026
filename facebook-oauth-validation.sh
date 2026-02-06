@@ -64,6 +64,7 @@ echo ""
 # 3. Vérifier useAuth.tsx
 check_file_contains "src/hooks/useAuth.tsx" "signInWithProvider" "Support OAuth dans useAuth" "warning"
 check_file_contains "src/hooks/useAuth.tsx" "facebook" "Support provider Facebook dans useAuth" "warning"
+check_file_contains "src/hooks/useAuth.tsx" "scopes: 'email,public_profile'" "Demande explicite des scopes Facebook (email,public_profile)" "warning"
 
 echo ""
 

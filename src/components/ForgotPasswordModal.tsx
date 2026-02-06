@@ -72,10 +72,16 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       }
 
       console.log('📤 Envoi de la demande de réinitialisation...');
+      console.log('⚠️ NOTE: Vérifiez que Supabase Email Auth est configuré avec SMTP/SendGrid/Mailgun');
 
       // Appel API corrigé avec URL ABSOLUE
       const redirectUrl = `${window.location.origin}/reset-password`;
       console.log('🔗 Redirect URL complète:', redirectUrl);
+      
+      // Vérifier que l'URL contient le protocole
+      if (!redirectUrl.startsWith('http')) {
+        throw new Error('URL de redirection invalide - doit contenir le protocole (http/https)');
+      }
 
       const { data, error: resetError } = await supabase.auth.resetPasswordForEmail(
         trimmedEmail,
@@ -92,18 +98,23 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
           code: (resetError as unknown as Record<string, unknown>).code,
           status: (resetError as unknown as Record<string, unknown>).status,
           fullError: resetError,
+          cause: '⚠️ Causes possibles: Supabase Email non configuré, URL non autorisée, compte introuvable',
         });
         throw resetError;
       }
 
-      console.log('✅ Email envoyé avec succès !');
+      // Si pas d'erreur Supabase, l'email a été accepté par Supabase
+      // (Mais attention: Supabase peut accepter la requête même si les emails ne sont pas configurés!)
+      console.log('✅ Email accepté par Supabase (en attente d\'envoi)');
+      console.log('💡 ASTUCE: Si l\'email n\'arrive pas, Supabase Email Auth n\'est probablement pas configuré');
+      console.log('📋 Configuration requise: Dashboard Supabase → Authentication → Email Provider → Configurer SMTP');
       console.groupEnd();
 
       // Afficher le message de succès
       setSubmitted(true);
       toast({
-        title: '✅ Email envoyé',
-        description: 'Vérifiez votre boîte email (et les spams) pour réinitialiser votre mot de passe.',
+        title: '✅ Demande envoyée',
+        description: 'Vérifiez votre boîte email (et le dossier spam) pour le lien de réinitialisation.',
         variant: 'default',
       });
     } catch (err: unknown) {
@@ -111,7 +122,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       console.groupEnd();
 
       // Extraction du message d'erreur
-      let errorMessage = 'Une erreur est survenue';
+      let errorMessage = 'Une erreur est survenue lors de la réinitialisation';
+      let statusCode = '';
       
       if ((err as unknown as Record<string, unknown>)?.message) {
         errorMessage = (err as unknown as Record<string, unknown>).message as string;
@@ -121,7 +133,19 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
         errorMessage = err;
       }
 
-      console.error('📌 Message d\'erreur final:', errorMessage);
+      // Améliorer le message d'erreur avec des conseils
+      if (errorMessage.includes('User not found')) {
+        errorMessage = 'Cet email n\'est pas enregistré dans notre système';
+        statusCode = ' (User not found)';
+      } else if (errorMessage.includes('rate limit')) {
+        errorMessage = 'Trop de tentatives. Veuillez attendre quelques minutes avant de réessayer';
+        statusCode = ' (Rate limited)';
+      } else if (errorMessage.includes('Email provider')) {
+        errorMessage = 'Service d\'email temporairement indisponible. Réessayez plus tard';
+        statusCode = ' (Email provider error)';
+      }
+
+      console.error('📌 Message d\'erreur final:', errorMessage + statusCode);
 
       setError(errorMessage);
       toast({
