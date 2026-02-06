@@ -114,6 +114,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   // CORRECTION MOBILE: Ajouter un log pour déboguer les problèmes de clic sur mobile
   const handleFacebookLogin = async () => {
     console.log('🔵 Facebook login button clicked');
+    console.log('🔵 URL actuelle:', window.location.origin);
+    console.log('🔵 Callback URL sera:', new URL('/auth/callback', window.location.origin).toString());
     
     // Sur mobile, vérifier que le SDK est prêt (sécurisé)
     try {
@@ -131,7 +133,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
       console.log('🧹 Nettoyage de session Supabase...');
       await supabase.auth.signOut();
       
-      // Nettoyer les paramètres d'URL résiduels
+      // Nettoyer les paramètres d'URL résiduels APRÈS un délai court
+      // ⏱️ Attendre 300ms pour que Supabase finisse son nettoyage interne
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       console.log('🧹 Nettoyage des URL...');
       if (typeof window !== 'undefined') {
         window.history.replaceState({}, document.title, window.location.pathname);

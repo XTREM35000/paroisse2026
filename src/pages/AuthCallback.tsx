@@ -13,11 +13,15 @@ const AuthCallback: React.FC = () => {
 
     const handleCallback = async () => {
       try {
-        console.log('🔍 AuthCallback: Vérification de la session OAuth...', {
+        // 📋 Diagnostic: Capturer l'URL AVANT toute manipulation
+        const diagnosticUrl = {
           href: window.location.href,
           hash: window.location.hash,
           search: window.location.search,
-        });
+          pathname: window.location.pathname,
+        };
+        console.log('🔍 AuthCallback: Diagnostic URL complète:', diagnosticUrl);
+        console.log('🔍 AuthCallback: Vérification de la session OAuth...', diagnosticUrl);
         
         // Récupérer l'utilisateur actuellement connecté
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -31,12 +35,17 @@ const AuthCallback: React.FC = () => {
             variant: 'destructive',
           });
           // Forcer une déconnexion locale & nettoyer l'URL pour redémarrer un flux propre
-          try {
-            await supabase.auth.signOut();
-          } catch (signOutErr) {
-            console.warn('⚠️ AuthCallback: Erreur lors de signOut forcé:', signOutErr);
-          }
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // ⏱️ Attendre 500ms pour que Facebook finisse son traitement avant de modifier l'URL
+          setTimeout(async () => {
+            if (!isMounted) return;
+            try {
+              await supabase.auth.signOut();
+            } catch (signOutErr) {
+              console.warn('⚠️ AuthCallback: Erreur lors de signOut forcé:', signOutErr);
+            }
+            // Nettoyer l'URL APRÈS le signOut pour éviter que Facebook ne le détecte
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }, 500);
 
           // Rediriger après 2 secondes pour laisser le toast
           setTimeout(() => {
@@ -50,12 +59,17 @@ const AuthCallback: React.FC = () => {
           if (!isMounted) return;
 
           // Forcer une déconnexion locale & nettoyer l'URL pour relancer un flux propre
-          try {
-            await supabase.auth.signOut();
-          } catch (signOutErr) {
-            console.warn('⚠️ AuthCallback: Erreur lors de signOut forcé:', signOutErr);
-          }
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // ⏱️ Attendre 500ms pour que Facebook finisse son traitement avant de modifier l'URL
+          setTimeout(async () => {
+            if (!isMounted) return;
+            try {
+              await supabase.auth.signOut();
+            } catch (signOutErr) {
+              console.warn('⚠️ AuthCallback: Erreur lors de signOut forcé:', signOutErr);
+            }
+            // Nettoyer l'URL APRÈS le signOut pour éviter que Facebook ne le détecte
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }, 500);
 
           setTimeout(() => {
             if (isMounted) window.location.replace('/login?error=no_user&retry=1');
@@ -95,12 +109,17 @@ const AuthCallback: React.FC = () => {
           variant: 'destructive',
         });
         // En cas d'erreur inattendue, forcer une déconnexion locale et nettoyer l'URL
-        try {
-          await supabase.auth.signOut();
-        } catch (signOutErr) {
-          console.warn('⚠️ AuthCallback: Erreur lors de signOut forcé:', signOutErr);
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
+        // ⏱️ Attendre 500ms pour que Facebook finisse son traitement avant de modifier l'URL
+        setTimeout(async () => {
+          if (!isMounted) return;
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutErr) {
+            console.warn('⚠️ AuthCallback: Erreur lors de signOut forcé:', signOutErr);
+          }
+          // Nettoyer l'URL APRÈS le signOut pour éviter que Facebook ne le détecte
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }, 500);
 
         setTimeout(() => {
           if (isMounted) window.location.replace('/login?error=callback&retry=1');
