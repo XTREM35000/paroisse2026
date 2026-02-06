@@ -178,11 +178,22 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
   };
 
   const signInWithProvider = async (provider: "google" | "github" | "facebook") => {
-    // CORRECTION: Ajouter redirectTo pour tous les providers pour que l'utilisateur revienne correctement
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    // CORRECTION: Construire le redirectTo avec la vraie URL dynamiquement
+    // En cas de doute, utiliser une URL absolue plutôt que relative
+    let redirectTo = '';
+    
+    if (typeof window !== 'undefined') {
+      // Construire l'URL du callback
+      redirectTo = new URL('/auth/callback', window.location.origin).toString();
+      console.log(`[OAuth] Redirection configurée pour ${provider}:`, redirectTo);
+    } else {
+      // Fallback en SSR
+      redirectTo = 'https://nd-compassion.ci/auth/callback';
+    }
     
     // For Facebook, explicitly request the email and public_profile scopes so Supabase receives the user's email
     if (provider === 'facebook') {
+      console.log('[Facebook OAuth] Appel signInWithOAuth avec redirectTo:', redirectTo);
       return await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -193,6 +204,7 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
     }
 
     // Default behavior for other providers (Google, GitHub, etc.)
+    console.log(`[${provider} OAuth] Appel signInWithOAuth avec redirectTo:`, redirectTo);
     return await supabase.auth.signInWithOAuth({
       provider,
       options: {

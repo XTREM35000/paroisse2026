@@ -29,11 +29,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
     console.log('🔴 Google login button clicked');
     setGoogleLoading(true);
     try {
-      // CORRECTION: Ajouter redirectTo pour revenir correctement après le callback OAuth
+      // CORRECTION: Construire l'URL du callback de manière robuste
+      const redirectTo = new URL('/auth/callback', window.location.origin).toString();
+      console.log('[Google OAuth] redirectTo:', redirectTo);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo
         }
       });
       if (error) {
