@@ -86,7 +86,7 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
             await ensureProfileExists(session.user.id);
 
             const { data: profileData } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
-            const role: string | null = (profileData as { role?: string | null } | null)?.role ?? null;
+            const role: string | null = profileData && typeof profileData === 'object' && 'role' in profileData ? String(profileData.role) ?? null : null;
             console.debug('[AuthProvider] redirect decision', { userId: session.user.id, role });
 
             const desiredPath = role?.toLowerCase().includes('admin') ? '/admin' : '/dashboard';
