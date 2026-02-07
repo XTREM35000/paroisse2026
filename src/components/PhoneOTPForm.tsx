@@ -168,14 +168,14 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
     return (
       <form onSubmit={handlePhoneSubmit} className="space-y-3 w-full">
         <div>
-          <label className="block text-xs font-medium mb-2">Numéro de téléphone</label>
+          <label className="block text-xs font-medium mb-2 text-neutral-900">Numéro de téléphone</label>
           <input
             type="tel"
             placeholder="+225 10 XX XX XX XX"
             value={phoneNumber}
             onChange={(e) => handlePhoneChange(e.target.value)}
             disabled={isLoading}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-neutral-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
           <p className="text-xs text-muted-foreground mt-1">Format international recommandé: +225 XX XX XX XX XX</p>
         </div>
@@ -213,7 +213,7 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-medium mb-2">Code de vérification</label>
+          <label className="block text-xs font-medium mb-2 text-neutral-900">Code de vérification</label>
           <input
             type="text"
             inputMode="numeric"
@@ -222,7 +222,7 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
             value={otpCode}
             onChange={(e) => handleOtpChange(e.target.value.replace(/\D/g, ''))}
             disabled={isLoading}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-neutral-900 placeholder:text-gray-500 text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
           <p className="text-xs text-muted-foreground mt-1">Entrez les 6 chiffres reçus par SMS</p>
         </div>
