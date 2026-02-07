@@ -4,17 +4,12 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { EmailFieldPro } from '@/components/ui/email-field-pro';
 import PasswordField from '@/components/ui/password-field';
 import { ensureProfileExists } from '@/utils/ensureProfileExists';
 import { Facebook } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import PhoneOTPForm from './PhoneOTPForm'; // Importez votre composant OTP
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -31,6 +26,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showRetryBanner, setShowRetryBanner] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false); // État pour contrôler la modale OTP
+
+  const closeOTPModal = () => {
+    setShowOTPModal(false);
+  };
+
+  const handleOTPSuccess = () => {
+    closeOTPModal();
+    if (onSuccess) onSuccess();
+  };
 
   const loginWithGoogle = async () => {
     console.log('🔴 Google login button clicked');
@@ -61,14 +66,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
         return;
       }
 
-      // In many environments Supabase will redirect the page for OAuth; keep a fallback check
-      // After OAuth redirect, ensure profile is created and let AuthProvider handle final redirect
+      // Dans de nombreux environnements, Supabase redirige la page pour OAuth
       setTimeout(async () => {
         try {
           const { data: authUser } = await supabase.auth.getUser();
           if (authUser?.user?.id) {
             await ensureProfileExists(authUser.user.id);
-            // No navigation here: AuthProvider will perform the correct redirect once profile exists
           }
         } catch (err) {
           console.error('Erreur lors de la vérification post-Google OAuth:', err);
@@ -97,12 +100,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
       }
 
       if (onSuccess) {
-        // Notify parent (closing modal / switching UI) and let AuthProvider perform the actual redirect
         setTimeout(() => {
           onSuccess();
         }, 500);
-      } else {
-        // Do not navigate here — AuthProvider handles final redirect based on the authoritative profile/roles
       }
     } catch (err: unknown) {
       console.error('Login error', err);
@@ -117,8 +117,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
     }
   };
 
-  // Gestion sécurisée de la connexion Facebook via Supabase OAuth
-  // CORRECTION MOBILE: Ajouter un log pour déboguer les problèmes de clic sur mobile
   const handleFacebookLogin = async () => {
     console.log('🔵 Facebook login button clicked');
     console.log('🔵 URL actuelle:', window.location.origin);
@@ -136,12 +134,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
     setFacebookLoading(true);
     try {
       // FIX: Nettoyage forcé de la session pour éviter les jetons corrompus
-      // Cela élimine les erreurs "Stop!" dues aux sessions antérieures
       console.log('🧹 Nettoyage de session Supabase...');
       await supabase.auth.signOut();
       
-      // Nettoyer les paramètres d'URL résiduels APRÈS un délai court
-      // ⏱️ Attendre 300ms pour que Supabase finisse son nettoyage interne
+      // Attendre 300ms pour que Supabase finisse son nettoyage interne
       await new Promise(resolve => setTimeout(resolve, 300));
       
       console.log('🧹 Nettoyage des URL...');
@@ -159,13 +155,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
         return;
       }
 
-      // Attendre que l'utilisateur soit authentifié après le redirection OAuth
       setTimeout(async () => {
         try {
           const { data: authUser } = await supabase.auth.getUser();
           if (authUser?.user?.id) {
             await ensureProfileExists(authUser.user.id);
-            // AuthProvider will handle the final redirect once profile exists
           }
         } catch (err) {
           console.error('Erreur lors de la création du profil Facebook:', err);
@@ -207,7 +201,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
       const retry = params.get('retry') === '1';
       const already = sessionStorage.getItem('ff_oauth_retry_done') === '1';
       if (retry && !already) {
-        // N'automatique pas la relance — afficher un bouton pour que l'utilisateur confirme
         setShowRetryBanner(true);
       }
     } catch (e) { /* ignore */ }
@@ -226,77 +219,105 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-2 w-full max-w-md text-sm">
-      <EmailFieldPro
-        value={email}
-        onChange={setEmail}
-        label="Email"
-        required
-        onValidationChange={() => {}}
-      />
-
-      <div>
-        <label className="block text-xs font-medium mb-0.5">Mot de passe</label>
-        <PasswordField value={password} onChange={(e) => setPassword(e.target.value)} required className="h-8 text-xs" />
-        <button
-          type="button"
-          onClick={() => {
-            onForgotPassword?.();
-          }}
-          className="text-xs font-medium text-blue-400 hover:text-blue-700 mt-3"
-        >
-          Mot de passe oublié ?
-        </button>
-      </div>
-
-      <div className="flex gap-2 pt-1">
-        <Button type="submit" disabled={loading} className="flex-1 h-8 text-xs">{loading ? 'Connexion...' : 'Se connecter'}</Button>
-      </div>
-
-      <Separator className="my-2" />
-
-      <div className="flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground text-center">Ou continuer avec</p>
-        <div className="flex gap-2">
-          <Button 
-            type="button" 
-            onClick={handleFacebookLogin} 
-            onTouchStart={(e) => {
-              e.preventDefault();
-              handleFacebookLogin();
-            }}
-            className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 cursor-pointer touch-none"
-            disabled={facebookLoading || loading}
-            style={{
-              minWidth: '44px',
-              WebkitTouchCallout: 'none',
-              WebkitUserSelect: 'none',
-            }}
-          >
-            <Facebook className="w-4 h-4" />
-            {facebookLoading ? 'Connexion...' : 'Facebook'}
-          </Button>
-          <Button 
-            type="button" 
-            onClick={loginWithGoogle}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              loginWithGoogle();
-            }}
-            className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600"
-            disabled={googleLoading || loading}
-          >
-            <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden focusable="false" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#EA4335" d="M24 9.5c3.9 0 7.1 1.4 9.2 3.1l6.8-6.8C36.7 2.7 30.9 0 24 0 14.7 0 6.8 5.6 3.1 13.6l7.9 6.1C12.9 15.1 18 9.5 24 9.5z"/>
-              <path fill="#34A853" d="M46.5 20.3c0 1.4-.1 2.8-.4 4.1H24v-8.9h12.7c-.5 2.9-2.6 5.6-5.2 7.1l.1.7 8.9 6.9C44.9 34.1 46.5 27.7 46.5 20.3z"/>
-              <path fill="#FBBC05" d="M10.9 28.8c-1.1-1.4-1.8-3.1-1.8-4.8s.6-3.4 1.8-4.8l-7.9-6.1C.9 14.9 0 17.4 0 20.1s.9 5.2 3 7.7l7.9-6.1z"/>
-              <path fill="#4285F4" d="M24 48c6.6 0 12.2-2.2 16.3-6l-8.9-6.9C29.1 34.9 26.7 36 24 36c-6 0-11.1-5.6-12-12.1L3.1 30.3C6.8 38.4 14.7 44 24 44z"/>
-            </svg>
-            {googleLoading ? 'Connexion...' : 'Google'}
-          </Button>
+      {/* Modale OTP */}
+      {showOTPModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 relative">
+            <button 
+              onClick={closeOTPModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+            <PhoneOTPForm onSuccess={handleOTPSuccess} />
+          </div>
         </div>
-      </div>
-    </form>
+      )}
+
+      <form onSubmit={onSubmit} className="space-y-2 w-full max-w-md text-sm">
+        <EmailFieldPro
+          value={email}
+          onChange={setEmail}
+          label="Email"
+          required
+          onValidationChange={() => {}}
+        />
+
+        <div>
+          <label className="block text-xs font-medium mb-0.5">Mot de passe</label>
+          <PasswordField value={password} onChange={(e) => setPassword(e.target.value)} required className="h-8 text-xs" />
+          <button
+            type="button"
+            onClick={() => {
+              onForgotPassword?.();
+            }}
+            className="text-xs font-medium text-blue-400 hover:text-blue-700 mt-3"
+          >
+            Mot de passe oublié ?
+          </button>
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <Button type="submit" disabled={loading} className="flex-1 h-8 text-xs">{loading ? 'Connexion...' : 'Se connecter'}</Button>
+        </div>
+
+        <Separator className="my-2" />
+
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground text-center">Ou continuer avec</p>
+          <div className="flex gap-2">
+            {/* Bouton OTP - Placé en premier (à gauche) */}
+            <Button 
+              type="button" 
+              onClick={() => setShowOTPModal(true)}
+              className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"
+              disabled={loading}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              SMS
+            </Button>
+            
+            <Button 
+              type="button" 
+              onClick={handleFacebookLogin} 
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleFacebookLogin();
+              }}
+              className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 cursor-pointer touch-none"
+              disabled={facebookLoading || loading}
+              style={{
+                minWidth: '44px',
+                WebkitTouchCallout: 'none',
+                WebkitUserSelect: 'none',
+              }}
+            >
+              <Facebook className="w-4 h-4" />
+              {facebookLoading ? 'Connexion...' : 'Facebook'}
+            </Button>
+            <Button 
+              type="button" 
+              onClick={loginWithGoogle}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                loginWithGoogle();
+              }}
+              className="flex-1 h-10 min-h-[44px] text-xs flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600"
+              disabled={googleLoading || loading}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden focusable="false" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#EA4335" d="M24 9.5c3.9 0 7.1 1.4 9.2 3.1l6.8-6.8C36.7 2.7 30.9 0 24 0 14.7 0 6.8 5.6 3.1 13.6l7.9 6.1C12.9 15.1 18 9.5 24 9.5z"/>
+                <path fill="#34A853" d="M46.5 20.3c0 1.4-.1 2.8-.4 4.1H24v-8.9h12.7c-.5 2.9-2.6 5.6-5.2 7.1l.1.7 8.9 6.9C44.9 34.1 46.5 27.7 46.5 20.3z"/>
+                <path fill="#FBBC05" d="M10.9 28.8c-1.1-1.4-1.8-3.1-1.8-4.8s.6-3.4 1.8-4.8l-7.9-6.1C.9 14.9 0 17.4 0 20.1s.9 5.2 3 7.7l7.9-6.1z"/>
+                <path fill="#4285F4" d="M24 48c6.6 0 12.2-2.2 16.3-6l-8.9-6.9C29.1 34.9 26.7 36 24 36c-6 0-11.1-5.6-12-12.1L3.1 30.3C6.8 38.4 14.7 44 24 44z"/>
+              </svg>
+              {googleLoading ? 'Connexion...' : 'Google'}
+            </Button>
+          </div>
+        </div>
+      </form>
     </>
   );
 };
