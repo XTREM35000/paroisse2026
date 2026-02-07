@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +24,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   const [loading, setLoading] = useState(false);
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showRetryBanner, setShowRetryBanner] = useState(false);
 
   const loginWithGoogle = async () => {
     console.log('🔴 Google login button clicked');
@@ -184,8 +185,42 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
     }
   };
 
+  // Retry manuel si le callback a redirigé vers /login?retry=1
+  const handleManualRetry = async () => {
+    try {
+      sessionStorage.setItem('ff_oauth_retry_done', '1');
+    } catch (e) { /* ignore */ }
+    setShowRetryBanner(false);
+    await handleFacebookLogin();
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const retry = params.get('retry') === '1';
+      const already = sessionStorage.getItem('ff_oauth_retry_done') === '1';
+      if (retry && !already) {
+        // N'automatique pas la relance — afficher un bouton pour que l'utilisateur confirme
+        setShowRetryBanner(true);
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
+
   return (
-    <form onSubmit={onSubmit} className="space-y-2 w-full max-w-md text-sm">
+    <>
+      {showRetryBanner && (
+        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>Une vérification Facebook a interrompu le flux OAuth. Cliquez sur « Réessayer Facebook » pour relancer manuellement.</div>
+            <div>
+              <Button type="button" onClick={handleManualRetry} disabled={facebookLoading} className="h-8 text-xs">Réessayer Facebook</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="space-y-2 w-full max-w-md text-sm">
       <EmailFieldPro
         value={email}
         onChange={setEmail}
@@ -256,6 +291,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
         </div>
       </div>
     </form>
+    </>
   );
 };
 
