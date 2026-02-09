@@ -25,6 +25,14 @@ const colorClasses: Record<string, string> = {
 };
 
 const AdminStatsWidget: React.FC<AdminStatsWidgetProps> = ({ stats, isLoading = false }) => {
+  // Format number with max 2 decimal places
+  const formatValue = (value: string | number) => {
+    if (typeof value === 'number' && !Number.isInteger(value)) {
+      return Number(value.toFixed(2));
+    }
+    return value;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       {stats.map((stat, idx) => (
@@ -45,7 +53,7 @@ const AdminStatsWidget: React.FC<AdminStatsWidgetProps> = ({ stats, isLoading = 
               </div>
 
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-bold">{stat.value}</span>
+                <span className="text-2xl font-bold">{formatValue(stat.value)}</span>
                 {stat.change && (
                   <div className={`flex items-center gap-1 text-xs font-semibold ${
                     stat.trend === 'down' ? 'text-red-600 dark:text-red-400' :
