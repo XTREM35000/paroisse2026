@@ -337,7 +337,8 @@ export function autocorrectEmail(email: string): string {
 }
 
 /**
- * Detect and separate domain accidentally typed in local part
+ * Detect and separate domain accidentally typed in local part (without @)
+ * Example: "prenom.nomgmail.com" → { localPart: "prenom.nom", domain: "gmail.com" }
  * Example: "20214dibogmail.com" → { localPart: "20214dibog", domain: "gmail.com" }
  * Returns null if no domain detected
  */
@@ -347,30 +348,21 @@ export function detectAndSeparateDomain(input: string): {
 } | null {
   if (!input || !input.includes('.')) return null;
 
-  const parts = input.split('.');
+  const normalized = input.trim().toLowerCase();
+  const parts = normalized.split('.');
   const lastPart = parts[parts.length - 1];
 
   // Check if last part looks like a TLD (2-6 chars, letters only)
   if (lastPart.length < 2 || lastPart.length > 6) return null;
   if (!/^[a-z]+$/.test(lastPart)) return null;
 
-  // Try to find a known domain ending
-  const knownDomains = [
-    'gmail.com',
-    'yahoo.com',
-    'yahoo.fr',
-    'hotmail.com',
-    'hotmail.fr',
-    'outlook.com',
-    'outlook.fr',
-    'icloud.com',
-    'live.com',
-  ];
+  // Get known domains
+  const knownDomainsList = getKnownDomains()
 
   // Check if last 2 parts form a known domain
   if (parts.length >= 2) {
     const lastTwoParts = [parts[parts.length - 2], parts[parts.length - 1]].join('.');
-    if (knownDomains.includes(lastTwoParts)) {
+    if (knownDomainsList.includes(lastTwoParts)) {
       const localPart = parts.slice(0, -2).join('.');
       return localPart ? { localPart, domain: lastTwoParts } : null;
     }

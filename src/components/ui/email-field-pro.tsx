@@ -3,7 +3,7 @@ import { Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from './input'
 import { Label } from './label'
-import { stripAndNormalize, normalizeEmail, sanitizeEmail, getKnownDomains } from '@/utils/emailSanitizer'
+import { stripAndNormalize, normalizeEmail, sanitizeEmail, getKnownDomains, detectAndSeparateDomain } from '@/utils/emailSanitizer'
 
 type DomainOption = { label: string; value: string }
 
@@ -111,28 +111,52 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 		onChange(localPart && newCustom ? `${localPart}@${newCustom}` : '')
 	}
 
+	// Handle paste to detect domains without @ (e.g., "prenom.nomgmail.com")
+	const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+		const pasted = e.clipboardData.getData('text')
+		if (!pasted) return
+
+		const detected = detectAndSeparateDomain(pasted)
+		if (detected) {
+			try {
+				const path = typeof window !== 'undefined' ? window.location.pathname : ''
+				if (path === '/auth') {
+					e.preventDefault()
+					setLocalPart(detected.localPart)
+					setDomain(DOMAIN_OPTIONS[0].value)
+					setCustomDomain('')
+					onChange(detected.localPart)
+				}
+			} catch (err) {
+				// ignore
+			}
+		}
+	}
+
 	// Validate on blur
 	const handleBlur = () => {
 		if (!fullValue) return
 
-		// If we're on the /auth page, strip known common domains on blur
+		// If we're on the /auth page, strip known common domains on blur when using @ notation
 		// Example: "prenom.nom@gmail.com" -> "prenom.nom"
-		try {
-			const path = typeof window !== 'undefined' ? window.location.pathname : ''
-			if (path === '/auth' && fullValue.includes('@')) {
-				const [loc, dom] = fullValue.split('@')
+		if (fullValue.includes('@')) {
+			try {
+				const path = typeof window !== 'undefined' ? window.location.pathname : ''
+				if (path === '/auth') {
+					const [loc, dom] = fullValue.split('@')
 					// Check against the consolidated known domains list from utils
 					const knownDomains = getKnownDomains()
 					if (knownDomains.includes(dom)) {
-					setLocalPart(loc)
-					setDomain(DOMAIN_OPTIONS[0].value)
-					setCustomDomain('')
-					onChange(loc)
-					return
+						setLocalPart(loc)
+						setDomain(DOMAIN_OPTIONS[0].value)
+						setCustomDomain('')
+						onChange(loc)
+						return
+					}
 				}
+			} catch (e) {
+				// ignore
 			}
-		} catch (e) {
-			// ignore
 		}
 
 		const validation = sanitizeEmail(fullValue)
@@ -162,6 +186,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 					value={localPart}
 					onChange={handleLocalChange}
 					onBlur={handleBlur}
+					onPaste={handlePaste}
 					disabled={disabled}
 					aria-invalid={Boolean(error || internalError)}
 					aria-describedby={error || internalError ? errorId : undefined}
