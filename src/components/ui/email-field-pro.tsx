@@ -88,28 +88,44 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 
 	// validateEmail implemented via useCallback above
 
-	const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		// STRIP MODE: Extract only the part before @
-		// This converts any "test@gmail.com" input into just "test"
+	const handleLocalChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		const stripped = stripAndNormalize(e.target.value)
 		setLocalPart(stripped)
-		onChange(stripped)
-	}
+		// Build complete email using functional update to get latest domain state
+		setDomain(prevDomain => {
+			const currentDomain = prevDomain || customDomain
+			const emailValue = stripped && currentDomain ? `${stripped}@${currentDomain}` : stripped
+			onChange(emailValue)
+			return prevDomain
+		})
+	}, [customDomain, onChange])
 
-	const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+	const handleDomainChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
 		const newDom = e.target.value
 		setDomain(newDom)
+		setCustomDomain('')
 		if (newDom !== '') {
-			setCustomDomain('')
-			onChange(localPart ? `${localPart}@${newDom}` : '')
+			// Build complete email with latest localPart state
+			setLocalPart(prevLocalPart => {
+				const emailValue = prevLocalPart && newDom ? `${prevLocalPart}@${newDom}` : prevLocalPart
+				onChange(emailValue)
+				return prevLocalPart
+			})
 		}
-	}
+	}, [onChange])
 
-	const handleCustomDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleCustomDomainChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		const newCustom = normalizeEmail(e.target.value.replace(/@/g, ''))
 		setCustomDomain(newCustom)
-		onChange(localPart && newCustom ? `${localPart}@${newCustom}` : '')
-	}
+		if (newCustom) {
+			// Build complete email with latest localPart state
+			setLocalPart(prevLocalPart => {
+				const emailValue = prevLocalPart && newCustom ? `${prevLocalPart}@${newCustom}` : prevLocalPart
+				onChange(emailValue)
+				return prevLocalPart
+			})
+		}
+	}, [onChange])
 
 	// Handle paste to detect domains without @ (e.g., "prenom.nomgmail.com")
 	const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -125,7 +141,8 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 					setLocalPart(detected.localPart)
 					setDomain(DOMAIN_OPTIONS[0].value)
 					setCustomDomain('')
-					onChange(detected.localPart)
+					// Return complete email with domain, not just local part
+					onChange(`${detected.localPart}@${detected.domain}`)
 				}
 			} catch (err) {
 				// ignore
@@ -137,8 +154,8 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 	const handleBlur = () => {
 		if (!fullValue) return
 
-		// If we're on the /auth page, strip known common domains on blur when using @ notation
-		// Example: "prenom.nom@gmail.com" -> "prenom.nom"
+		// If we're on the /auth page, reset domain view on blur but keep full email in onChange
+		// This makes the UI show only the local part, but provides complete email to forms
 		if (fullValue.includes('@')) {
 			try {
 				const path = typeof window !== 'undefined' ? window.location.pathname : ''
@@ -150,7 +167,8 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 						setLocalPart(loc)
 						setDomain(DOMAIN_OPTIONS[0].value)
 						setCustomDomain('')
-						onChange(loc)
+						// Send complete email with domain, maintain formatting for form submission
+						onChange(`${loc}@${dom}`)
 						return
 					}
 				}
