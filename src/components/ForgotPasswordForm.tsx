@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { stripAndNormalize } from '@/utils/emailSanitizer';
 import { EmailFieldPro } from '@/components/ui/email-field-pro';
 
 interface ForgotPasswordFormProps {
@@ -19,10 +20,13 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onSw
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
+    // STRIP MODE: Extract only the identifier part
+    const identifier = stripAndNormalize(email);
+    
+    if (!identifier.trim()) {
       toast({
-        title: '⚠️ Champ requis',
-        description: 'Veuillez entrer votre adresse email',
+        title: '❌ Identifiant requis',
+        description: 'Veuillez entrer votre identifiant',
         variant: 'destructive',
       });
       return;
@@ -30,7 +34,10 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onSw
 
     setLoading(true);
     try {
-      await resetPassword(email);
+      // Generate email from identifier (or backend can do this)
+      const emailToUse = `${identifier}@paroisse.ci`; // Adjust domain as needed
+      
+      await resetPassword(emailToUse);
       setSubmitted(true);
       toast({
         title: '✅ Email envoyé',

@@ -3,6 +3,7 @@ import { Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from './input'
 import { Label } from './label'
+import { stripAndNormalize, normalizeEmail, sanitizeEmail, getKnownDomains } from '@/utils/emailSanitizer'
 
 type DomainOption = { label: string; value: string }
 
@@ -72,13 +73,12 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 
 	const validateEmail = useCallback((email: string) => {
 		if (!email) {
-			setInternalError(required ? 'Email requis' : '')
+			setInternalError(required ? 'Identifiant requis' : '')
 			return !required
 		}
-		const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-		const ok = re.test(email)
-		setInternalError(ok ? '' : 'Format email invalide')
-		return ok
+		// In strip mode, just check that there's content
+		setInternalError('')
+		return true
 	}, [required])
 
 	useEffect(() => {
@@ -89,10 +89,11 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 	// validateEmail implemented via useCallback above
 
 	const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const sanitized = e.target.value.replace(/@/g, '').trim()
-		setLocalPart(sanitized)
-		const currentDomain = domain || customDomain
-		onChange(sanitized && currentDomain ? `${sanitized}@${currentDomain}` : '')
+		// STRIP MODE: Extract only the part before @
+		// This converts any "test@gmail.com" input into just "test"
+		const stripped = stripAndNormalize(e.target.value)
+		setLocalPart(stripped)
+		onChange(stripped)
 	}
 
 	const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -105,9 +106,40 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 	}
 
 	const handleCustomDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newCustom = e.target.value.trim()
+		const newCustom = normalizeEmail(e.target.value.replace(/@/g, ''))
 		setCustomDomain(newCustom)
 		onChange(localPart && newCustom ? `${localPart}@${newCustom}` : '')
+	}
+
+	// Validate on blur
+	const handleBlur = () => {
+		if (!fullValue) return
+
+		// If we're on the /auth page, strip known common domains on blur
+		// Example: "prenom.nom@gmail.com" -> "prenom.nom"
+		try {
+			const path = typeof window !== 'undefined' ? window.location.pathname : ''
+			if (path === '/auth' && fullValue.includes('@')) {
+				const [loc, dom] = fullValue.split('@')
+					// Check against the consolidated known domains list from utils
+					const knownDomains = getKnownDomains()
+					if (knownDomains.includes(dom)) {
+					setLocalPart(loc)
+					setDomain(DOMAIN_OPTIONS[0].value)
+					setCustomDomain('')
+					onChange(loc)
+					return
+				}
+			}
+		} catch (e) {
+			// ignore
+		}
+
+		const validation = sanitizeEmail(fullValue)
+		if (validation.suggestion && validation.suggestion !== fullValue) {
+			// Apply suggestion on blur
+			onChange(validation.suggestion)
+		}
 	}
 
 	return (
@@ -129,10 +161,13 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 					id={fieldId}
 					value={localPart}
 					onChange={handleLocalChange}
+					onBlur={handleBlur}
 					disabled={disabled}
 					aria-invalid={Boolean(error || internalError)}
 					aria-describedby={error || internalError ? errorId : undefined}
-					placeholder="nom.utilisateur"				autoComplete="email"					className={cn('flex-1', (error || internalError) && 'border-red-500 focus-visible:ring-red-500', className)}
+					placeholder="nom.utilisateur"
+					autoComplete="email"
+					className={cn('flex-1', (error || internalError) && 'border-red-500 focus-visible:ring-red-500', className)}
 				/>
 				<span className="text-muted-foreground font-medium">@</span>
 				<select
@@ -142,35 +177,33 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 					className={cn(
 						'h-10 rounded-md border bg-background px-3 text-sm font-medium',
 						error || internalError ? 'border-red-500' : 'border-input',
-						'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+						'focus:outline-none ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring'
 					)}
-					aria-label="Domaine email"
 				>
-					{DOMAIN_OPTIONS.map(opt => (
-						<option key={opt.value} value={opt.value}>
-							{opt.label}
+					{DOMAIN_OPTIONS.map(option => (
+						<option key={option.value} value={option.value}>
+							{option.label}
 						</option>
 					))}
 				</select>
+				{domain === '' && (
+					<Input
+						type="text"
+						placeholder="ex: mail.com"
+						value={customDomain}
+						onChange={handleCustomDomainChange}
+						disabled={disabled}
+						className={cn('flex-1', (error || internalError) && 'border-red-500 focus-visible:ring-red-500')}
+					/>
+				)}
 			</div>
 
-			{domain === '' && (
-				<Input
-					type="text"
-					value={customDomain}
-					onChange={handleCustomDomainChange}
-					disabled={disabled}
-					placeholder="ex: mondomaine.com"
-					aria-invalid={Boolean(error || internalError)}
-					className={cn('text-sm', (error || internalError) && 'border-red-500 focus-visible:ring-red-500')}
-				/>
-			)}
-
 			{(error || internalError) && (
-				<p id={errorId} className="text-xs text-red-500 font-medium">{error || internalError}</p>
+				<p id={errorId} className="text-sm text-red-500 flex items-center gap-1">
+					<span>⚠</span>
+					<span>{error || internalError}</span>
+				</p>
 			)}
 		</div>
 	)
 }
-
-export default EmailFieldPro

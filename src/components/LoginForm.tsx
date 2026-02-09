@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { EmailFieldPro } from '@/components/ui/email-field-pro';
 import PasswordField from '@/components/ui/password-field';
 import { ensureProfileExists } from '@/utils/ensureProfileExists';
+import { stripAndNormalize } from '@/utils/emailSanitizer';
 import { Facebook } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PhoneOTPForm from './PhoneOTPForm'; // Importez votre composant OTP
@@ -89,9 +90,36 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // STRIP MODE: Extract only the identifier part
+    const identifier = stripAndNormalize(email);
+    
+    if (!identifier.trim()) {
+      toast({
+        title: '❌ Identifiant requis',
+        description: 'Veuillez entrer votre identifiant',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!password.trim()) {
+      toast({
+        title: '❌ Mot de passe requis',
+        description: 'Veuillez entrer votre mot de passe',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const res: unknown = await login(email, password);
+      // Generate email from identifier (or backend can do this)
+      // Option 1: identifier@paroisse.ci
+      // Option 2: Send identifier directly and let backend handle it
+      const emailToUse = `${identifier}@paroisse.ci`; // Adjust domain as needed
+      
+      const res: unknown = await login(emailToUse, password);
       const data = (res as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
       const loggedUser = data?.user as Record<string, unknown> | undefined;
 

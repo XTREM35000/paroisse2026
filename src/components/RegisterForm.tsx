@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { stripAndNormalize } from "@/utils/emailSanitizer";
 import { Camera, Facebook } from "lucide-react";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import PasswordField from '@/components/ui/password-field';
@@ -53,8 +54,42 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // STRIP MODE: Extract only the identifier part
+    const identifier = stripAndNormalize(email);
+    
+    if (!identifier.trim()) {
+      toast({
+        title: '❌ Identifiant requis',
+        description: 'Veuillez entrer votre identifiant',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!password.trim()) {
+      toast({
+        title: '❌ Mot de passe requis',
+        description: 'Veuillez entrer un mot de passe',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!firstName.trim() || !lastName.trim()) {
+      toast({
+        title: '❌ Champs requis',
+        description: 'Veuillez entrer votre prénom et votre nom',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
+      // Generate email from identifier (or backend can do this)
+      const emailToUse = `${identifier}@paroisse.ci`; // Adjust domain as needed
+      
       // Déterminer le rôle à attribuer (premier utilisateur = admin, deuxième = moderateur)
       // Utiliser les valeurs canoniques françaises acceptées par la contrainte CHECK
       let assignedRole = 'membre';
@@ -73,7 +108,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
 
       // 1) Créer l'utilisateur d'abord et récupérer la réponse
       type AuthSignUpRes = { data?: { user?: { id?: string } } | null };
-      const registerRes = (await register(email, password, {
+      const registerRes = (await register(emailToUse, password, {
         full_name: fullName,
         phone: fullPhone,
         role: assignedRole,
