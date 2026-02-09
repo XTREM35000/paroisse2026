@@ -47,13 +47,13 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 
 	useEffect(() => {
 		if (!value) {
-			console.debug('[EmailFieldPro] value prop cleared');
+			console.log('[EmailFieldPro] value prop cleared');
 			setLocalPart('')
 			setDomain(DOMAIN_OPTIONS[0].value)
 			setCustomDomain('')
 			return
 		}
-		console.debug('[EmailFieldPro] value prop updated:', {value});
+		console.log('[EmailFieldPro] value prop updated:', {value});
 		const [loc, dom] = value.split('@')
 		setLocalPart(loc || '')
 		if (dom) {
@@ -91,7 +91,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 	// Send complete email via onChange whenever fullValue changes (identifier + domain)
 	useEffect(() => {
 		if (fullValue) {
-			console.debug('[EmailFieldPro] onChange emitting fullValue:', fullValue, {localPart, domain, customDomain});
+			console.log('[EmailFieldPro] onChange emitting fullValue:', fullValue, {localPart, domain, customDomain});
 			onChange(fullValue)
 		}
 	}, [fullValue, onChange, localPart, domain, customDomain])
@@ -100,13 +100,13 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 
 	const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const stripped = stripAndNormalize(e.target.value)
-		console.debug('[EmailFieldPro] handleLocalChange:', {from: e.target.value, to: stripped});
+		console.log('[EmailFieldPro] handleLocalChange:', {from: e.target.value, to: stripped});
 		setLocalPart(stripped)
 	}
 
 	const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const newDom = e.target.value
-		console.debug('[EmailFieldPro] handleDomainChange:', {selected: newDom});
+		console.log('[EmailFieldPro] handleDomainChange:', {selected: newDom});
 		setDomain(newDom)
 		if (newDom !== '') {
 			setCustomDomain('')
@@ -121,11 +121,11 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 	// Handle paste to detect domains without @ (e.g., "prenom.nomgmail.com")
 	const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
 		const pasted = e.clipboardData.getData('text')
-		console.debug('[EmailFieldPro] handlePaste:', {pasted});
+		console.log('[EmailFieldPro] handlePaste:', {pasted});
 		if (!pasted) return
 
 		const detected = detectAndSeparateDomain(pasted)
-		console.debug('[EmailFieldPro] handlePaste detected:', {detected});
+		console.log('[EmailFieldPro] handlePaste detected:', {detected});
 		if (detected) {
 			try {
 				const path = typeof window !== 'undefined' ? window.location.pathname : ''
@@ -144,7 +144,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 
 	// Validate on blur
 	const handleBlur = () => {
-		console.debug('[EmailFieldPro] handleBlur:', {fullValue, localPart, domain, customDomain});
+		console.log('[EmailFieldPro] handleBlur:', {fullValue, localPart, domain, customDomain});
 		if (!fullValue) return
 
 		// If we're on the /auth page, reset domain view on blur but keep full email in onChange
@@ -157,7 +157,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 					// Check against the consolidated known domains list from utils
 					const knownDomains = getKnownDomains()
 					if (knownDomains.includes(dom)) {
-						console.debug('[EmailFieldPro] handleBlur stripping domain on /auth:', {from: fullValue, domain: dom});
+						console.log('[EmailFieldPro] handleBlur stripping domain on /auth:', {from: fullValue, domain: dom});
 						setLocalPart(loc)
 						setDomain(DOMAIN_OPTIONS[0].value)
 						setCustomDomain('')
@@ -173,7 +173,7 @@ export const EmailFieldPro: React.FC<EmailFieldProProps> = ({
 		const validation = sanitizeEmail(fullValue)
 		if (validation.suggestion && validation.suggestion !== fullValue) {
 			// Apply suggestion on blur by parsing and updating state
-			console.debug('[EmailFieldPro] handleBlur applying suggestion:', {from: fullValue, to: validation.suggestion});
+			console.log('[EmailFieldPro] handleBlur applying suggestion:', {from: fullValue, to: validation.suggestion});
 			const [suggestedLoc, suggestedDom] = validation.suggestion.split('@')
 			if (suggestedLoc && suggestedDom) {
 				setLocalPart(suggestedLoc)
