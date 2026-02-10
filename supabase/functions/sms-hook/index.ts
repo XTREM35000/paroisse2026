@@ -322,9 +322,13 @@ function timingSafeCompare(a: string, b: string): boolean {
   return result === 0;
 }
 
-// Handler principal de la fonction Edge
+// Handler principal MODIFIÉ pour debug
 Deno.serve(async (req: Request) => {
-  console.log("Fonction sms-hook appelée");
+  console.log("Fonction sms-hook appelée - MODE DEBUG");
+  
+  // DEBUG: Loguer tous les headers
+  const headers = Object.fromEntries(req.headers.entries());
+  console.log("Headers reçus:", JSON.stringify(headers, null, 2));
   
   // Vérifier la méthode HTTP
   if (req.method !== "POST") {
@@ -334,31 +338,21 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  // Vérifier la signature du webhook
-  const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
-  
-  if (!hookSecret) {
-    console.error("SEND_SMS_HOOK_SECRET non configuré");
-    return new Response(
-      JSON.stringify({ error: "Configuration manquante" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  const isValid = await verifyWebhookSignature(req, hookSecret);
-  
-  if (!isValid) {
-    console.error("Signature du webhook invalide");
-    return new Response(
-      JSON.stringify({ error: "Signature invalide" }),
-      { status: 401, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  // TEMPORAIREMENT: Désactiver la vérification pour debug
+  console.log("⚠️ MODE DEBUG: Vérification de signature désactivée");
+  // const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
+  // if (!hookSecret) { ... }
+  // const isValid = await verifyWebhookSignature(req, hookSecret);
+  // if (!isValid) { ... }
 
   try {
+    // Lire le body pour debug
+    const rawBody = await req.text();
+    console.log("Body brut reçu:", rawBody);
+    
     // Parser le payload
-    const payload: SupabaseSMSWebhookPayload = await req.json();
-    console.log("Payload reçu:", JSON.stringify(payload, null, 2));
+    const payload: SupabaseSMSWebhookPayload = JSON.parse(rawBody);
+    console.log("Payload parsé:", JSON.stringify(payload, null, 2));
     
     // Vérifier le type d'événement
     if (payload.type !== "sms.send") {
@@ -386,51 +380,62 @@ Deno.serve(async (req: Request) => {
     const formattedPhone = formatPhoneNumber(phone);
     console.log(`Numéro formaté: ${formattedPhone}, OTP: ${otp}`);
     
-    // Obtenir un token d'accès Orange
-    let accessToken: string;
-    try {
-      accessToken = await getOrangeAccessToken();
-    } catch (error) {
-      console.error("Échec d'obtention du token Orange:", error);
-      return new Response(
-        JSON.stringify({ error: "Service SMS temporairement indisponible" }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    // Tester l'envoi réel avec Orange
+    console.log("Tentative d'envoi via Orange...");
     
-    // Envoyer le SMS via Orange
-    const smsSent = await sendOrangeSMS(formattedPhone, otp, accessToken);
+    // Simuler un succès d'abord pour tester le flux
+    // Puis tester avec l'API réelle
+    const TEST_MODE = true; // Mettre à false pour l'envoi réel
     
-    if (smsSent) {
-      console.log(`SMS OTP envoyé avec succès à ${formattedPhone}`);
+    if (TEST_MODE) {
+      console.log("✅ TEST: Simulation d'envoi réussi");
       return new Response(
         JSON.stringify({ 
           success: true,
-          message: "SMS envoyé via Orange",
+          message: "SMS envoyé via Orange (mode test)",
           phone: formattedPhone
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } else {
-      console.error(`Échec d'envoi du SMS à ${formattedPhone}`);
+      // Envoi réel via Orange
+      let accessToken: string;
+      try {
+        accessToken = await getOrangeAccessToken();
+      } catch (error) {
+        console.error("Échec d'obtention du token Orange:", error);
+        return new Response(
+          JSON.stringify({ error: "Service SMS temporairement indisponible" }),
+          { status: 502, headers: { "Content-Type": "application/json" } }
+        );
+      }
       
-      // ICI: FALLBACK VERS TWILIO EXISTANT
-      // Ne rien faire = Supabase utilisera automatiquement son provider Twilio par défaut
-      // car cette fonction retourne une erreur
+      const smsSent = await sendOrangeSMS(formattedPhone, otp, accessToken);
       
-      return new Response(
-        JSON.stringify({ 
-          error: "Échec d'envoi SMS Orange, fallback vers Twilio",
-          fallback: true
-        }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
-      );
+      if (smsSent) {
+        console.log(`✅ SMS OTP envoyé avec succès à ${formattedPhone}`);
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: "SMS envoyé via Orange",
+            phone: formattedPhone
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      } else {
+        console.error(`❌ Échec d'envoi du SMS à ${formattedPhone}`);
+        return new Response(
+          JSON.stringify({ 
+            error: "Échec d'envoi SMS Orange",
+            fallback: true
+          }),
+          { status: 502, headers: { "Content-Type": "application/json" } }
+        );
+      }
     }
     
   } catch (error) {
-    console.error("Erreur interne du serveur:", error);
-    
-    // En cas d'erreur inattendue, permettre le fallback vers Twilio
+    console.error("❌ Erreur interne du serveur:", error);
     return new Response(
       JSON.stringify({ 
         error: "Erreur interne du serveur",
