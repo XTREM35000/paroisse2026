@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Media, Album, MediaType } from '@/types/database';
+import type { StreamSources, ProviderType } from '@/lib/providers';
 
 // =====================================================
 // MEDIA QUERIES
@@ -202,21 +203,39 @@ export async function fetchRecentImages(limit = 12) {
 }
 
 // =====================================================
-// LIVE STREAMS
+// LIVE STREAMS (REFACTORED v2)
 // =====================================================
 
 export interface LiveStream {
   id: string;
   title: string;
+  description?: string | null;
+
+  // New: Extensible sources structure (supports migration from legacy stream_url)
+  stream_sources?: StreamSources | null;
+
+  // Legacy: Backward compatibility
   stream_url: string;
+
+  // Metadata
   stream_type: 'tv' | 'radio';
-  provider?: 'youtube' | 'api_video' | 'radio_stream';
+  provider: ProviderType;
+
+  // Playback hints
+  playback_strategy?: 'primary' | 'fallback' | null;
+
+  // Activation
   is_active: boolean;
   scheduled_at?: string | null;
+
+  // Replay handling
   replay_created?: boolean;
+  replay_video_id?: string | null;
+
+  // Timestamps
   created_at: string;
   updated_at: string;
-} 
+}
 
 /**
  * Fetch the active live stream (most recent if multiple)
@@ -262,17 +281,35 @@ export async function fetchAllLiveStreams(options?: {
 
 /**
  * Create or update a live stream
+ * 
+ * Handles both new stream_sources and legacy stream_url for backward compatibility
+ * Always maintains stream_url for fallback (required by DB constraint)
  */
-export async function upsertLiveStream(stream: Omit<LiveStream, 'created_at' | 'updated_at'> & { id?: string }) {
+export async function upsertLiveStream(
+  stream: Omit<LiveStream, 'created_at' | 'updated_at'> & { id?: string }
+) {
+  // Ensure stream_url is always populated (backward compatibility)
+  let fallbackUrl = stream.stream_url || '';
+  if (stream.stream_sources) {
+    // Extract first available source as fallback
+    fallbackUrl =
+      stream.stream_sources.url ||
+      stream.stream_sources.hls ||
+      stream.stream_sources.audio ||
+      stream.stream_sources.embed ||
+      fallbackUrl;
+  }
+
   if (stream.id) {
-    // Update existing - include all fields
+    // Update existing stream
     const payload = {
       title: stream.title,
-      stream_url: stream.stream_url,
+      stream_url: fallbackUrl,
+      stream_sources: stream.stream_sources ?? null,
       stream_type: stream.stream_type,
+      provider: stream.provider || 'youtube',
       is_active: stream.is_active,
-      scheduled_at: (stream as any).scheduled_at ?? null,
-      replay_created: (stream as any).replay_created ?? false,
+      scheduled_at: stream.scheduled_at ?? null,
       updated_at: new Date().toISOString(),
     };
 
@@ -286,16 +323,15 @@ export async function upsertLiveStream(stream: Omit<LiveStream, 'created_at' | '
     if (error) throw error;
     return data as LiveStream;
   } else {
-    // Create new - exclude id to let PostgreSQL generate UUID
-    const { title, stream_url, stream_type, is_active } = stream;
+    // Create new stream
     const payload = {
-      title,
-      stream_url,
-      stream_type,
-      provider: stream.provider ?? 'youtube',
-      is_active,
-      scheduled_at: (stream as any).scheduled_at ?? null,
-      replay_created: (stream as any).replay_created ?? false,
+      title: stream.title,
+      stream_url: fallbackUrl,
+      stream_sources: stream.stream_sources ?? null,
+      stream_type: stream.stream_type,
+      provider: stream.provider || 'youtube',
+      is_active: stream.is_active,
+      scheduled_at: stream.scheduled_at ?? null,
       updated_at: new Date().toISOString(),
     };
 

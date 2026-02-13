@@ -10,64 +10,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { fetchActiveLiveStream, type LiveStream } from '@/lib/supabase/mediaQueries';
 import useLiveSession from '@/hooks/useLiveSession';
+import useLiveStats from '@/hooks/useLiveStats';
 import LiveChatSidebar from '@/components/live/LiveChatSidebar';
-
-/**
- * Extract YouTube ID from various URL formats
- */
-function getYouTubeId(input: string): string {
-  if (!input) return '';
-
-  let id: string | null = null;
-
-  // Try URL parsing first
-  try {
-    const url = new URL(input);
-    const host = url.hostname.replace('www.', '');
-
-    if (host.includes('youtube.com')) {
-      if (url.pathname.includes('/embed/')) {
-        id = url.pathname.split('/embed/')[1].split('/')[0];
-      } else {
-        id = url.searchParams.get('v');
-      }
-    } else if (host === 'youtu.be') {
-      id = url.pathname.replace('/', '');
-    }
-  } catch (e) {
-    // Not a full URL, try regex
-  }
-
-  // Try regex if no ID yet
-  if (!id) {
-    const match = input.match(/(?:v=|v\/|embed\/|youtu\.be\/|watch\?v=)([A-Za-z0-9_-]{11})/);
-    if (match) id = match[1];
-  }
-
-  // If still no ID and input looks like an ID, use it directly
-  if (!id && /^[A-Za-z0-9_-]{11}$/.test(input)) {
-    id = input;
-  }
-
-  return id || '';
-}
-
-/**
- * Détermine la source vidéo à partir de l'URL
- */
-function determineVideoSource(url: string): 'youtube' | 'api_video' | 'unknown' {
-  if (!url) return 'unknown';
-  
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    return 'youtube';
-  }
-  
-  if (url.includes('embed.api.video') || url.includes('api.video')) {
-    return 'api_video';
-  }
-  
-  return 'unknown';
-}
+import { ProviderManager, type LiveStreamData } from '@/lib/providers';
 
 const Live: React.FC = () => {
   const location = useLocation();
@@ -80,8 +25,9 @@ const Live: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showChatMobile, setShowChatMobile] = useState(false);
 
-  // live session tracking (increments/decrements viewers)
+  // Live session tracking (increments/decrements viewers)
   const liveSession = useLiveSession(liveStream?.id);
+  const { stats: liveStats } = useLiveStats(liveStream?.id, 5000);
 
   useEffect(() => {
     if (!liveStream?.id) return;
@@ -102,7 +48,15 @@ const Live: React.FC = () => {
     const loadLiveStream = async () => {
       try {
         const stream = await fetchActiveLiveStream();
-        setLiveStream(stream);
+        console.log('📡 Fetched live stream:', stream ? { id: stream.id, title: stream.title, provider: stream.provider, url: stream.stream_url?.substring(0, 80) } : 'null');
+        if (stream) {
+          // Normalize stream data with ProviderManager
+          const normalized = ProviderManager.normalizeStream(stream as any);
+          console.log('✨ Normalized stream:', { provider: normalized.provider, url: normalized.stream_url?.substring(0, 80) });
+          setLiveStream(normalized as any);
+        } else {
+          setLiveStream(null);
+        }
       } catch (error) {
         console.error('Error loading live stream:', error);
         toast({
@@ -203,7 +157,7 @@ const Live: React.FC = () => {
             </div>
 
             {/* Quick Info Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               <div className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-center gap-2 mb-2">
                   {liveStream.stream_type === 'tv' ? (
@@ -222,17 +176,23 @@ const Live: React.FC = () => {
 
               <div className="rounded-lg border border-border bg-card p-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                  Démarré le
+                  Provider
                 </p>
-                <p className="font-semibold text-sm">
-                  {new Date(liveStream.created_at).toLocaleString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                <p className="font-semibold text-sm capitalize">
+                  {liveStream.provider || 'unknown'}
                 </p>
               </div>
+
+              {liveStats && (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                    Spectateurs
+                  </p>
+                  <p className="font-semibold text-sm">
+                    {liveStats.viewers_count || 0} en direct
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Information section */}
@@ -308,9 +268,21 @@ const Live: React.FC = () => {
 
       {/* Player Modal (Draggable) */}
       {liveStream && (
-        <DraggableModal open={isModalOpen} onClose={() => setIsModalOpen(false)} dragHandleOnly={false} verticalOnly={false} draggableOnMobile={true} initialY={80}>
+        <DraggableModal 
+          open={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          dragHandleOnly={false} 
+          verticalOnly={false} 
+          draggableOnMobile={true} 
+          initialY={80}
+        >
           {/* Header (drag handle) */}
-          <div className="flex items-center justify-between px-6 py-4 bg-amber-900 text-white rounded-t-lg cursor-grab select-none" data-drag-handle role="button" aria-label="Poignée de déplacement">
+          <div 
+            className="flex items-center justify-between px-6 py-4 bg-amber-900 text-white rounded-t-lg cursor-grab select-none" 
+            data-drag-handle 
+            role="button" 
+            aria-label="Poignée de déplacement"
+          >
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-start mr-2">
                 <div className="w-16 h-1.5 bg-white/80 rounded-full shadow-sm mb-1" aria-hidden />
@@ -344,82 +316,11 @@ const Live: React.FC = () => {
             <div className="flex flex-col md:flex-row gap-4">
               {/* Left: Player / Audio */}
               <div className="flex-1">
-                {liveStream.stream_type === 'tv' ? (
-                  // SWITCH POUR LES SOURCES VIDÉO (priorise `provider`, fallback sur détection d'URL)
-                  (() => {
-                    const videoSource = (liveStream.provider as 'youtube' | 'api_video' | 'radio_stream') ?? determineVideoSource(liveStream.stream_url);
-
-                    switch (videoSource) {
-                      case 'youtube':
-                        return (
-                          <div className="w-full bg-black rounded-lg overflow-hidden">
-                            <div className="aspect-video w-full">
-                              <iframe
-                                width="100%"
-                                height="100%"
-                                src={`https://www.youtube.com/embed/${getYouTubeId(liveStream.stream_url)}?autoplay=1&rel=0&modestbranding=1`}
-                                title={liveStream.title}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                className="border-0"
-                              />
-                            </div>
-                          </div>
-                        );
-
-                      case 'api_video':
-                        return (
-                          <div className="w-full bg-black rounded-lg overflow-hidden">
-                            <div className="aspect-video w-full">
-                              <iframe
-                                width="100%"
-                                height="100%"
-                                src={liveStream.stream_url} // URL d'embed api.video
-                                title={liveStream.title}
-                                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                                className="border-0"
-                                // Note: api.video nécessite parfois un token d'authentification
-                                // Si besoin, ajoutez: `?token=${VOTRE_TOKEN}`
-                              />
-                            </div>
-                          </div>
-                        );
-
-                      default:
-                        return (
-                          <div className="text-center py-12 bg-muted rounded-lg">
-                            <Tv className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-foreground font-medium">Source vidéo non prise en charge</p>
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {liveStream.stream_url}
-                            </p>
-                          </div>
-                        );
-                    }
-                  })()
-                ) : (
-                  // Audio Player for Radio
-                  <div className="w-full bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg p-8 flex flex-col items-center justify-center">
-                    <Radio className="w-12 h-12 text-green-500 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2 text-foreground">
-                      {liveStream.title}
-                    </h3>
-                    <audio
-                      controls
-                      autoPlay
-                      className="w-full mt-4"
-                      style={{
-                        filter:
-                          'sepia(20%) hue-rotate(10deg) saturate(1.2) brightness(1.1)',
-                      }}
-                    >
-                      <source src={liveStream.stream_url} type="audio/mpeg" />
-                      Votre navigateur ne supporte pas le lecteur audio.
-                    </audio>
-                    <p className="text-sm text-muted-foreground mt-4 text-center">
-                      En direct maintenant • {new Date().toLocaleTimeString('fr-FR')}
-                    </p>
-                  </div>
-                )}
+                {/* Multi-provider player using ProviderManager */}
+                {ProviderManager.renderPlayer(liveStream as LiveStreamData, {
+                  autoplay: true,
+                  controls: true,
+                })}
 
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <div className="rounded-lg bg-muted/50 p-4 flex-1">
@@ -431,7 +332,11 @@ const Live: React.FC = () => {
                   </div>
 
                   <div className="md:hidden">
-                    <Button variant="outline" size="sm" onClick={() => setShowChatMobile((s) => !s)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowChatMobile((s) => !s)}
+                    >
                       {showChatMobile ? 'Cacher le chat' : 'Afficher le chat'}
                     </Button>
                   </div>
@@ -451,12 +356,14 @@ const Live: React.FC = () => {
               </div> 
             </div>
 
-            {/* Small stats line for admins/moderators */}
-            <div className="mt-4 flex items-center gap-3">
-              <p className="text-sm text-muted-foreground">
-                {/* viewers badge */}
-                En direct • {liveSession.stats ? `${liveSession.stats.viewers_count} connecté(s)` : '—'}
-              </p>
+            {/* Stats line with viewer count */}
+            <div className="mt-4 flex items-center gap-3 text-muted-foreground text-sm">
+              <motion.span
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="inline-block w-2 h-2 bg-red-500 rounded-full"
+              />
+              En direct • {liveStats?.viewers_count || 0} spectateur(s) • {liveStream.provider}
             </div>
           </div>
         </DraggableModal>

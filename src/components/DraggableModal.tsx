@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useEffect } from 'react'
 import BaseModal from './base-modal'
 
 interface Props {
@@ -13,18 +13,28 @@ interface Props {
   maxWidthClass?: string
 }
 
-export default function DraggableModal({ open, onClose, children, verticalOnly = true, draggableOnMobile = false, dragHandleOnly = false, initialY = 0, center = false, maxWidthClass = 'max-w-4xl' }: Props) {
+export default function DraggableModal({
+  open,
+  onClose,
+  children,
+  verticalOnly = true,
+  draggableOnMobile = false,
+  dragHandleOnly = false,
+  initialY = 0,
+  center = false,
+  maxWidthClass = 'max-w-4xl',
+}: Props) {
   const ref = useRef<HTMLDivElement | null>(null)
-  const [posY, setPosY] = useState(initialY)
-  const [posX, setPosX] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
   const dragging = useRef(false)
   const startY = useRef(0)
   const startX = useRef(0)
+  const pos = useRef({ x: 0, y: initialY })
 
   useEffect(() => {
-    setPosY(initialY)
-    setPosX(0)
+    pos.current = { x: 0, y: initialY }
+    if (ref.current) {
+      ref.current.style.transform = `translate(0px, ${initialY}px)`
+    }
   }, [initialY, open])
 
   function isTouchDevice() {
@@ -49,54 +59,56 @@ export default function DraggableModal({ open, onClose, children, verticalOnly =
   function onPointerDown(e: React.PointerEvent) {
     if (!open) return
     if (isTouchDevice() && !draggableOnMobile) return
+
     if (dragHandleOnly) {
-      // Only start dragging when the target is a designated drag handle
-      try {
-        const el = e.target as Element | null
-        if (!el) return
-        const handle = el.closest('[data-drag-handle]')
-        if (!handle) return
-      } catch (err) { void err; return }
+      const el = e.target as Element | null
+      if (!el?.closest('[data-drag-handle]')) return
     }
-    // If interacting with inputs/buttons etc, don't start a drag (even when full-surface drag is enabled)
+
     if (isInteractiveTarget(e.target)) return
+
     dragging.current = true
-    setIsDragging(true)
-    // store start offsets for both axes
-    startY.current = e.clientY - posY
-    startX.current = e.clientX - posX
-    try { (e.target as Element).setPointerCapture(e.pointerId) } catch (err) { void err; }
-    try { document.body.style.userSelect = 'none' } catch { /* ignore */ }
+
+    startY.current = e.clientY - pos.current.y
+    startX.current = e.clientX - pos.current.x
+
+    try { (e.target as Element).setPointerCapture(e.pointerId) } catch {
+      // Ignore pointer capture errors
+    }
+    try { document.body.style.userSelect = 'none' } catch {
+      // Ignore style errors
+    }
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragging.current) return
+    if (!dragging.current || !ref.current) return
 
-    // Vertical movement
     let newY = e.clientY - startY.current
     const vMax = Math.max(200, window.innerHeight - 160)
     newY = Math.max(-vMax, Math.min(vMax, newY))
 
     if (verticalOnly) {
-      setPosY(newY)
+      pos.current.y = newY
+      ref.current.style.transform = `translate(0px, ${newY}px)`
       return
     }
 
-    // Horizontal movement (only if verticalOnly is false)
     let newX = e.clientX - startX.current
-    // compute reasonable horizontal bounds so the modal stays visible
     const hMax = Math.max(200, Math.floor(window.innerWidth / 2) - 80)
     newX = Math.max(-hMax, Math.min(hMax, newX))
 
-    setPosY(newY)
-    setPosX(newX)
+    pos.current = { x: newX, y: newY }
+    ref.current.style.transform = `translate(${newX}px, ${newY}px)`
   }
 
   function onPointerUp(e: React.PointerEvent) {
     dragging.current = false
-    setIsDragging(false)
-    try { (e.target as Element).releasePointerCapture(e.pointerId) } catch (err) { void err; }
-    try { document.body.style.userSelect = '' } catch { /* ignore */ }
+    try { (e.target as Element).releasePointerCapture(e.pointerId) } catch {
+      // Ignore pointer release errors
+    }
+    try { document.body.style.userSelect = '' } catch {
+      // Ignore style errors
+    }
   }
 
   if (!open) return null
@@ -108,8 +120,8 @@ export default function DraggableModal({ open, onClose, children, verticalOnly =
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        style={{ transform: `translate(${posX}px, ${posY}px)`, touchAction: 'none' as const }}
-        className={"bg-background rounded-lg shadow " + maxWidthClass + " w-full p-0 overflow-hidden " + (isDragging ? 'cursor-grabbing' : 'cursor-grab')}
+        style={{ transform: `translate(0px, ${initialY}px)`, touchAction: 'none' as const }}
+        className={`bg-background rounded-lg shadow ${maxWidthClass} w-full p-0 overflow-hidden cursor-grab`}
       >
         {children}
       </div>
