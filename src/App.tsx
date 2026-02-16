@@ -65,6 +65,8 @@ import DataDeletionPage from './pages/DataDeletionPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import DocProjetPage from './pages/DocProjetPage';
 import AuthCallback from './pages/AuthCallback';
+import AdminMemberCards from './pages/AdminMemberCards';
+import AdminCertificates from './pages/AdminCertificates';
 
 const queryClient = new QueryClient();
 
@@ -204,8 +206,22 @@ const App = () => {
             <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><Layout><AdminUsers /></Layout></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><Layout><AdminSettings /></Layout></ProtectedRoute>} />
             <Route path="/admin/ads" element={<ProtectedRoute requiredRole="admin"><Layout><AdminAds /></Layout></ProtectedRoute>} />
-            <Route path="/admin/tutoriels" element={<ProtectedRoute requiredRole="admin"><Layout><AdminTutorielsPage /></Layout></ProtectedRoute>} />
-            <Route path="/admin/directory" element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>} />
+            <Route
+              path="/admin/tutoriels"
+              element={<ProtectedRoute requiredRole="admin"><Layout><AdminTutorielsPage /></Layout></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/directory"
+              element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/member-cards"
+              element={<ProtectedRoute requiredRole="admin"><Layout><AdminMemberCards /></Layout></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/certificates"
+              element={<ProtectedRoute requiredRole="admin"><Layout><AdminCertificates /></Layout></ProtectedRoute>}
+            />
             <Route path="/admin/members" element={
               <ProtectedRoute requiredRole="admin">
                 <Layout><MembersPage /></Layout>

@@ -1,0 +1,116 @@
+/**
+ * CSS pour l'impression des documents
+ * Cartes de membres et certificats
+ */
+
+@media print {
+  /* Masquer tout sauf la zone d'impression */
+  body,
+  html {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  body * {
+    visibility: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Afficher uniquement les zones d'impression */
+  #member-card-preview,
+  #certificate-preview,
+  #print-zone,
+  #print-zone * {
+    visibility: visible;
+  }
+
+  /* Styles pour la page imprimée */
+  #print-zone {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  /* Cartes de membres - format cm */
+  #member-card-preview {
+    width: 85mm;
+    height: 55mm;
+    margin: 0;
+    padding: 0;
+    page-break-after: always;
+    border: none;
+  }
+
+  /* Certificats - format A4 */
+  #certificate-preview {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 0;
+    page-break-after: always;
+  }
+
+  /* Enlever les ombres et bordures inutiles */
+  .shadow-lg,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  /* Optimiser les couleurs pour l'impression */
+  .bg-gray-50 {
+    background-color: white !important;
+  }
+
+  .border-gray-200,
+  .border-gray-300,
+  .border-amber-800 {
+    border-color: #000 !important;
+  }
+
+  /* Assurer la visibilité du texte */
+  .text-gray-900,
+  .text-amber-900,
+  .text-gray-600,
+  .text-gray-700 {
+    color: #000 !important;
+  }
+
+  /* Enlever les transitions et animations */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Marges de page */
+  @page {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Forcer le mode couleur pour les logos et images */
+  img {
+    visibility: visible !important;
+  }
+}
+
+/* Styles écran pour les aperçus */
+@media screen {
+  .print-preview-container {
+    background-color: #f3f4f6;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  #member-card-preview,
+  #certificate-preview {
+    background: white;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+}

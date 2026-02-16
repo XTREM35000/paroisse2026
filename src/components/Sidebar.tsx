@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen, FileText, CheckCircle2 } from 'lucide-react';
+import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen, FileText, CheckCircle2, Award } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
 
@@ -35,7 +35,7 @@ export const MENU_GROUPS = [
     items: [
       { label: 'Chat', href: '/chat', icon: MessageSquare },
           { label: 'Annonces', href: '/announcements', icon: BarChart3 },
-          { label: 'Affiches  & Flyers', href: '/affiche', icon: Image },
+          { label: 'Affiches & Flyers', href: '/affiche', icon: Image },
       { label: 'Événements', href: '/evenements', icon: Calendar },
       { label: 'Annuaire', href: '/directory', icon: Users },
     ],
@@ -50,20 +50,40 @@ export const MENU_GROUPS = [
     ],
   },
   {
-    title: 'Administration',
+    title: 'Contenu & Diffusion',
+    adminOnly: true,
+    items: [
+      { label: 'Streaming', href: '/admin/live', icon: Video },
+      { label: 'Tutoriels', href: '/admin/tutoriels', icon: Video },
+      { label: 'Contenu', href: '/admin/ads', icon: Image },
+    ],
+  },
+  {
+    title: 'Gestion Personnes',
+    adminOnly: true,
+    items: [
+      { label: 'Utilisateurs', href: '/admin/users', icon: Users },
+      { label: 'Annuaire', href: '/admin/directory', icon: Users },
+      { label: 'Cartes', href: '/admin/member-cards', icon: CreditCard, badge: 'New' },
+      { label: 'Attestations', href: '/admin/certificates', icon: Award, badge: 'New' },
+    ],
+  },
+  {
+    title: 'Configuration',
+    adminOnly: true,
+    items: [
+      { label: 'Accueil', href: '/admin/homepage', icon: Settings },
+      { label: 'Paramètres', href: '/admin/settings', icon: Settings },
+      { label: 'Documents', href: '/documents', icon: FileText },
+      { label: 'Événements', href: '/admin/events', icon: Calendar },
+    ],
+  },
+  {
+    title: 'Supervision',
     adminOnly: true,
     items: [
       { label: 'Approbations', href: '/admin/approvals', icon: CheckCircle2 },
-      { label: 'En Ligne', href: '/admin/live', icon: Video },
       { label: 'Notifications', href: '/admin/notifications', icon: Bell },
-      { label: 'Affiches  & Flyers', href: '/admin/ads', icon: Image },
-      { label: 'Tutoriels', href: '/admin/tutoriels', icon: Video },
-      { label: 'Utilisateurs', href: '/admin/users', icon: Users },
-      { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },
-      { label: 'Annuaire', href: '/admin/directory', icon: Users },
-      { label: 'Page d\'accueil', href: '/admin/homepage', icon: Settings },
-      { label: 'Événements', href: '/admin/events', icon: Calendar },
-      { label: 'Documents', href: '/documents', icon: FileText },
     ],
   },
 ];
@@ -211,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
           return (
             <div key={group.title} className="mb-6">
               {!isCollapsed && (
-                <div className="px-2 text-xs text-muted-foreground uppercase mb-2 font-semibold">
+                <div className="px-2 text-sm text-muted-foreground uppercase mb-3 font-bold tracking-wider">
                   {group.title}
                 </div>
               )}
@@ -223,14 +243,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                       key={item.href}
                       to={item.href}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2 rounded transition-colors ${
+                        `flex items-center gap-3 px-3 py-2 rounded transition-colors justify-between ${
                           isActive ? 'bg-accent/60 text-accent-foreground' : 'hover:bg-accent/50'
                         }`
                       }
                       title={isCollapsed ? item.label : ''}
                     >
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                      <div className="flex items-center gap-3">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                      </div>
+                      {!isCollapsed && (item as any)?.badge && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gradient-to-b from-green-400 to-green-600 text-white shadow-md shadow-green-500/50">
+                          {(item as any).badge}
+                        </span>
+                      )}
                     </NavLink>
                   );
                 })}
