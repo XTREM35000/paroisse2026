@@ -43,7 +43,7 @@ export const MENU_GROUPS = [
   {
     title: 'Donations',
     items: [
-      { label: 'Faire un don', href: '/donate', icon: CreditCard },
+      { label: 'Faire un don', href: '/donate', icon: CreditCard, badge: 'New' },
       { label: 'Campagnes', href: '/campaigns', icon: BarChart3 },
       { label: 'Historique', href: '/donations', icon: CreditCard },
       { label: 'Reçus', href: '/receipts', icon: CreditCard },
@@ -65,7 +65,7 @@ export const MENU_GROUPS = [
       { label: 'Utilisateurs', href: '/admin/users', icon: Users },
       { label: 'Annuaire', href: '/admin/directory', icon: Users },
       { label: 'Cartes', href: '/admin/member-cards', icon: CreditCard, badge: 'New' },
-      { label: 'Attestations', href: '/admin/certificates', icon: Award, badge: 'New' },
+      { label: 'Diplômes', href: '/admin/certificates', icon: Award, badge: 'New' },
     ],
   },
   {

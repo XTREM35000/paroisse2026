@@ -48,6 +48,7 @@ import Donate from './pages/Donate';
 import Campaigns from './pages/Campaigns';
 import DonationsHistory from './pages/DonationsHistory';
 import Receipts from './pages/Receipts';
+import AdminDonate from './pages/AdminDonate';
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import AdminAds from './pages/AdminAds';
@@ -200,6 +201,14 @@ const App = () => {
             <Route path="/verse" element={<Layout><Verse /></Layout>} />
             <Route path="/directory" element={<Layout><Directory /></Layout>} />
             <Route path="/donate" element={<Layout><Donate /></Layout>} />
+            <Route
+              path="/admin/donate"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Layout><AdminDonate /></Layout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
             <Route path="/donations" element={<Layout><DonationsHistory /></Layout>} />
             <Route path="/receipts" element={<Layout><Receipts /></Layout>} />

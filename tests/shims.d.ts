@@ -33,8 +33,4 @@ declare module '@/hooks/useUnreadNotifications' {
   export default hook;
 }
 
-declare module '@/integrations/supabase/client' {
-  export const supabase: any;
-}
-
 export {};
