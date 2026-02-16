@@ -369,6 +369,76 @@ export async function deactivateOtherLiveStreams(activeId: string) {
 }
 
 // =====================================================
+// LIVE STREAM PROVIDER SOURCES (Links below player)
+// =====================================================
+
+import type { LiveProviderSource } from '@/types/database';
+
+/**
+ * Récupère tous les liens fournisseurs pour un live stream
+ */
+export async function fetchLiveProviderSources(liveId: string): Promise<LiveProviderSource[]> {
+  const { data, error } = await supabase
+    .from('live_stream_sources')
+    .select('*')
+    .eq('live_id', liveId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data as LiveProviderSource[];
+}
+
+/**
+ * Ajoute une source de fournisseur pour un live
+ */
+export async function addLiveProviderSource(
+  liveId: string,
+  provider: 'youtube' | 'facebook' | 'instagram' | 'tiktok' | 'custom',
+  url: string
+): Promise<LiveProviderSource> {
+  const { data, error } = await supabase
+    .from('live_stream_sources')
+    .insert([{ live_id: liveId, provider, url }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as LiveProviderSource;
+}
+
+/**
+ * Met à jour une source de fournisseur
+ */
+export async function updateLiveProviderSource(
+  sourceId: string,
+  provider: string,
+  url: string
+): Promise<LiveProviderSource> {
+  const { data, error } = await supabase
+    .from('live_stream_sources')
+    .update({ provider, url })
+    .eq('id', sourceId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as LiveProviderSource;
+}
+
+/**
+ * Supprime une source de fournisseur
+ */
+export async function deleteLiveProviderSource(sourceId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('live_stream_sources')
+    .delete()
+    .eq('id', sourceId);
+
+  if (error) throw error;
+  return true;
+}
+
+// =====================================================
 // LIVE HELPERS: RPCs and stats
 // =====================================================
 

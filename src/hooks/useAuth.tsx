@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";import { ensureProfile
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
+  userRole: string | null; // Nouveau : exposer le rôle directement
   login: (email: string, password: string) => Promise<unknown>;
   register: (
     email: string,
@@ -20,7 +21,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.Element {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null); // Nouveau : stocker le rôle
   const [loading, setLoading] = useState<boolean>(true);
+  
+  // Ref pour tracker si on a déjà fait la redirection/setup au login
+  const hasPerformedInitialRedirectRef = React.useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -30,6 +35,22 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
         const res = await supabase.auth.getUser();
         if (!mounted) return;
         setUser(res.data?.user ?? null);
+        
+        // Si user existe, charger son rôle
+        if (res.data?.user?.id) {
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', res.data.user.id)
+              .maybeSingle();
+            
+            const role = profileData?.role || null;
+            setUserRole(role);
+          } catch (err) {
+            console.error('Error fetching user role:', err);
+          }
+        }
       } catch (e) {
         console.error("getUser error", e);
       } finally {
@@ -41,17 +62,18 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
       if (!mounted) return;
       setUser(session?.user ?? null);
 
-      // Invalider le cache du profil quand l'authentification change
+      // Invalider le cache du profil
       try {
         localStorage.removeItem('ff_profile_cache');
       } catch (e) {
         console.error('Failed to invalidate profile cache:', e);
       }
 
-      // After auth state changes, ensure roles consistency (first user = admin)
-      if (session?.user) {
+      // Setup rôles et redirection SEULEMENT au SIGNED_IN (login)
+      if (session?.user && _event === 'SIGNED_IN') {
         (async () => {
           try {
+            // Vérifier que le premier utilisateur est admin
             const { data: profiles } = await supabase
               .from('profiles')
               .select('id, role')
@@ -66,69 +88,63 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
                   .eq('id', first.id);
               }
             }
-          } catch (err) {
-            console.error('Erreur lors de la vérification des rôles:', err);
-          }
-        })();
 
-        // Close auth modal if it was opened via the '#auth' fragment
-        try {
-          if (typeof window !== 'undefined' && window.location.hash.includes('#auth')) {
-            // Setting hash to empty triggers hashchange events which Header listens to
-            window.location.hash = '';
-          }
-        } catch (e) { /* ignore */ }
-
-        // Ensure profile exists before deciding redirect to avoid race conditions
-        (async () => {
-          try {
-            // Create profile if missing so role lookup is reliable
+            // Créer le profil s'il n'existe pas
             await ensureProfileExists(session.user.id);
 
-            const { data: profileData } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
-            const role: string | null = profileData && typeof profileData === 'object' && 'role' in profileData ? String(profileData.role) ?? null : null;
-            console.debug('[AuthProvider] redirect decision', { userId: session.user.id, role });
+            // Récupérer et stocker le rôle
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .maybeSingle();
 
-            const desiredPath = role?.toLowerCase().includes('admin') ? '/admin' : '/dashboard';
-            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-            const lastRedirect = typeof window !== 'undefined' ? Number(sessionStorage.getItem('ff_last_redirect') || '0') : 0;
-            const now = Date.now();
+            const role = profileData?.role || null;
+            setUserRole(role);
 
-            // Avoid redirect if we're already on the correct page
-            if (currentPath === desiredPath || currentPath.startsWith(desiredPath)) {
-              console.debug('[AuthProvider] already on desired path, skipping redirect', { currentPath, desiredPath });
-              return;
-            }
-
-            // Prevent redirect storms by ensuring we don't redirect more often than every 5s
-            if (now - lastRedirect < 5000) {
-              console.debug('[AuthProvider] recent redirect detected, skipping to avoid loop', { lastRedirect, now });
-              return;
-            }
-
-            console.debug('[AuthProvider] redirecting to', desiredPath, 'for user', session.user.id);
-            try { sessionStorage.setItem('ff_last_redirect', String(now)); } catch (e) { /* ignore */ }
-
-            // Use SPA-safe redirect: store pending path and dispatch an event for a Router-aware handler to pick up
+            // Fermer modal auth si besoin
             try {
-              try { sessionStorage.setItem('ff_pending_redirect', desiredPath); } catch (e) { /* ignore */ }
-              try {
-                window.dispatchEvent(new CustomEvent('ff:auth-redirect', { detail: { path: desiredPath } }));
-                console.debug('[AuthProvider] dispatched ff:auth-redirect event', desiredPath);
-              } catch (evtErr) {
-                console.warn('[AuthProvider] event dispatch failed, falling back to window.location.replace', evtErr);
-                try { window.location.replace(desiredPath); } catch (e) { try { window.location.href = desiredPath; } catch { /* ignore */ } }
+              if (typeof window !== 'undefined' && window.location.hash.includes('#auth')) {
+                window.location.hash = '';
               }
-            } catch (err) {
-              // Final fallback
-              try { window.location.replace(desiredPath); } catch (e) { try { window.location.href = desiredPath; } catch { /* ignore */ } }
+            } catch (e) { /* ignore */ }
+
+            // REDIRECTION SEULEMENT AU LOGIN INITIAL (pas au retour d'onglet)
+            if (!hasPerformedInitialRedirectRef.current) {
+              hasPerformedInitialRedirectRef.current = true;
+
+              const desiredPath = role?.toLowerCase().includes('admin') ? '/admin' : '/dashboard';
+              const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+              
+              // Pages publiques/auth - ne pas rediriger
+              const publicAuthPages = [
+                '/reset-password',
+                '/email-confirmed',
+                '/auth',
+                '/forgot-password',
+              ];
+              
+              const isOnPublicAuthPage = publicAuthPages.some(page => currentPath === page || currentPath.startsWith(page));
+
+              if (!isOnPublicAuthPage && (currentPath === '/' || !currentPath.startsWith(desiredPath))) {
+                console.debug('[AuthProvider] Performing initial redirect to', desiredPath);
+                try {
+                  window.dispatchEvent(new CustomEvent('ff:auth-redirect', { detail: { path: desiredPath } }));
+                } catch (e) {
+                  window.location.replace(desiredPath);
+                }
+              }
             }
           } catch (err) {
-            // If profile creation or role lookup fails, fallback to main dashboard
-            console.error('[AuthProvider] redirect failed, falling back to /dashboard', err);
-            try { window.location.replace('/dashboard'); } catch { try { window.location.href = '/dashboard'; } catch { /* ignore */ } }
+            console.error('[AuthProvider] SIGNED_IN handler error:', err);
           }
         })();
+      } 
+      // Au SIGNED_OUT : réinitialiser
+      else if (_event === 'SIGNED_OUT') {
+        setUserRole(null);
+        hasPerformedInitialRedirectRef.current = false;
+        console.debug('[AuthProvider] User signed out');
       }
 
       setLoading(false);
@@ -139,6 +155,7 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
       data?.subscription?.unsubscribe();
     };
   }, []);
+
 
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -248,7 +265,7 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
     }
   };
 
-  const value: AuthContextValue = { user, loading, login, register, signInWithProvider, signOut, resetPassword };
+  const value: AuthContextValue = { user, userRole, loading, login, register, signInWithProvider, signOut, resetPassword };
 
   return (
     <AuthContext.Provider value={value}>

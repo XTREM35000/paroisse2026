@@ -363,3 +363,14 @@ export interface PendingApprovalItem {
   time_remaining?: string;
   content?: Video | GalleryImage;
 }
+// =====================================================
+// Live Stream Sources (Provider Links)
+// =====================================================
+
+export interface LiveProviderSource {
+  id: string;
+  live_id: string;
+  provider: 'youtube' | 'facebook' | 'instagram' | 'tiktok' | 'custom';
+  url: string;
+  created_at: string;
+}

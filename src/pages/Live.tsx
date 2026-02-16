@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Tv, Radio, PlayCircle, X } from 'lucide-react';
 import HeroBanner from '@/components/HeroBanner';
@@ -11,7 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchActiveLiveStream, type LiveStream } from '@/lib/supabase/mediaQueries';
 import useLiveSession from '@/hooks/useLiveSession';
 import useLiveStats from '@/hooks/useLiveStats';
+import useLiveProviderSources from '@/hooks/useLiveProviderSources';
 import LiveChatSidebar from '@/components/live/LiveChatSidebar';
+import LiveProviderLinks from '@/components/live/LiveProviderLinks';
 import { ProviderManager, type LiveStreamData } from '@/lib/providers';
 
 const Live: React.FC = () => {
@@ -25,9 +27,15 @@ const Live: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showChatMobile, setShowChatMobile] = useState(false);
 
+  // Refs pour gérer les intervals et éviter les rechargements
+  const intervalRef = useRef<number | null>(null);
+  const isPageVisibleRef = useRef(true);
+  const hasInitialLoadRef = useRef(false);
+
   // Live session tracking (increments/decrements viewers)
   const liveSession = useLiveSession(liveStream?.id);
   const { stats: liveStats } = useLiveStats(liveStream?.id, 5000);
+  const { sources: providerSources } = useLiveProviderSources(liveStream?.id);
 
   useEffect(() => {
     if (!liveStream?.id) return;
@@ -43,7 +51,7 @@ const Live: React.FC = () => {
     };
   }, [isModalOpen, liveStream?.id, liveSession]);
 
-  // Load active live stream on mount
+  // Load active live stream on mount ONLY - pas de reload au retour
   useEffect(() => {
     const loadLiveStream = async () => {
       try {
@@ -69,11 +77,56 @@ const Live: React.FC = () => {
       }
     };
 
-    loadLiveStream();
+    // Charger SEULEMENT au premier mount
+    if (!hasInitialLoadRef.current) {
+      hasInitialLoadRef.current = true;
+      loadLiveStream();
+    }
 
-    // Refresh every 30 seconds to check for stream changes
-    const interval = setInterval(loadLiveStream, 30000);
-    return () => clearInterval(interval);
+    // Setup polling interval - mais seulement si page visible
+    const startPolling = () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+      }
+      intervalRef.current = window.setInterval(() => {
+        if (isPageVisibleRef.current) {
+          loadLiveStream();
+        }
+      }, 30000);
+    };
+
+    // Listener pour visibilité page
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden;
+      console.log('📺 Page visibility:', isPageVisibleRef.current ? 'visible' : 'hidden');
+
+      if (isPageVisibleRef.current) {
+        // Page redevient visible : NE PAS recharger, juste reprendre le polling
+        if (intervalRef.current === null) {
+          startPolling();
+        }
+      } else {
+        // Page cachée : arrêter le polling
+        if (intervalRef.current !== null) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
+    };
+
+    // Démarrer le polling initial
+    startPolling();
+
+    // Ajouter le listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [toast]);
 
   const handleWatchLive = () => {
@@ -341,6 +394,9 @@ const Live: React.FC = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Provider Links Section - Afficher les liens fournisseurs */}
+                <LiveProviderLinks sources={providerSources} />
 
                 {/* Mobile chat */}
                 {showChatMobile && (
