@@ -199,7 +199,6 @@ export default function AdminMemberCards() {
         subtitle="Gérez les cartes officielles des membres"
         backgroundImage="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1920&h=1080&fit=crop"
         showBackButton={true}
-        bucket="documents"
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">

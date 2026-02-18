@@ -208,7 +208,6 @@ export default function AdminCertificates() {
         subtitle="Gérez les certificats, diplômes et mentions honorifiques"
         backgroundImage="https://images.unsplash.com/photo-1557804506-669714d2e9d8?w=1920&h=1080&fit=crop"
         showBackButton={true}
-        bucket="documents"
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
