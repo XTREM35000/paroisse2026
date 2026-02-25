@@ -15,6 +15,7 @@ import useLiveProviderSources from '@/hooks/useLiveProviderSources';
 import LiveChatSidebar from '@/components/live/LiveChatSidebar';
 import LiveProviderLinks from '@/components/live/LiveProviderLinks';
 import { ProviderManager, type LiveStreamData } from '@/lib/providers';
+import { getEmbedUrl } from '@/lib/providers/videoUtils';
 
 const Live: React.FC = () => {
   const location = useLocation();
@@ -60,8 +61,10 @@ const Live: React.FC = () => {
         if (stream) {
           // Normalize stream data with ProviderManager
           const normalized = ProviderManager.normalizeStream(stream as any);
-          console.log('✨ Normalized stream:', { provider: normalized.provider, url: normalized.stream_url?.substring(0, 80) });
-          setLiveStream(normalized as any);
+          // carry over video_id field if present
+          const withId = { ...normalized, video_id: (stream as any).video_id } as any;
+          console.log('✨ Normalized stream:', { provider: withId.provider, url: withId.stream_url?.substring(0, 80), video_id: withId.video_id });
+          setLiveStream(withId);
         } else {
           setLiveStream(null);
         }
@@ -369,11 +372,31 @@ const Live: React.FC = () => {
             <div className="flex flex-col md:flex-row gap-4">
               {/* Left: Player / Audio */}
               <div className="flex-1">
-                {/* Multi-provider player using ProviderManager */}
-                {ProviderManager.renderPlayer(liveStream as LiveStreamData, {
-                  autoplay: true,
-                  controls: true,
-                })}
+                {/* Multi-provider player using ProviderManager, with special case for Facebook */}
+                {(liveStream.video_id && (['youtube','facebook','twitch','tiktok'] as string[]).includes(liveStream.provider)) ? (
+                  // build embed URL directly using pre-imported helper
+                  (() => {
+                    const url = getEmbedUrl(liveStream.provider as any, liveStream.video_id || '');
+                    return (
+                      <div className="aspect-video w-full">
+                        <iframe
+                          src={url}
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          allowFullScreen
+                          allow="autoplay; encrypted-media; picture-in-picture"
+                          className="border-0 w-full h-full"
+                        />
+                      </div>
+                    );
+                  })()
+                ) : (
+                  ProviderManager.renderPlayer(liveStream as LiveStreamData, {
+                    autoplay: true,
+                    controls: true,
+                  })
+                )}
 
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <div className="rounded-lg bg-muted/50 p-4 flex-1">

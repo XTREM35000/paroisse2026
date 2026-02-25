@@ -14,6 +14,9 @@ import {
   radioStreamProvider,
   customEmbedProvider,
   extractYouTubeId,
+  facebookProvider,
+  instagramProvider,
+  tiktokProvider,
 } from './providers';
 
 /**
@@ -26,6 +29,9 @@ export class ProviderManager {
     restreamProvider,
     apiVideoProvider,
     radioStreamProvider,
+    facebookProvider,
+    instagramProvider,
+    tiktokProvider,
   ];
 
   /**
@@ -133,6 +139,28 @@ export class ProviderManager {
             valid: false,
             error: 'Invalid YouTube URL or ID',
           };
+        }
+        break;
+      }
+      case 'facebook': {
+        // basic sanity check for facebook live/video URL
+        if (!/facebook\.com\/.+\/(videos|watch)/.test(url) && !/fb\.watch\//.test(url)) {
+          return {
+            valid: false,
+            error: 'URL ne ressemble pas à un Facebook Live valide',
+          };
+        }
+        break;
+      }
+      case 'instagram': {
+        if (!/instagram\.com/.test(url.toLowerCase())) {
+          return { valid: false, error: 'Lien Instagram invalide' };
+        }
+        break;
+      }
+      case 'tiktok': {
+        if (!/tiktok\.com/.test(url.toLowerCase()) && !/vm\.tiktok\.com/.test(url.toLowerCase())) {
+          return { valid: false, error: 'Lien TikTok invalide' };
         }
         break;
       }

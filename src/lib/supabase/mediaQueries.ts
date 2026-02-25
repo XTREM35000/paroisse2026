@@ -211,7 +211,11 @@ export interface LiveStream {
   title: string;
   description?: string | null;
 
-  // New: Extensible sources structure (supports migration from legacy stream_url)
+  // new simplified scheme
+  provider: ProviderType;
+  video_id?: string | null;
+
+  // New: Extensible sources structure (kept for backward compatibility)
   stream_sources?: StreamSources | null;
 
   // Legacy: Backward compatibility
@@ -219,7 +223,6 @@ export interface LiveStream {
 
   // Metadata
   stream_type: 'tv' | 'radio';
-  provider: ProviderType;
 
   // Playback hints
   playback_strategy?: 'primary' | 'fallback' | null;
@@ -288,8 +291,20 @@ export async function fetchAllLiveStreams(options?: {
 export async function upsertLiveStream(
   stream: Omit<LiveStream, 'created_at' | 'updated_at'> & { id?: string }
 ) {
-  // Ensure stream_url is always populated (backward compatibility)
+  // Ensure we compute a fallback URL for legacy columns
   let fallbackUrl = stream.stream_url || '';
+
+  // If video_id is provided, build an embed based on provider (helper can be added externally)
+  if (stream.video_id && stream.provider) {
+    try {
+      const { getEmbedUrl } = await import('@/lib/providers/videoUtils');
+      const embed = getEmbedUrl(stream.provider as any, stream.video_id);
+      if (embed) fallbackUrl = embed;
+    } catch {
+      /* ignore dynamic import failure */
+    }
+  }
+
   if (stream.stream_sources) {
     // Extract first available source as fallback
     fallbackUrl =
@@ -300,19 +315,23 @@ export async function upsertLiveStream(
       fallbackUrl;
   }
 
+  const payload: any = {
+    title: stream.title,
+    stream_url: fallbackUrl,
+    stream_sources: stream.stream_sources ?? null,
+    stream_type: stream.stream_type,
+    provider: stream.provider || 'youtube',
+    is_active: stream.is_active,
+    scheduled_at: stream.scheduled_at ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (stream.video_id !== undefined) {
+    payload.video_id = stream.video_id;
+  }
+
   if (stream.id) {
     // Update existing stream
-    const payload = {
-      title: stream.title,
-      stream_url: fallbackUrl,
-      stream_sources: stream.stream_sources ?? null,
-      stream_type: stream.stream_type,
-      provider: stream.provider || 'youtube',
-      is_active: stream.is_active,
-      scheduled_at: stream.scheduled_at ?? null,
-      updated_at: new Date().toISOString(),
-    };
-
     const { data, error } = await supabase
       .from('live_streams')
       .update(payload)
@@ -324,17 +343,6 @@ export async function upsertLiveStream(
     return data as LiveStream;
   } else {
     // Create new stream
-    const payload = {
-      title: stream.title,
-      stream_url: fallbackUrl,
-      stream_sources: stream.stream_sources ?? null,
-      stream_type: stream.stream_type,
-      provider: stream.provider || 'youtube',
-      is_active: stream.is_active,
-      scheduled_at: stream.scheduled_at ?? null,
-      updated_at: new Date().toISOString(),
-    };
-
     const { data, error } = await supabase
       .from('live_streams')
       .insert([payload])

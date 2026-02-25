@@ -18,7 +18,16 @@ export type PlaybackType = 'iframe' | 'hls' | 'audio';
 /**
  * Supported streaming provider identifiers
  */
-export type ProviderType = 'youtube' | 'restream' | 'app.restream' | 'api_video' | 'radio_stream';
+export type ProviderType =
+  | 'youtube'
+  | 'restream'
+  | 'app.restream'
+  | 'api_video'
+  | 'radio_stream'
+  | 'facebook'
+  | 'instagram'
+  | 'tiktok'
+  | 'twitch';
 
 /**
  * Stream type classification
@@ -197,6 +206,15 @@ export interface LiveStream {
   created_at: string;
   updated_at: string;
 }
+
+// -----------------------------------------------------------------------------
+// `LiveStreamData` is a simple alias used throughout the provider system. It
+// represents the shape of data that the ProviderManager and related helpers
+// operate on. We keep it separate so that the provider code does not have to
+// depend directly on the full media query types and it leaves room for future
+// alterations without affecting the database interfaces.
+// -----------------------------------------------------------------------------
+export type LiveStreamData = LiveStream;
 
 /**
  * Partial stream for insert/update operations

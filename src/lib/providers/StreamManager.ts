@@ -24,6 +24,9 @@ import { ReestreamNormalizer, AppReestreamNormalizer } from './normalizers/Reest
 import { YoutubeNormalizer } from './normalizers/YoutubeNormalizer';
 import { ApiVideoNormalizer } from './normalizers/ApiVideoNormalizer';
 import { RadioStreamNormalizer } from './normalizers/RadioStreamNormalizer';
+import { FacebookNormalizer } from './normalizers/FacebookNormalizer';
+import { InstagramNormalizer } from './normalizers/InstagramNormalizer';
+import { TikTokNormalizer } from './normalizers/TikTokNormalizer';
 
 /**
  * StreamManager: Single point of access for all streaming operations
@@ -50,6 +53,9 @@ class StreamManager {
       ['youtube', new YoutubeNormalizer()],
       ['api_video', new ApiVideoNormalizer()],
       ['radio_stream', new RadioStreamNormalizer()],
+      ['facebook', new FacebookNormalizer()],
+      ['instagram', new InstagramNormalizer()],
+      ['tiktok', new TikTokNormalizer()],
     ]);
   }
 

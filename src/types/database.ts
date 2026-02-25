@@ -364,6 +364,22 @@ export interface PendingApprovalItem {
   content?: Video | GalleryImage;
 }
 // =====================================================
+// Live Stream data
+// =====================================================
+
+export type LiveStreamProvider = 'youtube' | 'facebook' | 'twitch' | 'tiktok' | 'instagram';
+
+export interface LiveStream {
+  id: string;
+  provider: LiveStreamProvider;
+  video_id: string; // or channel name for twitch
+  title: string;
+  active: boolean;
+  scheduled_for?: string | null;
+  created_at: string;
+}
+
+// =====================================================
 // Live Stream Sources (Provider Links)
 // =====================================================
 

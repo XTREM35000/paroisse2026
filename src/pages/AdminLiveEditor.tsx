@@ -41,12 +41,8 @@ const AdminLiveEditor: React.FC = () => {
 
   type FormData = {
     title: string;
-    stream_url: string;
-    embed_html: string;
-    hls_url: string;
-    audio_url?: string;
-    stream_type: 'tv' | 'radio';
-    provider: ProviderType;
+    provider: 'youtube' | 'facebook' | 'twitch' | 'tiktok';
+    video_id: string;
     is_active: boolean;
     scheduled_at: string;
   };
@@ -55,12 +51,8 @@ const AdminLiveEditor: React.FC = () => {
   const [editingStream, setEditingStream] = useState<LiveStream | null>(null);
   const [formData, setFormData] = useState<FormData>({
     title: '',
-    stream_url: '',
-    embed_html: '',
-    hls_url: '',
-    audio_url: '',
-    stream_type: 'tv',
-    provider: 'restream',
+    provider: 'youtube',
+    video_id: '',
     is_active: false,
     scheduled_at: '',
   });
@@ -102,13 +94,23 @@ const AdminLiveEditor: React.FC = () => {
 
   const resetForm = () => {
     setEditingStream(null);
-    setFormData({ title: '', stream_url: '', embed_html: '', hls_url: '', audio_url: '', stream_type: 'tv', provider: 'restream', is_active: false, scheduled_at: '' });
+    setFormData({ title: '', provider: 'youtube', video_id: '', is_active: false, scheduled_at: '' });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.currentTarget as HTMLInputElement;
     setFormData((f) => ({ ...f, [name]: value }));
   };
+
+  const handleProviderChange = (v: string) => {
+    // only accept the four supported providers; fallback to YouTube
+    const allowedProviders = ['youtube', 'facebook', 'twitch', 'tiktok'] as const;
+    const p = allowedProviders.includes(v as FormData['provider'])
+      ? (v as FormData['provider'])
+      : 'youtube';
+    setFormData((f) => ({ ...f, provider: p, video_id: '' }));
+  };
+
 
   const handleAddNew = () => {
     resetForm();
@@ -117,15 +119,13 @@ const AdminLiveEditor: React.FC = () => {
 
   const handleEdit = (stream: LiveStream) => {
     setEditingStream(stream);
-    const sources = stream.stream_sources ?? null;
+    // only allow known options; otherwise default to YouTube
+    const allowed: FormData['provider'][] = ['youtube', 'facebook', 'twitch', 'tiktok'];
+    const prov = allowed.includes(stream.provider as FormData['provider']) ? (stream.provider as FormData['provider']) : 'youtube';
     setFormData({
       title: stream.title || '',
-      stream_url: sources?.url ?? stream.stream_url ?? '',
-      embed_html: sources?.embed ?? '',
-      hls_url: sources?.hls ?? '',
-      audio_url: sources?.audio ?? '',
-      stream_type: stream.stream_type ?? 'tv',
-      provider: (stream.provider as ProviderType) ?? (stream.stream_type === 'tv' ? 'restream' : 'radio_stream'),
+      provider: prov,
+      video_id: stream.video_id || '',
       is_active: !!stream.is_active,
       scheduled_at: stream.scheduled_at ?? '',
     });
@@ -133,45 +133,35 @@ const AdminLiveEditor: React.FC = () => {
   };
 
   const handleSaveStream = async () => {
-    if (!formData.title.trim()) { toast({ title: 'Erreur', description: 'Veuillez remplir le titre', variant: 'destructive' }); return; }
-    if (!formData.provider) { toast({ title: 'Erreur', description: 'Veuillez sélectionner un fournisseur', variant: 'destructive' }); return; }
+    if (!formData.title.trim()) {
+      toast({ title: 'Erreur', description: 'Veuillez remplir le titre', variant: 'destructive' });
+      return;
+    }
+    if (!formData.provider || !formData.video_id.trim()) {
+      toast({ title: 'Erreur', description: 'Veuillez sélectionner un fournisseur et entrer un ID', variant: 'destructive' });
+      return;
+    }
 
     setSaving(true);
     try {
-      const rawInput = {
-        stream_url: formData.stream_url.trim() || undefined,
-        embed_html: formData.embed_html.trim() || undefined,
-        hls_url: formData.hls_url.trim() || undefined,
-        audio: formData.audio_url?.trim() || undefined,
-        id: editingStream?.id,
-        title: formData.title,
-      } as const;
-
-      const normalized = streamManager.normalize(formData.provider, rawInput);
-      if (!streamManager.validate(formData.provider, normalized.sources)) {
-        toast({ title: 'Erreur', description: 'Données non valides pour le provider sélectionné', variant: 'destructive' });
-        return;
-      }
-
-      if (formData.stream_type === 'tv' && formData.provider === 'radio_stream') {
-        toast({ title: 'Erreur', description: 'Un flux TV ne peut pas utiliser le fournisseur "Flux Radio"', variant: 'destructive' });
-        return;
-      }
+      // compute embed url as fallback using provider-specific helpers
+      const { getEmbedUrl, extractVideoId } = await import('@/lib/providers/videoUtils');
+      const id = extractVideoId(formData.video_id.trim(), formData.provider);
+      const embedUrl = getEmbedUrl(formData.provider, id);
 
       if (formData.is_active && editingStream?.id) {
         await deactivateOtherLiveStreams(editingStream.id);
       }
 
       const scheduledAtISO = formData.scheduled_at ? new Date(formData.scheduled_at).toISOString() : null;
-      const fallbackUrl = normalized.sources.url || normalized.sources.hls || normalized.sources.audio || normalized.sources.embed || '';
 
       await upsertLiveStream({
         id: editingStream?.id,
         title: formData.title,
-        stream_url: fallbackUrl,
-        stream_sources: normalized.sources,
-        stream_type: formData.stream_type,
-        provider: formData.provider,
+        provider: formData.provider as ProviderType,
+        video_id: id,
+        stream_url: embedUrl,
+        stream_type: 'tv',
         is_active: formData.is_active,
         scheduled_at: scheduledAtISO,
       });
@@ -206,7 +196,14 @@ const AdminLiveEditor: React.FC = () => {
     setSaving(true);
     try {
       if (!stream.is_active) await deactivateOtherLiveStreams(stream.id);
-      await upsertLiveStream({ id: stream.id, title: stream.title, stream_url: stream.stream_url, stream_type: stream.stream_type, provider: stream.provider ?? (stream.stream_type === 'tv' ? 'youtube' : 'radio_stream'), is_active: !stream.is_active });
+      await upsertLiveStream({
+        id: stream.id,
+        title: stream.title,
+        stream_url: stream.stream_url,
+        provider: stream.provider || 'youtube',
+        stream_type: stream.stream_type || 'tv',
+        is_active: !stream.is_active,
+      });
       toast({ title: 'Succès', description: !stream.is_active ? 'Direct activé' : 'Direct désactivé' });
       await loadLiveStreams();
     } catch (e) {
@@ -258,98 +255,56 @@ const AdminLiveEditor: React.FC = () => {
               </div>
             </div>
 
-            {/* Type et Fournisseur */}
+            {/* Fournisseur + identifiant simplifié */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="stream_type">Type</Label>
-                <Select value={formData.stream_type} onValueChange={(v) => setFormData((f) => ({ ...f, stream_type: v as 'tv' | 'radio' }))}>
-                  <SelectTrigger id="stream_type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tv">📺 TV / Vidéo</SelectItem>
-                    <SelectItem value="radio">📻 Radio / Audio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
                 <Label htmlFor="provider">Plateforme</Label>
-                <Select value={formData.provider} onValueChange={(v) => setFormData((f) => ({ ...f, provider: v as ProviderType }))}>
+                <Select value={formData.provider} onValueChange={handleProviderChange}>
                   <SelectTrigger id="provider">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ProviderManager.ProviderTypes.map((p) => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="twitch">Twitch</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Champs conditionnels par provider */}
-            {/* Champs YouTube et Programmation côte-à-côte */}
-            {formData.provider === 'youtube' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="stream_url">ID YouTube</Label>
-                  <Input name="stream_url" id="stream_url" value={formData.stream_url} onChange={handleChange} placeholder="jdQA4..." />
-                </div>
-                <div>
-                  <Label htmlFor="scheduled_at">Programmation</Label>
-                  <Input name="scheduled_at" id="scheduled_at" type="datetime-local" value={formData.scheduled_at} onChange={handleChange} />
-                </div>
-              </div>
-            )}
+            <div>
+              <Label htmlFor="video_id">
+                {formData.provider === 'youtube' && 'ID YouTube'}
+                {formData.provider === 'facebook' && 'ID Facebook'}
+                {formData.provider === 'twitch' && 'Chaîne Twitch'}
+                {formData.provider === 'tiktok' && 'Identifiant TikTok'}
+              </Label>
+              <Input
+                name="video_id"
+                id="video_id"
+                value={formData.video_id}
+                onChange={handleChange}
+                placeholder={
+                  formData.provider === 'youtube'
+                    ? 'dQw4w9WgXcQ'
+                    : formData.provider === 'facebook'
+                    ? '1261288742544535'
+                    : formData.provider === 'twitch'
+                    ? 'ndcompassion'
+                    : formData.provider === 'tiktok'
+                    ? '@ndcompassion/live'
+                    : ''
+                }
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {formData.provider === 'youtube' && 'Ex: dQw4w9WgXcQ (depuis youtu.be/ID ou youtube.com/watch?v=ID)'}
+                {formData.provider === 'facebook' && 'Ex: 1261288742544535 (depuis facebook.com/video_id)'}
+                {formData.provider === 'twitch' && 'Nom de la chaîne uniquement'}
+                {formData.provider === 'tiktok' && 'Format: @username/live'}
+              </p>
+            </div>
 
-            {formData.provider === 'restream' && (
-              <>
-                <div>
-                  <Label htmlFor="stream_url">URL Stream</Label>
-                  <Input name="stream_url" id="stream_url" value={formData.stream_url} onChange={handleChange} placeholder="https://..." />
-                </div>
-              </>
-            )}
-
-            {formData.provider === 'app.restream' && (
-              <>
-                <div>
-                  <Label htmlFor="stream_url">URL Stream</Label>
-                  <Input name="stream_url" id="stream_url" value={formData.stream_url} onChange={handleChange} placeholder="https://..." />
-                </div>
-              </>
-            )}
-
-            {formData.provider === 'api_video' && (
-              <>
-                <div>
-                  <Label htmlFor="stream_url">URL Stream</Label>
-                  <Input name="stream_url" id="stream_url" value={formData.stream_url} onChange={handleChange} placeholder="https://..." />
-                </div>
-                <div>
-                  <Label htmlFor="hls_url">URL HLS (.m3u8)</Label>
-                  <Input name="hls_url" id="hls_url" value={formData.hls_url} onChange={handleChange} placeholder="https://.../.m3u8" />
-                </div>
-              </>
-            )}
-
-            {formData.provider === 'radio_stream' && (
-              <>
-                <div>
-                  <Label htmlFor="audio_url">URL Audio (MP3, AAC, M3U8)</Label>
-                  <Input name="audio_url" id="audio_url" value={formData.audio_url} onChange={handleChange} placeholder="https://..." />
-                </div>
-              </>
-            )}
-
-            {/* Embed HTML - optionnel */}
-            {formData.provider !== 'radio_stream' && (
-              <div>
-                <Label htmlFor="embed_html">Embed HTML (optionnel)</Label>
-                <Input name="embed_html" id="embed_html" value={formData.embed_html} onChange={handleChange} placeholder="&lt;iframe src=..." />
-              </div>
-            )}
 
             {/* Programmation - seulement si pas YouTube */}
             {formData.provider !== 'youtube' && (
@@ -405,7 +360,9 @@ const AdminLiveEditor: React.FC = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm break-all">{stream.stream_url}</p>
+                    <p className="text-sm break-all">
+                      {stream.video_id ? `${stream.provider}: ${stream.video_id}` : stream.stream_url}
+                    </p>
                     <div className="mt-3 flex items-center justify-between">
                       <div className="text-xs text-muted-foreground">Fournisseur: {stream.provider}</div>
                       <div className="flex items-center gap-2">

@@ -78,6 +78,44 @@ export const PROVIDER_REGISTRY: Record<ProviderType, ProviderCapability> = {
   // BROADCAST DESTINATIONS (Primarily for distribution, not primary playback)
   // ============================================================================
 
+  facebook: {
+    id: 'facebook',
+    label: 'Facebook',
+    description: 'Embed Facebook Live via plugin iframe',
+    isPrimaryPlayback: true,
+    mobileFriendly: true,
+    corsRequired: false,
+    inputFormats: ['url', 'embed'],
+    playbackFormats: ['iframe'],
+    example: 'Exemple: https://www.facebook.com/YourPage/videos/123456789 ou iframe fourni par Facebook',
+  },
+
+  instagram: {
+    id: 'instagram',
+    label: 'Instagram',
+    description: '⚠️ Destination de diffusion + lien uniquement',
+    isPrimaryPlayback: false,
+    mobileFriendly: true,
+    corsRequired: false,
+    isBroadcastOnly: true,
+    inputFormats: ['url', 'embed'],
+    playbackFormats: ['iframe'],
+    example: 'Exemple: https://www.instagram.com/tv/XXXXX/ ou URL de post',
+  },
+
+  tiktok: {
+    id: 'tiktok',
+    label: 'TikTok',
+    description: '⚠️ Destination de diffusion + lien uniquement',
+    isPrimaryPlayback: false,
+    mobileFriendly: true,
+    corsRequired: false,
+    isBroadcastOnly: true,
+    inputFormats: ['url', 'embed'],
+    playbackFormats: ['iframe'],
+    example: 'Exemple: https://www.tiktok.com/@user/video/1234567890',
+  },
+
   youtube: {
     id: 'youtube',
     label: 'YouTube',

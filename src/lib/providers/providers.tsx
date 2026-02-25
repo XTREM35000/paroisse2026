@@ -260,6 +260,138 @@ export const radioStreamProvider: LiveProvider = {
 /**
  * Custom Embed Provider (HTML5, generic iframe)
  */
+export const facebookProvider: LiveProvider = {
+  name: 'facebook',
+  displayName: 'Facebook',
+  description: 'Live streams hosted on Facebook',
+
+  detect: (url: string) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return /facebook\.com/.test(lower) || /fb\.watch\//.test(lower);
+  },
+
+  extractUrl: (url: string) => {
+    return url;
+  },
+
+  renderPlayer: (url: string, options: ProviderOptions = {}) => {
+    const trimmed = url.trim();
+    if (trimmed.startsWith('<iframe')) {
+      return (
+        <div className={`w-full rounded-lg overflow-hidden ${options.className || ''}`}>
+          <div className="w-full" dangerouslySetInnerHTML={{ __html: trimmed }} />
+        </div>
+      );
+    }
+    const href = encodeURIComponent(url);
+    const width = options.width || '100%';
+    const height = options.height || '100%';
+    return (
+      <div className={`w-full bg-black rounded-lg overflow-hidden ${options.className || ''}`}>
+        <div className="aspect-video w-full">
+          <iframe
+            width={width}
+            height={height}
+            src={`https://www.facebook.com/plugins/video.php?href=${href}&width=560&show_text=false&appId`}
+            title="Facebook Live Player"
+            frameBorder="0"
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
+            className="w-full h-full"
+          />
+        </div>
+      </div>
+    );
+  },
+
+  streamType: 'tv',
+  urlPlaceholder: 'https://www.facebook.com/YourPage/videos/123456789/',
+  supportedFormats: [
+    'https://www.facebook.com/YourPage/videos/123456789/',
+    '<iframe src="https://www.facebook.com/plugins/video.php?..." />',
+  ],
+};
+
+export const instagramProvider: LiveProvider = {
+  name: 'instagram',
+  displayName: 'Instagram',
+  description: 'Lien ou embed Instagram (TV/Live)',
+  detect: (url: string) => {
+    if (!url) return false;
+    return /instagram\.com/.test(url.toLowerCase());
+  },
+  extractUrl: (url: string) => url,
+  renderPlayer: (url: string, options: ProviderOptions = {}) => {
+    // if embed HTML provided
+    const trimmed = url.trim();
+    if (trimmed.startsWith('<iframe')) {
+      return (
+        <div className={`w-full rounded-lg overflow-hidden ${options.className || ''}`}>
+          <div className="w-full" dangerouslySetInnerHTML={{ __html: trimmed }} />
+        </div>
+      );
+    }
+    // fall back to simple link card
+    return (
+      <div className="w-full p-4 bg-card rounded-lg text-center">
+        <p className="mb-2">Vidéo hébergée sur Instagram.</p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline"
+        >Ouvrir sur Instagram</a>
+      </div>
+    );
+  },
+  streamType: 'tv',
+  urlPlaceholder: 'https://www.instagram.com/tv/XXXXXXXXX/',
+  supportedFormats: [
+    'https://www.instagram.com/tv/XXXXX/',
+    '<iframe src="https://www.instagram.com/p/XXXXX/embed" />',
+  ],
+};
+
+export const tiktokProvider: LiveProvider = {
+  name: 'tiktok',
+  displayName: 'TikTok',
+  description: 'Lien ou embed TikTok',
+  detect: (url: string) => {
+    if (!url) return false;
+    const u = url.toLowerCase();
+    return /tiktok\.com/.test(u) || /vm\.tiktok\.com/.test(u);
+  },
+  extractUrl: (url: string) => url,
+  renderPlayer: (url: string, options: ProviderOptions = {}) => {
+    const trimmed = url.trim();
+    if (trimmed.startsWith('<iframe')) {
+      return (
+        <div className={`w-full rounded-lg overflow-hidden ${options.className || ''}`}>
+          <div className="w-full" dangerouslySetInnerHTML={{ __html: trimmed }} />
+        </div>
+      );
+    }
+    return (
+      <div className="w-full p-4 bg-card rounded-lg text-center">
+        <p className="mb-2">Vidéo hébergée sur TikTok.</p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black underline"
+        >Ouvrir sur TikTok</a>
+      </div>
+    );
+  },
+  streamType: 'tv',
+  urlPlaceholder: 'https://www.tiktok.com/@user/video/1234567890',
+  supportedFormats: [
+    'https://www.tiktok.com/@user/video/1234567890',
+    'https://vm.tiktok.com/XXXX/',
+  ],
+};
+
 export const customEmbedProvider: LiveProvider = {
   name: 'youtube' as ProviderType, // Fallback to youtube type
   displayName: 'Custom Embed',
