@@ -102,6 +102,59 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
             const role = profileData?.role || null;
             setUserRole(role);
 
+            // Vérifier si le profil est incomplet (email, full_name, avatar_url)
+            try {
+              const { data: fullProfile } = await supabase
+                .from('profiles')
+                .select('email, full_name, avatar_url')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+              const missingFields: string[] = [];
+              if (!fullProfile) {
+                missingFields.push('profile_missing');
+              } else {
+                if (!fullProfile.email) missingFields.push('email');
+                if (!fullProfile.full_name) missingFields.push('full_name');
+                if (!fullProfile.avatar_url) missingFields.push('avatar_url');
+              }
+
+              if (missingFields.length > 0) {
+                try {
+                  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+                  const publicAuthPages = ['/reset-password', '/email-confirmed', '/auth', '/forgot-password', '/connexion'];
+                  const isOnPublicAuthPage = publicAuthPages.some(page => currentPath === page || currentPath.startsWith(page));
+
+                  // Eviter de rediriger les admins hors de l'admin
+                  const isAdminPath = currentPath.startsWith('/admin') || role?.toLowerCase()?.includes('admin');
+
+                  if (!isAdminPath && !isOnPublicAuthPage && currentPath !== '/profil') {
+                    const target = '/profil?prompt=complete';
+                    try {
+                      window.dispatchEvent(new CustomEvent('ff:profile-incomplete', { detail: { missingFields } }));
+                    } catch (e) {
+                      // ignore
+                    }
+                    try {
+                      window.location.replace(target);
+                    } catch (e) {
+                      // fallback
+                      window.location.href = target;
+                    }
+                  } else {
+                    // Still emit event so UI can react (e.g., show modal)
+                    try {
+                      window.dispatchEvent(new CustomEvent('ff:profile-incomplete', { detail: { missingFields } }));
+                    } catch (e) { /* ignore */ }
+                  }
+                } catch (e) {
+                  console.error('[AuthProvider] profile completeness check failed:', e);
+                }
+              }
+            } catch (e) {
+              console.error('[AuthProvider] failed to fetch full profile for completeness check:', e);
+            }
+
             // Fermer modal auth si besoin
             try {
               if (typeof window !== 'undefined' && window.location.hash.includes('#auth')) {

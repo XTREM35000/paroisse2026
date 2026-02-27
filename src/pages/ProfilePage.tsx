@@ -87,8 +87,21 @@ const ProfilePage = () => {
     }
   }, [user, profile, navigate]);
 
+  // Show a small prompt banner when redirected with prompt=complete
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get('prompt') === 'complete') {
+        setShowCompletePrompt(true);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [location.search]);
+
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  const [showCompletePrompt, setShowCompletePrompt] = useState(false);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -209,6 +222,28 @@ const ProfilePage = () => {
         backgroundImage={hero?.image_url}
         onBgSave={saveHero}
       />
+
+      {showCompletePrompt && (
+        <div className="container mx-auto px-4 mt-4">
+          <div className="rounded-lg p-4 bg-yellow-50 border border-yellow-200 flex items-center justify-between">
+            <div>
+              <p className="font-medium">Complétez votre profil</p>
+              <p className="text-sm text-muted-foreground">Il manque des informations (nom, email ou photo). Merci de compléter pour améliorer votre expérience.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => { setIsEditing(true); setShowCompletePrompt(false); }} className="">Compléter maintenant</Button>
+              <Button variant="outline" onClick={() => {
+                setShowCompletePrompt(false);
+                try {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('prompt');
+                  window.history.replaceState({}, document.title, url.pathname + url.search);
+                } catch (e) { /* ignore */ }
+              }}>Plus tard</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 py-12 lg:py-16">
         <div className="container mx-auto px-4">

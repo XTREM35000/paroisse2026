@@ -57,20 +57,20 @@ export default function WelcomeModal({ onClose, onOpenAuthModal }: WelcomeModalP
       {/* Content */}
       <div className="p-6">
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <h3 className="text-lg font-semibold text-white mb-3">
             Heureux de vous compter parmi nous ! 🙏
           </h3>
-          <p className="text-gray-600 mb-4 leading-relaxed">
+          <p className="text-white/90 mb-4 leading-relaxed">
             Découvrez nos dernières vidéos de messes, homélies, événements et bien plus encore.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-white/80 mb-6">
             Rejoignez notre communauté pour rester connecté à votre paroisse.
           </p>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+      <div className="px-6 py-4 bg-background/5 border-t border-border/20 flex gap-3">
         <button
           onClick={handleConnect}
           className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
@@ -79,7 +79,7 @@ export default function WelcomeModal({ onClose, onOpenAuthModal }: WelcomeModalP
         </button>
         <button
           onClick={handleClose}
-          className="flex-1 px-4 py-2 border border-gray-300 hover:border-gray-400 text-gray-700 font-semibold rounded-lg transition-colors"
+          className="flex-1 px-4 py-2 border border-border/30 text-white/90 font-semibold rounded-lg transition-colors"
         >
           Continuer
         </button>

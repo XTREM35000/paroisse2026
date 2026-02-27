@@ -244,15 +244,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
 
       {/* Modale OTP */}
       {showOTPModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 relative">
+        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2147483648 }}>
+          <div className="absolute inset-0 bg-black/50" aria-hidden />
+          <div className="bg-white rounded-xl max-w-md md:max-w-lg w-full p-6 relative max-h-[calc(100vh-48px)] overflow-auto" style={{ zIndex: 2147483649 }}>
             <button 
               onClick={closeOTPModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               ✕
             </button>
-            <PhoneOTPForm onSuccess={handleOTPSuccess} />
+            <PhoneOTPForm onSuccess={handleOTPSuccess} onCancel={closeOTPModal} />
           </div>
         </div>
       )}

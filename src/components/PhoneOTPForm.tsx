@@ -9,9 +9,10 @@ type PhoneOTPStep = 'initial' | 'code_sent' | 'verified';
 
 interface PhoneOTPFormProps {
   onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
+const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess, onCancel }) => {
   const { toast } = useToast();
   const [step, setStep] = useState<PhoneOTPStep>('initial');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -175,6 +176,10 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
           <p className="text-sm text-gray-600">
             Entrez votre numéro de téléphone pour recevoir un code de vérification
           </p>
+          <div className="flex justify-end gap-2 mt-2">
+            <button type="button" onClick={() => onCancel && onCancel()} className="text-sm text-gray-600 hover:text-gray-900">Revenir</button>
+            <button type="button" onClick={() => onCancel && onCancel()} className="text-sm text-gray-600 hover:text-gray-900">Fermer</button>
+          </div>
         </div>
 
         <form onSubmit={handlePhoneSubmit} className="space-y-4">
@@ -242,7 +247,7 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
   // Step 2: OTP code input
   if (step === 'code_sent') {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 min-h-[520px]">
         <div className="text-center space-y-2">
           <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
             <Phone className="w-6 h-6 text-blue-600" />
@@ -252,6 +257,10 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
             Entrez le code à 6 chiffres envoyé au
           </p>
           <p className="text-sm font-medium text-gray-900">{phoneNumber}</p>
+          <div className="flex justify-end gap-2 mt-2">
+            <button type="button" onClick={handleReset} className="text-sm text-gray-600 hover:text-gray-900">Revenir</button>
+            <button type="button" onClick={() => onCancel && onCancel()} className="text-sm text-gray-600 hover:text-gray-900">Fermer</button>
+          </div>
         </div>
 
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -373,6 +382,10 @@ const PhoneOTPForm: React.FC<PhoneOTPFormProps> = ({ onSuccess }) => {
         <p className="text-sm text-gray-600">
           Votre numéro <span className="font-medium text-gray-900">{phoneNumber}</span> a été vérifié
         </p>
+        <div className="flex justify-end gap-2 mt-2">
+          <button type="button" onClick={handleReset} className="text-sm text-gray-600 hover:text-gray-900">Revenir</button>
+          <button type="button" onClick={() => onCancel && onCancel()} className="text-sm text-gray-600 hover:text-gray-900">Fermer</button>
+        </div>
       </div>
 
       <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
