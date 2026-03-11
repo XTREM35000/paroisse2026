@@ -33,8 +33,19 @@ export default function DonationModal({
 
   const { processPayment } = usePayment();
 
+  const getMinAmount = (currency: string) => {
+    switch (currency) {
+      case "XOF": return 5000;
+      case "EUR": return 8;
+      case "USD": return 8;
+      case "CAD": return 10;
+      case "GBP": return 7;
+      case "CNY": return 60;
+      default: return 5000;
+    }
+  };
   const [form, setForm] = useState({
-    amount: "5000",
+    amount: getMinAmount("XOF").toString(),
     payerName: "",
     payerEmail: "",
   });
@@ -100,6 +111,7 @@ export default function DonationModal({
             pattern="[0-9]*"
             inputMode="numeric"
             value={form.amount}
+            placeholder={`Montant (min ${getMinAmount("XOF")} XOF)`}
             onChange={(e) => {
               // Empêche la saisie non numérique
               const val = e.target.value.replace(/[^0-9]/g, "");

@@ -10,7 +10,18 @@ import { PaymentLogosCardsOnly } from "@/components/donations/PaymentLogosSectio
 import EmailInputWithSuffix from "@/components/EmailInputWithSuffix";
 
 export default function StripeDonationModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-	const [amount, setAmount] = useState("5000");
+	const getMinAmount = (currency: string) => {
+		switch (currency) {
+			case "XOF": return 5000;
+			case "EUR": return 8;
+			case "USD": return 8;
+			case "CAD": return 10;
+			case "GBP": return 7;
+			case "CNY": return 60;
+			default: return 5000;
+		}
+	};
+	const [amount, setAmount] = useState(getMinAmount("XOF").toString());
 	const [email, setEmail] = useState("");
 	const [phone, setPhone] = useState("");
 	const [currency, setCurrency] = useState("XOF");
@@ -78,7 +89,7 @@ export default function StripeDonationModal({ open, onClose }: { open: boolean; 
 			<PaymentLogosCardsOnly />
 			<form onSubmit={submit} className="space-y-4">
 				<Input
-					placeholder="Montant"
+					placeholder={`Montant (min ${getMinAmount(currency)} ${currency})`}
 					value={amount}
 					type="number"
 					min={getMinAmount(currency)}
