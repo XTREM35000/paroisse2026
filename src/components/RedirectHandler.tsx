@@ -15,6 +15,8 @@ const RedirectHandler: React.FC = () => {
     const perform = (path?: string | null) => {
       try {
         if (!path) return;
+        // Empêche toute redirection sur /donation-success
+        if (path.startsWith('/donation-success')) return;
         // Clear pending key to prevent re-execution
         try { sessionStorage.removeItem('ff_pending_redirect'); } catch (e) { /* ignore */ }
         // Use replace to avoid polluting history
