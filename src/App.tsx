@@ -89,6 +89,21 @@ const App = () => {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
+  // Blocage de toute redirection automatique sur /donation-success
+  React.useEffect(() => {
+    const originalPushState = window.history.pushState;
+    window.history.pushState = function (...args) {
+      if (window.location.pathname.startsWith('/donation-success')) {
+        // Empêche toute navigation
+        return;
+      }
+      return originalPushState.apply(window.history, args);
+    };
+    return () => {
+      window.history.pushState = originalPushState;
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

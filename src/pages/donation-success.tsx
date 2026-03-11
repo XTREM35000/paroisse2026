@@ -1,13 +1,25 @@
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 export default function DonationSuccess() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [amount, setAmount] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
+    // Empêche toute navigation automatique pendant l'affichage du succès/erreur
+    const blockNavigation = (e: Event) => {
+      e.preventDefault();
+      // Utilise une variable pour le cast returnValue
+      (e as unknown as { returnValue?: boolean }).returnValue = false;
+      return false;
+    };
+    window.addEventListener('beforeunload', blockNavigation);
+    window.addEventListener('popstate', blockNavigation);
+    // Vérification du paiement
     const verify = async () => {
       const params = new URLSearchParams(window.location.search);
       const sessionId = params.get("session_id");
@@ -39,6 +51,10 @@ export default function DonationSuccess() {
       }
     };
     verify();
+    return () => {
+      window.removeEventListener('beforeunload', blockNavigation);
+      window.removeEventListener('popstate', blockNavigation);
+    };
   }, []);
 
   return (
