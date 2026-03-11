@@ -1,48 +1,44 @@
-import { useState } from 'react';
-import { initCinetPayPayment } from '@/lib/payments/cinetpay';
-import { initMobileMoneyPayment } from '@/lib/payments/mobileMoney';
-import type { PaymentInitResult } from '@/lib/payments/types';
+import { useCallback, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface PaymentResult {
+  paymentUrl?: string;
+  manualReceiptUrl?: string;
+  method: string;
+}
 
 export const usePayment = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [message, setMessage] = useState<string>("");
 
-  const processPayment = async (
-    method: 'cinetpay' | 'moov' | 'mtn' | 'orange' | 'card' | 'wave' | 'mobile_money',
-    data: any
-  ): Promise<PaymentInitResult> => {
-    setLoading(true);
-    setError(null);
+  const processPayment = useCallback(
+    async ({ donationId }: { donationId: string }): Promise<PaymentResult> => {
+      setStatus("pending");
+      setMessage("Initialisation du paiement...");
 
-    try {
-      switch (method) {
-        case 'cinetpay':
-        case 'card':
-          return await initCinetPayPayment(
-            data.amount,
-            data.currency || 'XOF',
-            data.customerName,
-            data.customerEmail,
-            data.customerPhone,
-            data.donationId
-          );
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { donationId },
+      });
 
-        case 'moov':
-        case 'mtn':
-        case 'orange':
-        case 'mobile_money':
-          return await initMobileMoneyPayment(method as any, data.phoneNumber, data.amount, data.donationId);
-
-        default:
-          throw new Error('Méthode de paiement non supportée');
+      if (error) {
+        console.error(error);
+        setStatus("failed");
+        setMessage("Erreur lors du paiement");
+        throw error;
       }
-    } catch (err: any) {
-      setError(err?.message || String(err));
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  return { processPayment, loading, error } as const;
+      if (data.method === "manual") {
+        setStatus("completed");
+        setMessage("Don enregistré. Merci !");
+      } else {
+        setStatus("processing");
+        setMessage("Redirection vers la plateforme sécurisée...");
+      }
+
+      return data;
+    },
+    []
+  );
+
+  return { processPayment, status, message, setStatus, setMessage };
 };

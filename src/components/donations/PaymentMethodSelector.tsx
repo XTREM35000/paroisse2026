@@ -1,3 +1,6 @@
+// src\components\donations\PaymentMethodSelector.tsx
+
+
 /**
  * Sélecteur de méthode de paiement avec animation 3D et dégradés
  */
@@ -31,12 +34,19 @@ const getIconComponent = (iconName?: string) => {
 const getMethodStyle = (code: string) => {
   switch (code) {
     case 'card':
+    case 'stripe':
+      return {
+        gradient: 'from-pink-500 via-pink-400 to-rose-500',
+        icon: 'text-white',
+        badge: 'Carte bancaire',
+        inConstruction: false,
+      };
     case 'cinetpay':
       return {
         gradient: 'from-blue-600 via-blue-500 to-purple-600',
         icon: 'text-white',
-        badge: code === 'cinetpay' ? 'CinetPay' : 'Carte bancaire',
-        inConstruction: code === 'card',
+        badge: 'CinetPay',
+        inConstruction: false,
       };
     case 'moov':
     case 'mtn':
@@ -129,7 +139,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
           <motion.button
             key={method.code}
             onClick={() => handleCardClick(method)}
-            onMouseMove={(e: any) => handleMouseMove(e, method.code)}
+            onMouseMove={(e: React.MouseEvent<HTMLButtonElement>) => handleMouseMove(e, method.code)}
             onMouseLeave={handleMouseLeave}
             disabled={loading}
             whileHover={{ scale: 1.05 }}
@@ -141,7 +151,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                 ? `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
                 : 'rotateX(0deg) rotateY(0deg)',
               transition: 'transform 0.2s ease-out',
-            } as any}
+            } as React.CSSProperties}
           >
             {/* Gradient Background */}
             <div

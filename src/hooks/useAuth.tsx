@@ -134,7 +134,6 @@ export function AuthProvider({ children }: React.PropsWithChildren): React.JSX.E
                   console.error('[AuthProvider] profile completeness check failed:', e);
                 }
               }
-              }
             } catch (e) {
               console.error('[AuthProvider] failed to fetch full profile for completeness check:', e);
             }

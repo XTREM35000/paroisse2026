@@ -42,8 +42,8 @@ export default function WelcomeModal({ onClose, onOpenAuthModal }: WelcomeModalP
       <div className="px-6 pt-6 pb-2 text-center">
 
         {/* Icon */}
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Sparkles className="h-6 w-6 text-primary" />
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <img src="/logo.png" alt="Logo" className="h-16 w-16" />
         </div>
 
         {/* Title */}

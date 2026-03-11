@@ -1,14 +1,10 @@
-/**
- * Hook pour créer une donation
- */
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface CreateDonationInput {
   amount: number;
   currency: string;
   payment_method: string;
-  campaign_id?: string;
   payer_name: string;
   payer_email: string;
   payer_phone?: string;
@@ -16,74 +12,41 @@ export interface CreateDonationInput {
   is_anonymous?: boolean;
 }
 
-export interface ParsedDonation {
-  id: string;
-  amount: number;
-  currency: string;
-  payment_method: string;
-  payment_status: string;
-  payer_name: string;
-  payer_email: string;
-  payer_phone?: string;
-  created_at?: string;
-}
-
-interface UseCreateDonationResult {
-  createDonation: (input: CreateDonationInput) => Promise<ParsedDonation | null>;
-  loading: boolean;
-  error: string | null;
-}
-
-export function useCreateDonation(): UseCreateDonationResult {
+export const useCreateDonation = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const createDonation = async (input: CreateDonationInput): Promise<ParsedDonation | null> => {
-    try {
-      setLoading(true);
-      setError(null);
+  const createDonation = async (input: CreateDonationInput) => {
+    setLoading(true);
 
-      // Récupérer l'utilisateur actuel
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+    // Récupérer l'utilisateur actuel
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        throw new Error('Vous devez être connecté pour faire un don');
-      }
+    const { data, error } = await supabase
+      .from("donations")
+      .insert({
+        user_id: user && !input.is_anonymous ? user.id : null,
+        amount: input.amount,
+        currency: input.currency,
+        payment_method: input.payment_method,
+        payer_name: input.payer_name,
+        payer_email: input.payer_email,
+        payer_phone: input.payer_phone,
+        intention_message: input.intention_message,
+        is_anonymous: input.is_anonymous || false,
+        payment_status: "pending",
+      })
+      .select()
+      .single();
 
-      // Créer la donation
-      const { data, error: insertError } = await supabase
-        .from('donations')
-        .insert({
-          user_id: user.id,
-          amount: input.amount,
-          currency: input.currency,
-          payment_method: input.payment_method,
-          payment_status: 'pending',
-          campaign_id: input.campaign_id || null,
-          payer_name: input.payer_name || user.user_metadata?.full_name || '',
-          payer_email: input.payer_email || user.email || '',
-          payer_phone: input.payer_phone || null,
-          intention_message: input.intention_message || null,
-          is_anonymous: input.is_anonymous || false,
-        })
-        .select()
-        .single();
+    setLoading(false);
 
-      if (insertError) throw insertError;
-
-      return data as ParsedDonation;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur lors de la création de la donation';
-      setError(message);
-      console.error('useCreateDonation error:', err);
-      return null;
-    } finally {
-      setLoading(false);
+    if (error) {
+      console.error(error);
+      throw error;
     }
+
+    return data;
   };
 
-  return { createDonation, loading, error };
-}
+  return { createDonation, loading };
+};
