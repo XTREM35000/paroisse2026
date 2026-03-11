@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 
-import CurrencySelect from "@/components/forms/CurrencySelect"
-import PhoneInput from "@/components/forms/PhoneInput"
+import CurrencySelect from "@/components/form/CurrencySelect"
+import PhoneInput from "@/components/form/PhoneInput"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
