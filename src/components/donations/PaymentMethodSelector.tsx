@@ -180,14 +180,21 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
             {/* Content */}
             <div className="relative h-full flex flex-col items-center justify-center gap-4 text-white p-6">
-              {/* Icon */}
+              {/* Logo ou icône */}
               <motion.div
-                animate={{
-                  y: isHovered ? -5 : 0,
-                }}
+                animate={{ y: isHovered ? -5 : 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {getIconComponent(method.icon)}
+                {method.image ? (
+                  <img
+                    src={method.image}
+                    alt={method.label}
+                    className="h-14 w-auto object-contain drop-shadow-lg"
+                    style={{ maxWidth: 96 }}
+                  />
+                ) : (
+                  getIconComponent(method.icon)
+                )}
               </motion.div>
 
               {/* Label */}

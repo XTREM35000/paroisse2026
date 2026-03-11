@@ -45,7 +45,14 @@ export default function VideosPage() {
       
       return () => {
         // Nettoyer au unmount (optionnel)
-        document.head.removeChild(link);
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      };
+      return () => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
       };
     }
   }, [hero?.image_url]);
@@ -249,6 +256,11 @@ export default function MyPage() {
       link.href = hero.image_url;
       link.fetchPriority = 'high';
       document.head.appendChild(link);
+      return () => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      };
     }
   }, [hero?.image_url]);
 
@@ -307,6 +319,11 @@ export default function VersePage() {
       link.href = hero.image_url;
       link.fetchPriority = 'high';
       document.head.appendChild(link);
+      return () => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      };
     }
   }, [hero?.image_url]);
 

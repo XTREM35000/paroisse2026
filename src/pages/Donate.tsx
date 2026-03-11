@@ -2,15 +2,21 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Heart } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 
-import PaymentMethodSelector from "@/components/donations/PaymentMethodSelector"
-import StripeDonationModal from "@/components/donations/StripeDonationModal"
-import MobileMoneyDonationModal from "@/components/donations/MobileMoneyDonationModal"
-import CashDonationModal from "@/components/donations/CashDonationModal"
-import HeroBanner from "@/components/HeroBanner"
-import { useLocation } from 'react-router-dom'
-import usePageHero from '@/hooks/usePageHero'
+
+import PaymentLogosSection from "@/components/donations/PaymentLogosSection";
+import PaymentMethodSelector from "@/components/donations/PaymentMethodSelector";
+import { Button } from "@/components/ui/button";
+import StripeDonationModal from "@/components/donations/StripeDonationModal";
+import MobileMoneyDonationModal from "@/components/donations/MobileMoneyDonationModal";
+import CashDonationModal from "@/components/donations/CashDonationModal";
+
+
+
+
+import { useLocation } from "react-router-dom";
+import usePageHero from "@/hooks/usePageHero";
+import HeroBanner from "@/components/HeroBanner";
 
 export default function Donate() {
 
@@ -32,58 +38,54 @@ return (
   onBgSave={saveHero}
 />
 
+
 <div className="container mx-auto px-4 py-12">
 
-{/* SECTION PAYMENT */}
 
 <motion.section
-initial={{opacity:0,y:20}}
-animate={{opacity:1,y:0}}
-className="mb-16"
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="mb-16"
 >
-
-<h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-green-700">
-Choisissez votre méthode de paiement
-</h2>
-
-<p className="text-center text-gray-600 mb-12">
-Sélectionnez une méthode pour continuer vers votre don
-</p>
-
-<PaymentMethodSelector
-selectedMethod={method}
-onSelect={(m)=>setMethod(m)}
-methods={[
-{
-id: "stripe-1",
-code:"stripe",
-label:"Carte bancaire",
-description:"Visa / Mastercard",
-icon:"CreditCard",
-is_active: true,
-requires_validation: false
-},
-{
-id: "cinetpay-1",
-code:"cinetpay",
-label:"Mobile Money",
-description:"MTN / Orange / Moov / Wave",
-icon:"Smartphone",
-is_active: true,
-requires_validation: false
-},
-{
-id: "cash-1",
-code:"cash",
-label:"Guichet Paroisse",
-description:"Paiement en espèces",
-icon:"DollarSign",
-is_active: true,
-requires_validation: false
-}
-]}
-/>
-
+  <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-green-700">
+    Choisissez votre méthode de paiement
+  </h2>
+  <p className="text-center text-gray-600 mb-12">
+    Sélectionnez une méthode pour continuer vers votre don
+  </p>
+  <PaymentMethodSelector
+    selectedMethod={method}
+    onSelect={(m) => setMethod(m)}
+    methods={[
+      {
+        id: "stripe-1",
+        code: "stripe",
+        label: "Carte bancaire",
+        description: "Visa / Mastercard",
+        image: "/svg/MasterCard.png",
+        is_active: true,
+        requires_validation: false,
+      },
+      {
+        id: "cinetpay-1",
+        code: "cinetpay",
+        label: "Mobile Money",
+        description: "MTN / Orange / Moov / Wave",
+        image: "/svg/ORANGE.svg",
+        is_active: true,
+        requires_validation: false,
+      },
+      {
+        id: "cash-1",
+        code: "cash",
+        label: "Guichet Paroisse",
+        description: "Paiement en espèces",
+        image: "/svg/espece.png",
+        is_active: true,
+        requires_validation: false,
+      },
+    ]}
+  />
 </motion.section>
 
 

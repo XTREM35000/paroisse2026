@@ -13,55 +13,41 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
 
-  // gérer preflight request
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
   try {
 
-    const { donationId } = await req.json()
+    const { sessionId } = await req.json()
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+    if (!session || session.payment_status !== "paid") {
+      throw new Error("Paiement non validé")
+    }
+
+    const donationId = session.metadata?.donation_id
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
-    const { data: donation } = await supabase
+    await supabase
       .from("donations")
-      .select("*")
+      .update({
+        status: "paid",
+        stripe_session_id: session.id
+      })
       .eq("id", donationId)
-      .single()
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-
-      line_items: [
-  {
-    price_data: {
-      currency: donation.currency.toLowerCase(),
-      product_data: {
-        name: "Don - Paroisse Compassion"
-      },
-      unit_amount: Math.round(Number(donation.amount) * 100)
-    },
-    quantity: 1
-  }
-],
-
-      success_url: `${Deno.env.get("SITE_URL")}/donation-success?session_id={CHECKOUT_SESSION_ID}`,
-
-      cancel_url: `${Deno.env.get("SITE_URL")}/donate`,
-
-      metadata: {
-        donation_id: donation.id
-      }
-
-    })
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({
+        success: true,
+        amount: session.amount_total / 100,
+        currency: session.currency
+      }),
       {
         headers: {
           ...corsHeaders,

@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface PaymentMethod {
   id: string;
   code: string;
   label: string;
@@ -13,6 +12,7 @@ export interface PaymentMethod {
   is_active: boolean;
   requires_validation: boolean;
   display_order?: number;
+  image?: string;
 }
 
 interface UseDonationMethodsResult {

@@ -1,48 +1,76 @@
-import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
 
-export default function DonationSuccess(){
+export default function DonationSuccess() {
 
-const navigate=useNavigate()
+  const [status, setStatus] = useState("loading")
+  const [amount, setAmount] = useState(null)
 
-useEffect(()=>{
+  useEffect(() => {
 
-setTimeout(()=>{
+    const verify = async () => {
 
-navigate("/donate")
+      const params = new URLSearchParams(window.location.search)
+      const sessionId = params.get("session_id")
 
-},4000)
+      if (!sessionId) {
+        setStatus("error")
+        return
+      }
 
-},[])
+      try {
 
-return(
+        const res = await fetch(
+          "https://cghwsbkxcjsutqwzdbwe.supabase.co/functions/v1/verify-payment",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ sessionId })
+          }
+        )
 
-<div className="min-h-screen flex items-center justify-center">
+        const data = await res.json()
 
-<div className="bg-white p-10 rounded-xl text-center">
+        if (data.success) {
+          setAmount(data.amount)
+          setStatus("success")
+        } else {
+          setStatus("error")
+        }
 
-<h1 className="text-3xl text-green-600">
+      } catch {
+        setStatus("error")
+      }
 
-Paiement réussi ❤️
+    }
 
-</h1>
+    verify()
 
-<p className="mt-4">
+  }, [])
 
-Merci pour votre don !
+  if (status === "loading") {
+    return <div>Paiement en vérification...</div>
+  }
 
-</p>
+  if (status === "error") {
+    return <div>Erreur de vérification du paiement.</div>
+  }
 
-<p className="text-sm text-gray-500">
+  return (
+    <div className="donation-success">
 
-Retour automatique...
+      <h1>Merci pour votre don 🙏</h1>
 
-</p>
+      <p>
+        Votre paiement de <strong>{amount}</strong> a été confirmé.
+      </p>
 
-</div>
+      <a href="/donate">
+        Retour à la page de dons
+      </a>
 
-</div>
-
-)
+    </div>
+  )
 
 }
