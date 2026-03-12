@@ -116,12 +116,16 @@ export default function DonationSuccess() {
     setShowExitConfirm(true);
   };
 
-  const confirmExit = () => {
+  // ✅ CORRECTION : Fonction de navigation vers /donate
+  const goToDonatePage = () => {
+    setShowSuccessDialog(false);
+    setShowErrorDialog(false);
+    setShowExitConfirm(false);
     navigate("/donate");
   };
 
   const handleRefresh = () => {
-    window.location.reload(); // Gardé car c'est un refresh, pas une navigation
+    window.location.reload();
   };
 
   const handleSeeDetails = () => {
@@ -180,7 +184,7 @@ export default function DonationSuccess() {
                 Voir l'historique
               </Button>
               <Button
-                onClick={confirmExit}
+                onClick={goToDonatePage}  // ✅ CORRECTION
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 Retour aux dons
@@ -223,7 +227,7 @@ export default function DonationSuccess() {
                 Rafraîchir
               </Button>
               <Button
-                onClick={confirmExit}
+                onClick={goToDonatePage}  // ✅ CORRECTION
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 <span className="mr-2">💝</span>
@@ -261,7 +265,7 @@ export default function DonationSuccess() {
                 Continuer sur cette page
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={confirmExit}
+                onClick={goToDonatePage}  // ✅ CORRECTION
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 Quitter
@@ -285,15 +289,3 @@ export default function DonationSuccess() {
     </div>
   );
 }
-
-// Ajoute ces animations dans ton fichier CSS global
-const styles = `
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .animate-fadeIn {
-    animation: fadeIn 0.5s ease-out;
-  }
-`;
