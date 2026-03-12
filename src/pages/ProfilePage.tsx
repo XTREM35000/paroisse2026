@@ -7,7 +7,7 @@ import HeroBanner from '@/components/HeroBanner';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import Footer from '@/components/Footer';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useUser } from '@/hooks/useUser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ interface UserData {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuthContext();
   const { profile, isLoading: profileLoading } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

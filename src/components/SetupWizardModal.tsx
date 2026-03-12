@@ -4,6 +4,7 @@ import { saveInitialSetup, uploadImageToStorage, saveHeaderConfig } from '@/lib/
 import { useSetup } from '@/contexts/SetupContext';
 import type { HomepageSectionRow } from '@/lib/setupWizard';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Upload, Loader2 } from 'lucide-react';
@@ -40,7 +41,7 @@ type ImageField = 'heroImageUrl' | 'brandingLogo' | 'headerLogo';
 
 export default function SetupWizardModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { markCompleted } = useSetup();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 

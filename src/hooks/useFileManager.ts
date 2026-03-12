@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useRoleCheck } from '@/hooks/useRoleCheck';
 
 export interface ZipStructure {
@@ -19,7 +19,7 @@ export default function useFileManager() {
   const [isUploading, setIsUploading] = useState(false);
   const bucket = 'paroisse-files';
 
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { isAdmin } = useRoleCheck();
 
   const uploadZip = async (file: File, mediaType: string): Promise<UploadResult> => {

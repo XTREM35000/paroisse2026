@@ -3,7 +3,7 @@ import { Trash2, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import useRoleCheck from '@/hooks/useRoleCheck';
 import {
   fetchLiveProviderSources,
@@ -32,7 +32,7 @@ export default function AdminLiveSourcesEditor({
   liveTitle = 'Live Stream',
 }: AdminLiveSourcesEditorProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { isAdmin } = useRoleCheck();
 
   const [sources, setSources] = useState<LiveProviderSource[]>([]);

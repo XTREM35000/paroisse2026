@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { stripAndNormalize } from "@/utils/emailSanitizer";
@@ -19,7 +19,7 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin }) => {
-  const { register, signInWithProvider } = useAuth();
+  const { register, signInWithProvider } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");

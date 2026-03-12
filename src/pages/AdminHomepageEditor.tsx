@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Save, X, AlertCircle, Plus, Trash2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
 import { useHeaderConfig, useUpdateHeaderConfig } from "@/hooks/useHeaderConfig";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,7 @@ import useRoleCheck from '@/hooks/useRoleCheck';
 // use shared `supabase` client from integrations
 const AdminHomepageEditor = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { sections, isLoading: contentLoading } = useHomepageContent();
   
   const [loading, setLoading] = useState(false);
@@ -158,7 +158,7 @@ const AdminHomepageEditor = () => {
         }
       }
     }
-  }, [sections]);
+  }, [sections, headerConfig]);
 
   const { profile, isAdmin } = useRoleCheck();
 

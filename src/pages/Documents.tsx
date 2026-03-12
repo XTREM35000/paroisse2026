@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRoleCheck } from '@/hooks/useRoleCheck';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import usePageHero from '@/hooks/usePageHero';
@@ -61,7 +61,7 @@ interface EditForm {
 
 export default function Documents() {
   const { isAdmin } = useRoleCheck();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { toast } = useToast();
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useUser } from '@/hooks/useUser';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import PasswordField from '@/components/ui/password-field';
 import { useToast } from '@/hooks/use-toast';
 
 const AddMemberForm: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { profile } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();

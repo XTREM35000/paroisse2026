@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BookOpen } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import useRoleCheck from '@/hooks/useRoleCheck';
 
 interface NavItem {
@@ -42,7 +42,7 @@ interface MobileSidebarProps {
 }
 
 export default function MobileSidebar({ isOpen, onClose, navItems, navigation, navigationGroups, user: userProp, onSignOut }: MobileSidebarProps) {
-  const auth = useAuth();
+  const auth = useAuthContext();
   const { user: authUser, signOut: authSignOut } = auth || {};
   const user = userProp ?? authUser;
   const { isAdmin, isModerator } = useRoleCheck();

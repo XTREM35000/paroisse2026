@@ -11,7 +11,7 @@ import ThemeToggle from "./ThemeToggle";
 import HeaderSkeleton from "./HeaderSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuthContext } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useUser } from "@/hooks/useUser";
 import { useHeaderConfig } from "@/hooks/useHeaderConfig";
 import useRoleCheck from '@/hooks/useRoleCheck';

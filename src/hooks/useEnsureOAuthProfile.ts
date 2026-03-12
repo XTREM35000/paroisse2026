@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAuth } from './useAuth';
+import { useAuthContext } from './useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
  * Vérifie si le profil existe et le crée si nécessaire
  */
 export function useEnsureOAuthProfile() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     if (!user) return;

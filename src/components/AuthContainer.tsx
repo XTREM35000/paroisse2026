@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import LoginForm from '@/components/LoginForm';
 import RegisterForm from '@/components/RegisterForm';
 import ForgotPasswordForm from '@/components/ForgotPasswordForm';

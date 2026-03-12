@@ -19,7 +19,7 @@ import WelcomeModal from "@/components/WelcomeModal";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
 import { useAdvertisements } from "@/hooks/useAdvertisements";
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 import type { Video } from "@/types/database";
@@ -59,7 +59,7 @@ const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const navigationType = useNavigationType();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { profile } = useUser();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [showAdPopup, setShowAdPopup] = useState(false);

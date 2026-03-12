@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import { Button } from '@/components/ui/button';
 import DraggableModal from '@/components/DraggableModal';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { fetchActiveLiveStream, type LiveStream } from '@/lib/supabase/mediaQueries';
 import useLiveSession from '@/hooks/useLiveSession';
@@ -19,7 +19,7 @@ import { getEmbedUrl } from '@/lib/providers/videoUtils';
 
 const Live: React.FC = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
   const { toast } = useToast();
 

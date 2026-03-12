@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useUser } from '@/hooks/useUser';
 import { useNotification } from '@/components/ui/notification-system';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,7 +52,7 @@ export default function ChatPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Hooks
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { profile } = useUser();
   const { notifyError, notifySuccess } = useNotification();
 

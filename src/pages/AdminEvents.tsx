@@ -6,7 +6,7 @@ import Layout from '@/components/Layout';
 import HeroBanner from '@/components/HeroBanner';
 import EventModalForm from '@/components/EventModalForm';
 import { useEvents } from '@/hooks/useEvents';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import useRoleCheck from '@/hooks/useRoleCheck';
 import usePageHero from '@/hooks/usePageHero';
 import { useNotification } from '@/components/ui/notification-system';
@@ -31,7 +31,7 @@ const AdminEvents: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<EditingEvent | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ eventId: string; clickCount: number } | null>(null);
 
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { profile, isAdmin } = useRoleCheck();
   const { events, createEvent, updateEvent, deleteEvent, loading } = useEvents();
   const { notifySuccess, notifyError } = useNotification();

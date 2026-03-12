@@ -12,7 +12,7 @@ import { useVideos } from '@/hooks/useVideos';
 import FileUploadZone from '@/components/FileUploadZone';
 import ArchiveCard from '@/components/ArchiveCard';
 import useArchives from '@/hooks/useArchives';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useUser } from '@/hooks/useUser';
 import type { Video } from '@/types/database';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ const VideosPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedVideoForPlayback, setSelectedVideoForPlayback] = useState<Video | null>(null);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { profile } = useUser();
   const { videos, loading, createVideo, updateVideo, deleteVideo, refreshVideos } = useVideos(
     100,

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";import { useQueryClient } from '@t
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import { useGalleryImages } from "@/hooks/useGalleryImages";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import GalleryCard from "@/components/GalleryCard";
 import GalleryGrid from "@/components/GalleryGrid";
 import FileUploadZone from '@/components/FileUploadZone';
@@ -15,7 +15,7 @@ import type { GalleryImage } from '@/types/database';
 
 const GalleryPage = () => {
   const { images, loading } = useGalleryImages(100);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");

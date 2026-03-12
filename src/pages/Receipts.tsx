@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRoleCheck } from '@/hooks/useRoleCheck';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
 import HeroBanner from '@/components/HeroBanner';
@@ -35,7 +35,7 @@ interface Receipt {
 
 export default function Receipts() {
   const { isAdmin } = useRoleCheck();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { toast } = useToast();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);

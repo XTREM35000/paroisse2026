@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { LogOut } from 'lucide-react';
 
@@ -12,7 +12,7 @@ interface UserProfileDisplayProps {
 }
 
 const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onLogoutSuccess }) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuthContext();
   const navigate = useNavigate();
   const [profile, setProfile] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);

@@ -1,4 +1,4 @@
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { canAccess as rpCanAccess, isAdmin as rpIsAdmin } from '@/utils/rolePermissions';
 
 export function useRoleCheck() {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { EmailFieldPro } from '@/components/ui/email-field-pro';
@@ -17,7 +17,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) => {
-  const { login, signInWithProvider } = useAuth();
+  const { login, signInWithProvider } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState('');

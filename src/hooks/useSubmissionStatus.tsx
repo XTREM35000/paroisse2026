@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import type { ContentApproval } from '@/types/database';
 
 export const useSubmissionStatus = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [submissions, setSubmissions] = useState<ContentApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

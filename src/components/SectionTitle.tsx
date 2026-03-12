@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 
 interface SectionTitleProps {
   title: string;
@@ -16,7 +16,7 @@ const SectionTitle = ({
   viewAllLink,
   viewAllText = "Voir tout",
 }: SectionTitleProps) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   return (
     <motion.div

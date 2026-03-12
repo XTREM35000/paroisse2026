@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from './useAuth';
+import { useAuthContext } from './useAuthContext';
 import { rpcIncrementViewer, getLiveStats, type LiveStats } from '@/lib/supabase/mediaQueries';
 
 export default function useLiveSession(liveId?: string) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const joinedRef = useRef(false);
   const [stats, setStats] = useState<LiveStats | null>(null);
   const pollRef = useRef<number | null>(null);

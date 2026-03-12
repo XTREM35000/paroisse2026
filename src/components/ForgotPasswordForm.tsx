@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { stripAndNormalize } from '@/utils/emailSanitizer';
 import { EmailFieldPro } from '@/components/ui/email-field-pro';
@@ -11,7 +11,7 @@ interface ForgotPasswordFormProps {
 }
 
 const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onSwitchToLogin }) => {
-  const { resetPassword } = useAuth();
+  const { resetPassword } = useAuthContext();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);

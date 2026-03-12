@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useUser } from '@/hooks/useUser';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/integrations/supabase/client';
 import HeroBanner from '@/components/HeroBanner';
@@ -22,7 +22,7 @@ interface SupabaseResponse<T> {
   error: { message: string } | null;
 }
 export default function AdminTutorielsPage() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { show: showToast } = useToast();
   const { profile, isLoading: userLoading } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();

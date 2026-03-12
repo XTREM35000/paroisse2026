@@ -1,7 +1,7 @@
 import { X, Upload, Link as LinkIcon, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { createVideo } from '@/lib/supabase/videoQueries';
 import { useToast } from '@/hooks/use-toast';
 import type { Video } from '@/types/database';
@@ -16,7 +16,7 @@ interface VideoModalProps {
 type TabType = 'url' | 'details';
 
 const VideoModal: React.FC<VideoModalProps> = ({ open, onClose, onVideoAdded }) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('url');
   const [isLoading, setIsLoading] = useState(false);

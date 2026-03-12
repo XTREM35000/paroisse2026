@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { useEnsureOAuthProfile } from '@/hooks/useEnsureOAuthProfile';
 import { SetupProvider, useSetup } from '@/contexts/SetupContext';
 import { EventModalProvider } from '@/contexts/EventModalContext';
@@ -19,7 +19,7 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
     localStorage.setItem('sidebar-collapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   // Appliquer le hook pour assurer que le profil existe après OAuth
   useEnsureOAuthProfile();
   

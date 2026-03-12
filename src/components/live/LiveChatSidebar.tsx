@@ -4,7 +4,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { fetchChatMessages, sendChatMessage, subscribeToChatMessages, joinChatRoom } from '@/lib/supabase/chatQueries';
 import { getOrCreateLiveChatRoom } from '@/lib/supabase/mediaQueries';
 import type { ChatMessage, ChatRoom } from '@/types/database';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 }
 
 const LiveChatSidebar: React.FC<Props> = ({ liveId, title }) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
