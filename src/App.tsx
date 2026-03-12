@@ -73,36 +73,22 @@ import AdminCertificates from './pages/AdminCertificates';
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Debugging: track visibility changes to help diagnose unexpected reloads when tab regains focus
-  // Leave lightweight logging in place for now; can be removed once root cause is identified
-  // React.useEffect(() => {
-  //   const onVisibilityChange = () => {
-  //     const state = document.visibilityState;
-  //     const ts = new Date().toISOString();
-  //     console.debug('visibilitychange', { state, ts, href: window.location.href });
-  //     if (state === 'visible') {
-  //       // capture a small stack to help find who triggered reloads
-  //       console.debug('visibilitychange stack:', new Error('visibilitychange stack').stack);
-  //     }
-  //   };
-  //   document.addEventListener('visibilitychange', onVisibilityChange);
-  //   return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  // }, []);
-
-  // Blocage de toute redirection automatique sur /donation-success
+  // Debugging: track visibility changes (gardé)
   React.useEffect(() => {
-    const originalPushState = window.history.pushState;
-    window.history.pushState = function (...args) {
-      if (window.location.pathname.startsWith('/donation-success')) {
-        // Empêche toute navigation
-        return;
+    const onVisibilityChange = () => {
+      const state = document.visibilityState;
+      const ts = new Date().toISOString();
+      console.debug('visibilitychange', { state, ts, href: window.location.href });
+      if (state === 'visible') {
+        console.debug('visibilitychange stack:', new Error('visibilitychange stack').stack);
       }
-      return originalPushState.apply(window.history, args);
     };
-    return () => {
-      window.history.pushState = originalPushState;
-    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
+
+  // ❌ SUPPRIMÉ : Le blocage de navigation vers /donation-success qui causait le problème
+  // ✅ La navigation fonctionne maintenant normalement
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -115,7 +101,6 @@ const App = () => {
           <ToastProvider>
           <BrowserRouter>
             <ScrollToTop />
-            {/* Router-aware redirect handler: picks up auth redirects without reloading the page */}
             <RedirectHandler />
           <Routes>
             <Route path="/" element={<Layout><Index /></Layout>} />
@@ -216,8 +201,11 @@ const App = () => {
             <Route path="/prayers" element={<Layout><Prayers /></Layout>} />
             <Route path="/verse" element={<Layout><Verse /></Layout>} />
             <Route path="/directory" element={<Layout><Directory /></Layout>} />
+            
+            {/* ✅ Routes de donation - placées stratégiquement */}
             <Route path="/donate" element={<Layout><Donate /></Layout>} />
             <Route path="/donation-success" element={<Layout><DonationSuccess /></Layout>} />
+            
             <Route
               path="/admin/donate"
               element={
@@ -260,6 +248,8 @@ const App = () => {
             } />
             <Route path="/membres" element={<Layout><MembersPage /></Layout>} />
             <Route path="/unauthorized" element={<Unauthorized />} />
+            
+            {/* ✅ Route catch-all - TOUJOURS À LA FIN */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
         </BrowserRouter>
@@ -271,4 +261,5 @@ const App = () => {
   </QueryClientProvider>
   );
 };
+
 export default App;
