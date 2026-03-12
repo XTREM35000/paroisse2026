@@ -65,6 +65,8 @@ export default function StripeDonationModal({ open, onClose }: { open: boolean; 
 				payer_email: email,
 				payer_phone: phone,
 				payment_method: "stripe",
+				payment_status: "pending", // Ajoute explicitement le statut
+				// Ne pas inclure 'status' car la colonne n'existe plus
 			})
 			.select()
 			.single();
