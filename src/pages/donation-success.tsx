@@ -116,12 +116,18 @@ export default function DonationSuccess() {
     setShowExitConfirm(true);
   };
 
-  // ✅ CORRECTION : Fonction de navigation vers /donate
+  // ✅ Fonction de navigation vers /donate avec logs
   const goToDonatePage = () => {
+    console.log("🟢 Navigation vers /donate");
     setShowSuccessDialog(false);
     setShowErrorDialog(false);
     setShowExitConfirm(false);
-    navigate("/donate");
+    
+    // Utiliser setTimeout pour s'assurer que les dialogues sont fermés avant navigation
+    setTimeout(() => {
+      console.log("🟢 Exécution de navigate('/donate')");
+      navigate("/donate");
+    }, 100);
   };
 
   const handleRefresh = () => {
@@ -129,6 +135,7 @@ export default function DonationSuccess() {
   };
 
   const handleSeeDetails = () => {
+    console.log("🟢 Navigation vers historique");
     setShowSuccessDialog(false);
     navigate("/donations/history");
   };
@@ -184,7 +191,7 @@ export default function DonationSuccess() {
                 Voir l'historique
               </Button>
               <Button
-                onClick={goToDonatePage}  // ✅ CORRECTION
+                onClick={goToDonatePage}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 Retour aux dons
@@ -227,7 +234,7 @@ export default function DonationSuccess() {
                 Rafraîchir
               </Button>
               <Button
-                onClick={goToDonatePage}  // ✅ CORRECTION
+                onClick={goToDonatePage}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 <span className="mr-2">💝</span>
@@ -265,7 +272,7 @@ export default function DonationSuccess() {
                 Continuer sur cette page
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={goToDonatePage}  // ✅ CORRECTION
+                onClick={goToDonatePage}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 Quitter
