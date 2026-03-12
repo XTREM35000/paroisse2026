@@ -1,134 +1,187 @@
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Heart } from "lucide-react"
-import { useLocation } from "react-router-dom"
+import React, { useEffect, useState } from "react";
+import { useLocation, useSearchParams, Link } from "react-router-dom";
+import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
+import HeroBanner from "@/components/HeroBanner";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
-import PaymentLogosSection from "@/components/donations/PaymentLogosSection"
-import PaymentMethodSelector from "@/components/donations/PaymentMethodSelector"
-import { Button } from "@/components/ui/button"
-import HeroBanner from "@/components/HeroBanner"
-import usePageHero from "@/hooks/usePageHero"
+interface VerifyResponse {
+  success?: boolean;
+  status?: string;
+  amount?: number;
+  currency?: string;
+  message?: string;
+  error?: string;
+}
 
-// Imports des modals de paiement
-import StripeDonationModal from "@/components/donations/StripeDonationModal"
-import MobileMoneyDonationModal from "@/components/donations/MobileMoneyDonationModal"
-import CashDonationModal from "@/components/donations/CashDonationModal"
+const DonationSuccess: React.FC = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-export default function Donate() {
-  const [method, setMethod] = useState<string | null>(null)
-  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(true);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [amount, setAmount] = useState<number | null>(null);
+  const [currency, setCurrency] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const location = useLocation()
-  const { data: hero, save: saveHero } = usePageHero(location.pathname)
+  useEffect(() => {
+    console.log("[DonationSuccess] Mount");
+    console.log("[DonationSuccess] Location href:", window.location.href);
+    console.log("[DonationSuccess] Location pathname/search:", {
+      pathname: location.pathname,
+      search: location.search,
+    });
 
-  const paymentMethods = [
-    {
-      id: "stripe-1",
-      code: "stripe",
-      label: "Carte bancaire",
-      description: "Visa / Mastercard / American Express",
-      image: "/svg/MasterCard.png",
-      is_active: true,
-      requires_validation: false,
-    },
-    {
-      id: "cinetpay-1",
-      code: "cinetpay",
-      label: "Mobile Money",
-      description: "MTN / Orange / Moov / Wave",
-      image: "/svg/ORANGE.svg",
-      is_active: true,
-      requires_validation: false,
-    },
-    {
-      id: "cash-1",
-      code: "cash",
-      label: "Guichet Paroisse",
-      description: "Paiement en espèces à l'accueil",
-      image: "/svg/espece.png",
-      is_active: true,
-      requires_validation: false,
-    },
-  ]
+    const sId = searchParams.get("session_id");
+    console.log("[DonationSuccess] Extracted session_id:", sId);
+    setSessionId(sId);
 
-  const handleMethodSelect = (selectedMethod: string) => {
-    setMethod(selectedMethod)
-    // OUVRE DIRECTEMENT LE MODAL quand on clique sur une carte
-    setOpen(true)
-  }
+    if (!sId) {
+      setError("Session Stripe introuvable dans l'URL.");
+      setLoading(false);
+      return;
+    }
 
-  const handleCloseModal = () => {
-    setOpen(false)
-    setMethod(null)
-  }
+    const verify = async () => {
+      try {
+        console.log("[DonationSuccess] Appel de la fonction verify-payment avec:", {
+          sessionId: sId,
+        });
+
+        const { data, error: fnError } = await supabase.functions.invoke(
+          "verify-payment",
+          {
+            body: { sessionId: sId },
+          }
+        );
+
+        console.log("[DonationSuccess] Réponse brute verify-payment:", {
+          data,
+          fnError,
+        });
+
+        if (fnError) {
+          console.error("[DonationSuccess] Erreur Supabase verify-payment:", fnError);
+          setError(
+            "Une erreur est survenue lors de la vérification du paiement. Merci de contacter le support si le problème persiste."
+          );
+          setLoading(false);
+          return;
+        }
+
+        const payload = data as VerifyResponse | null;
+        console.log("[DonationSuccess] Payload parsé:", payload);
+
+        if (!payload) {
+          setError("Réponse vide lors de la vérification du paiement.");
+          setLoading(false);
+          return;
+        }
+
+        if (payload.success === false) {
+          setStatus(payload.status || "unknown");
+          setAmount(payload.amount ?? null);
+          setCurrency(payload.currency ?? null);
+          setError(
+            payload.message ||
+              "Le paiement n'a pas encore été confirmé. Si le montant a été débité, le statut sera mis à jour automatiquement."
+          );
+          setLoading(false);
+          return;
+        }
+
+        setStatus(payload.status || "paid");
+        setAmount(payload.amount ?? null);
+        setCurrency(payload.currency ?? null);
+        setError(null);
+        setLoading(false);
+      } catch (e) {
+        console.error("[DonationSuccess] Exception lors de verify-payment:", e);
+        setError(
+          "Impossible de vérifier le paiement pour le moment. Merci de réessayer dans quelques instants."
+        );
+        setLoading(false);
+      }
+    };
+
+    verify();
+  }, [location.pathname, location.search, searchParams]);
+
+  const renderStatus = () => {
+    if (loading) {
+      return (
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-green-700" />
+          <p className="text-gray-700 text-center">
+            Vérification de votre don en cours...
+          </p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col items-center gap-4">
+          <AlertTriangle className="h-10 w-10 text-amber-600" />
+          <p className="text-red-600 text-center max-w-xl">{error}</p>
+          {status && (
+            <p className="text-sm text-gray-600">
+              Statut actuel du don : <span className="font-semibold">{status}</span>
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <CheckCircle2 className="h-12 w-12 text-green-700" />
+        <h2 className="text-2xl md:text-3xl font-bold text-green-800 text-center">
+          Merci pour votre don !
+        </h2>
+        <p className="text-gray-700 text-center max-w-xl">
+          Votre contribution nous aide à poursuivre la mission de compassion, de foi
+          et de solidarité. Que Dieu vous bénisse abondamment.
+        </p>
+        {amount != null && currency && (
+          <p className="text-lg font-semibold text-green-800">
+            Montant confirmé : {amount} {currency}
+          </p>
+        )}
+        {sessionId && (
+          <p className="text-xs text-gray-500 break-all mt-2">
+            ID de session Stripe : {sessionId}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeroBanner
-        title="Faire un don"
-        subtitle="Soutenez notre mission avec votre générosité"
+        title="Don confirmé"
+        subtitle="Merci pour votre générosité"
         showBackButton={true}
-        backgroundImage={hero?.image_url}
-        onBgSave={saveHero}
       />
 
       <div className="container mx-auto px-4 py-12">
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-16"
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-green-700">
-            Choisissez votre méthode de paiement
-          </h2>
-          <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-            Sélectionnez votre mode de paiement préféré pour continuer. 
-            Toutes les transactions sont sécurisées.
-          </p>
+        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col items-center gap-8">
+          {renderStatus()}
 
-          <PaymentMethodSelector
-            selectedMethod={method}
-            onSelect={handleMethodSelect} // ✅ Ouvre directement le modal
-            methods={paymentMethods}
-          />
-        </motion.section>
-
-        {/* Supprimé le bouton "Continuer" car on ouvre directement le modal */}
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-12 pt-8 border-t border-gray-200"
-        >
-          <PaymentLogosSection />
-          <p className="text-center text-sm text-gray-500 mt-4">
-            Paiement 100% sécurisé • Chiffrement SSL
-          </p>
-        </motion.div>
-
-        {/* Modals de paiement */}
-        {method === "stripe" && (
-          <StripeDonationModal
-            open={open}
-            onClose={handleCloseModal}
-          />
-        )}
-
-        {method === "cinetpay" && (
-          <MobileMoneyDonationModal
-            open={open}
-            onClose={handleCloseModal}
-          />
-        )}
-
-        {method === "cash" && (
-          <CashDonationModal
-            open={open}
-            onClose={handleCloseModal}
-          />
-        )}
+          <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full justify-center">
+            <Button asChild className="bg-green-700 hover:bg-green-800">
+              <Link to="/donate">Faire un autre don</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">Retour à l'accueil</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default DonationSuccess;
