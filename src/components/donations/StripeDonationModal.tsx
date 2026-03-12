@@ -26,19 +26,6 @@ export default function StripeDonationModal({ open, onClose }: { open: boolean; 
 	const [currency, setCurrency] = useState("XOF");
 	const [emailValid, setEmailValid] = useState(true);
 
-	// ⚠️ DEUXIÈME DÉCLARATION SUPPRIMÉE ICI ⚠️
-	// const getMinAmount = (currency: string) => {
-	//   switch (currency) {
-	//     case "XOF": return 5000;
-	//     case "EUR": return 8; // ~5000 XOF
-	//     case "USD": return 8;
-	//     case "CAD": return 10;
-	//     case "GBP": return 7;
-	//     case "CNY": return 60;
-	//     default: return 5000;
-	//   }
-	// };
-
 	const submit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const min = getMinAmount(currency);
@@ -51,11 +38,14 @@ export default function StripeDonationModal({ open, onClose }: { open: boolean; 
 			alert("Veuillez saisir un email valide.");
 			return;
 		}
+		
 		const { data: { user } } = await supabase.auth.getUser();
 		if (!user) {
 			alert("Veuillez vous connecter");
 			return;
 		}
+
+		// CORRECTION : Insertion alignée avec la structure de la table
 		const { data: donation, error } = await supabase
 			.from("donations")
 			.insert({
@@ -65,19 +55,40 @@ export default function StripeDonationModal({ open, onClose }: { open: boolean; 
 				payer_email: email,
 				payer_phone: phone,
 				payment_method: "stripe",
-				payment_status: "pending", // Ajoute explicitement le statut
-				// Ne pas inclure 'status' car la colonne n'existe plus
+				payment_status: "pending", // ← AJOUTÉ explicitement
+				is_anonymous: false,        // ← AJOUTÉ (valeur par défaut)
+				is_active: true              // ← AJOUTÉ (valeur par défaut)
 			})
 			.select()
 			.single();
+
 		if (error) {
-			console.error(error);
+			console.error("Erreur lors de la création du don:", error);
+			alert("Erreur lors de la création du don. Veuillez réessayer.");
 			return;
 		}
-		const { data } = await supabase.functions.invoke("create-payment", {
-			body: { donationId: donation.id },
-		});
-		window.location.href = data.url;
+
+		try {
+			const { data, error: invokeError } = await supabase.functions.invoke("create-payment", {
+				body: { donationId: donation.id },
+			});
+
+			if (invokeError) {
+				console.error("Erreur lors de l'appel à create-payment:", invokeError);
+				alert("Erreur lors de la création du paiement. Veuillez réessayer.");
+				return;
+			}
+
+			if (data?.url) {
+				window.location.href = data.url;
+			} else {
+				console.error("Pas d'URL de redirection:", data);
+				alert("Erreur: Pas d'URL de redirection reçue.");
+			}
+		} catch (err) {
+			console.error("Exception lors de l'appel à create-payment:", err);
+			alert("Erreur lors de la communication avec le serveur.");
+		}
 	};
 
 	return (
@@ -99,7 +110,6 @@ export default function StripeDonationModal({ open, onClose }: { open: boolean; 
 					pattern="[0-9]*"
 					inputMode="numeric"
 					onChange={(e) => {
-						// Empêche la saisie non numérique
 						const val = e.target.value.replace(/[^0-9]/g, "");
 						setAmount(val);
 					}}
