@@ -68,14 +68,28 @@ export default function Receipts() {
     const fetchDonations = async () => {
       setLoading(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           setDonations([]);
           setLoading(false);
           return;
         }
 
-        const { data, error } = await supabase
+        // Cast léger pour éviter la profondeur de types générée par les types Supabase
+        const { data, error } = await (supabase as unknown as {
+          from: (table: string) => {
+            select: (cols: string) => {
+              eq: (col: string, val: string) => {
+                order: (
+                  col: string,
+                  opts: { ascending: boolean }
+                ) => Promise<{ data: Donation[] | null; error: unknown | null }>;
+              };
+            };
+          };
+        })
           .from("donations")
           .select("*")
           .eq("user_id", user.id)

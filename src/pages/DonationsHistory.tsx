@@ -61,12 +61,14 @@ const DonationsHistoryPage = () => {
       setLoading(true);
       // RLS policies handle filtering by user_id; no need to manually filter
       const query = (supabase as any).from("donations").select("*");
-      const { data, error } = await query.order("donation_date", { ascending: false });
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       const mappedData = (data || []).map((d: any) => ({
         ...d,
         user_id: d.user_id ?? d.donor_id,
+        // compat: fall back to created_at when donation_date n'existe pas en base
+        donation_date: d.donation_date ?? d.created_at,
         // compatibility: map purpose -> location, metadata.quantity -> quantity
         location: d.purpose ?? d.location ?? "",
         quantity: d.metadata?.quantity ?? d.quantity ?? undefined,
