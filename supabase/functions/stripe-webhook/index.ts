@@ -8,7 +8,22 @@ const stripe = new Stripe(
 
 const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!
 
+// En-têtes CORS (même si le webhook est appelé par Stripe, c'est une bonne pratique)
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 Deno.serve(async (req) => {
+  // Gérer la pré-vérification OPTIONS
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200 
+    })
+  }
+
   try {
     const body = await req.text()
     const signature = req.headers.get("stripe-signature")!
@@ -17,7 +32,13 @@ Deno.serve(async (req) => {
     try {
       event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
     } catch (err) {
-      return new Response(`Webhook error: ${err.message}`, { status: 400 })
+      return new Response(
+        JSON.stringify({ error: `Webhook error: ${err.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
     }
 
     if (event.type === "checkout.session.completed") {
@@ -26,7 +47,13 @@ Deno.serve(async (req) => {
       
       if (!donationId) {
         console.error("No donation_id in metadata")
-        return new Response("Missing donation_id", { status: 400 })
+        return new Response(
+          JSON.stringify({ error: "Missing donation_id" }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400 
+          }
+        )
       }
 
       const supabase = createClient(
@@ -34,7 +61,7 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       )
 
-      // Vérifier l'état actuel du don en utilisant payment_status
+      // Vérifier l'état actuel du don
       const { data: donation, error: selectError } = await supabase
         .from("donations")
         .select("payment_status")
@@ -43,57 +70,65 @@ Deno.serve(async (req) => {
 
       if (selectError) {
         console.error("Error checking donation:", selectError)
-        return new Response(`Select error: ${selectError.message}`, { status: 500 })
+        return new Response(
+          JSON.stringify({ error: selectError.message }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500 
+          }
+        )
       }
 
       // Si déjà payé, ignorer
       if (donation && donation.payment_status === "paid") {
-        return new Response("ok")
+        return new Response(
+          JSON.stringify({ message: "already paid" }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        )
       }
 
-      // Mettre à jour le don avec les bonnes colonnes
+      // Mettre à jour le don
       const { error: updateError } = await supabase
         .from("donations")
         .update({
-          payment_status: "paid",  // ← CORRECTION: utiliser payment_status
-          transaction_id: session.payment_intent || session.id,  // ← CORRECTION: utiliser transaction_id
+          payment_status: "paid",
+          transaction_id: session.payment_intent || session.id,
           updated_at: new Date().toISOString()
         })
         .eq("id", donationId)
 
       if (updateError) {
         console.error("Error updating donation:", updateError)
-        return new Response(`Update error: ${updateError.message}`, { status: 500 })
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500 
+          }
+        )
       }
 
       console.log(`✅ Donation ${donationId} marked as paid`)
-
-      // Envoi du reçu (optionnel)
-      if (session.customer_details?.email) {
-        try {
-          await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-receipt`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              email: session.customer_details.email,
-              amount: session.amount_total / 100,
-              currency: session.currency,
-              donationId: donationId
-            })
-          })
-        } catch (receiptError) {
-          console.error("Error sending receipt:", receiptError)
-          // Ne pas bloquer la réponse pour l'erreur de reçu
-        }
-      }
     }
 
-    return new Response("ok", { status: 200 })
+    return new Response(
+      JSON.stringify({ message: "ok" }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    )
   } catch (error) {
     console.error("Unexpected error:", error)
-    return new Response(`Server error: ${error.message}`, { status: 500 })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
+      }
+    )
   }
 })
