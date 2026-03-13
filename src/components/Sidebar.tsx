@@ -84,7 +84,7 @@ export const MENU_GROUPS = [
       { label: 'Approbations', href: '/admin/approvals', icon: CheckCircle2 },
       { label: 'Notifications', href: '/admin/notifications', icon: Bell },
       // Lien Master Reset affiché seulement pour les super_admin (filtré dans le rendu)
-      { label: 'Master Reset', href: '/admin/master-reset', icon: Settings, superOnly: true },
+      { label: 'Master Reset', href: '/admin/master-reset', icon: Settings, superOnly: true, badge: 'New' },
     ],
   },
 ];

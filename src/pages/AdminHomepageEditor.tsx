@@ -467,22 +467,28 @@ const AdminHomepageEditor = () => {
           className="space-y-8"
         >
           {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold font-display">Édition de la page d'accueil</h1>
-            <p className="text-muted-foreground">Modifiez le contenu dynamique de votre site</p>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold font-display">
+              Page d’accueil &amp; SEO
+            </h1>
+            <p className="text-muted-foreground leading-relaxed">
+              Optimisez le premier écran que voient vos visiteurs : logo, titres,
+              section héro et blocs clés. Concentrez-vous d’abord sur un message
+              clair avec des mots‑clés locaux (paroisse, ville, quartier).
+            </p>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 border-b border-border overflow-x-auto pb-4">
-            {[
-              { id: "header", label: "Header" },
-              { id: "hero", label: "Section héro" },
-              { id: "gallery", label: "Galerie" },
-              { id: "videos", label: "Vidéos" },
-              { id: "events", label: "Événements" },
-              { id: "mass-times", label: "Horaires" },
-              { id: "contact", label: "Contact" },
-            ].map((tab) => (
+          <div className="flex gap-2 border-b border-border overflow-x-auto pb-3">
+              {[
+                { id: "header", label: "En‑tête (logo & menu)" },
+                { id: "hero", label: "Section héro (SEO)" },
+                { id: "gallery", label: "Bloc Galerie" },
+                { id: "videos", label: "Bloc Vidéos" },
+                { id: "events", label: "Bloc Événements" },
+                { id: "mass-times", label: "Horaires des messes" },
+                { id: "contact", label: "Contact & infos pratiques" },
+              ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -498,7 +504,7 @@ const AdminHomepageEditor = () => {
           </div>
 
           {/* Content */}
-          <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-6 shadow-sm">
             {/* Header Tab */}
             {activeTab === "header" && (
               <div className="space-y-6">
@@ -660,7 +666,11 @@ const AdminHomepageEditor = () => {
             {activeTab === "hero" && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Titre principal</label>
+                  <label className="block text-sm font-medium mb-1">Titre principal (H1)</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Phrase courte et claire qui décrit la paroisse (inclure idéalement la
+                    ville ou le quartier&nbsp;: ex. &laquo;&nbsp;Paroisse Notre Dame de la Compassion – Abidjan&nbsp;&raquo;).
+                  </p>
                   <input
                     type="text"
                     value={heroData.title}
@@ -669,7 +679,10 @@ const AdminHomepageEditor = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Sous-titre</label>
+                  <label className="block text-sm font-medium mb-1">Sous-titre</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Accroche qui résume la mission ou un appel à l’action (ex. &laquo;&nbsp;Une communauté vivante au service de la foi&nbsp;&raquo;).
+                  </p>
                   <input
                     type="text"
                     value={heroData.subtitle}
@@ -678,7 +691,11 @@ const AdminHomepageEditor = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Contenu</label>
+                  <label className="block text-sm font-medium mb-1">Paragraphe d’introduction</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    2–3 phrases maximum, avec des mots‑clés naturels (paroisse, ville, horaires, communautés…)
+                    pour aider le référencement sans surcharger en texte.
+                  </p>
                   <textarea
                     value={heroData.content}
                     onChange={(e) => setHeroData({ ...heroData, content: e.target.value })}
@@ -688,7 +705,10 @@ const AdminHomepageEditor = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Texte du bouton</label>
+                    <label className="block text-sm font-medium mb-1">Texte du bouton principal</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Appel à l’action clair (ex. &laquo;&nbsp;Découvrir les messes&nbsp;&raquo;, &laquo;&nbsp;Voir les événements&nbsp;&raquo;).
+                    </p>
                     <input
                       type="text"
                       value={heroData.button_text}
@@ -697,7 +717,11 @@ const AdminHomepageEditor = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Lien du bouton</label>
+                    <label className="block text-sm font-medium mb-1">Lien du bouton</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      URL interne à privilégier (ex. <code className="font-mono text-[11px]">/evenements</code> ou
+                      <code className="font-mono text-[11px]">/donate</code>).
+                    </p>
                     <input
                       type="text"
                       value={heroData.button_link}

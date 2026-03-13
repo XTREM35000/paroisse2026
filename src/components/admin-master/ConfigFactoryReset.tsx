@@ -153,15 +153,18 @@ export function ConfigFactoryReset() {
         <CardHeader>
           <CardTitle className="text-red-600 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Mise à nu complète (Factory Reset)
+            Réinitialisation complète (Factory Reset)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          <p className="text-muted-foreground">
-            Cette opération supprime tout le contenu non essentiel (médias, dons,
-            événements, messages, etc.) pour repartir sur un environnement vierge,
-            prêt pour une nouvelle paroisse. Une sauvegarde complète est créée
-            automatiquement avant l’exécution.
+          <p className="text-muted-foreground leading-relaxed">
+            Cette opération supprime tout le <span className="font-semibold">contenu non essentiel</span> du site
+            (médias, dons, événements, messages, annonces, contenus pastoraux…) pour repartir
+            sur un environnement vierge, prêt pour une nouvelle paroisse.
+            <br />
+            <span className="font-semibold text-red-600">
+              Une sauvegarde complète est automatiquement créée avant l’exécution.
+            </span>
           </p>
 
           <motion.div
@@ -224,14 +227,16 @@ export function ConfigFactoryReset() {
               </div>
             )}
 
-            <Button
-              variant="destructive"
-              className="mt-2"
-              onClick={startSequence}
-              disabled={executing}
-            >
-              🧨 Hot Suppression Environnement
-            </Button>
+            <div className="pt-2 flex justify-end">
+              <Button
+                variant="destructive"
+                className="w-full md:w-auto font-semibold"
+                onClick={startSequence}
+                disabled={executing}
+              >
+                🧨 Réinitialisation complète de l’environnement
+              </Button>
+            </div>
           </motion.div>
         </CardContent>
       </Card>

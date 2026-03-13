@@ -586,20 +586,24 @@ const AdminAboutEditor: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Administration — Page À propos</h1>
-        <p className="text-muted-foreground mt-2">
-          Gérez les sections de votre page "À propos". Cliquez sur une section pour l'éditer.
+    <div className="container mx-auto px-4 py-10">
+      <div className="mb-8 space-y-2">
+        <h1 className="text-3xl font-bold">
+          Page &laquo; À propos &raquo;
+        </h1>
+        <p className="text-muted-foreground leading-relaxed">
+          Structurez l’histoire de la paroisse en sections simples : un titre clair, un court texte
+          et, si besoin, une image illustratrice. Commencez par choisir une section dans la colonne
+          de gauche, puis ajustez son contenu dans l’éditeur.
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-4 gap-6">
+      <div className="grid lg:grid-cols-4 gap-6 items-start">
         {/* Liste des sections */}
         <div className="lg:col-span-1">
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Sections</CardTitle>
+              <CardTitle>Sections de la page</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -671,7 +675,7 @@ const AdminAboutEditor: React.FC = () => {
         {/* Éditeur */}
         <div className="lg:col-span-3">
           {editingSection ? (
-            <Card>
+            <Card className="shadow-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>
@@ -685,13 +689,16 @@ const AdminAboutEditor: React.FC = () => {
               <CardContent>
                 <Tabs defaultValue="general" className="space-y-4">
                   <TabsList>
-                    <TabsTrigger value="general">Général</TabsTrigger>
-                    <TabsTrigger value="content">Contenu</TabsTrigger>
-                    <TabsTrigger value="metadata">Métadonnées</TabsTrigger>
-                    <TabsTrigger value="image">Image</TabsTrigger>
+                    <TabsTrigger value="general">Texte &amp; en‑tête</TabsTrigger>
+                    <TabsTrigger value="content">Paragraphe</TabsTrigger>
+                    <TabsTrigger value="metadata">Mise en page</TabsTrigger>
+                    <TabsTrigger value="image">Image de section</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="general" className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Définissez le titre, le sous‑titre et l’icône qui apparaîtront pour cette section sur la page publique.
+                    </p>
                     <div>
                       <Label htmlFor="title">Titre</Label>
                       <Input
@@ -741,7 +748,7 @@ const AdminAboutEditor: React.FC = () => {
 
                   <TabsContent value="content" className="space-y-4">
                     <div>
-                      <Label htmlFor="content">Contenu (utilisez \n pour les sauts de ligne)</Label>
+                      <Label htmlFor="content">Contenu principal de la section</Label>
                       <Textarea
                         id="content"
                         value={editingSection.content || ''}
@@ -753,12 +760,15 @@ const AdminAboutEditor: React.FC = () => {
                         className="font-mono text-sm"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Pour les retours à la ligne, utilisez \n
+                        Vous pouvez utiliser des retours à la ligne pour aérer le texte.
                       </p>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="metadata" className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Options avancées (listes, cartes, boutons, contacts…) pour affiner la mise en page. Laissez vide si vous ne les utilisez pas.
+                    </p>
                     <MetadataEditor
                       section={editingSection}
                       onChange={(metadata) => setEditingSection({
