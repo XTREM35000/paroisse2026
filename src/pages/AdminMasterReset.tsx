@@ -12,6 +12,7 @@ import { ConfigText } from "@/components/admin-master/ConfigText";
 import { ConfigCritical } from "@/components/admin-master/ConfigCritical";
 import { ConfigAdmins } from "@/components/admin-master/ConfigAdmins";
 import { AuditLogs } from "@/components/admin-master/AuditLogs";
+import { ConfigFactoryReset } from "@/components/admin-master/ConfigFactoryReset";
 
 const TABS = [
   { id: "backup", label: "Sauvegarde & restauration" },
@@ -19,6 +20,7 @@ const TABS = [
   { id: "banners", label: "Bannières" },
   { id: "text", label: "Contenu texte" },
   { id: "critical", label: "Actions critiques" },
+  { id: "factory", label: "🏭 Mise à nu complète" },
   { id: "admins", label: "Rôles Admin" },
   { id: "logs", label: "Journal" },
 ] as const;
@@ -97,6 +99,7 @@ export default function AdminMasterReset() {
             {activeTab === "banners" && <ConfigBanners />}
             {activeTab === "text" && <ConfigText />}
             {activeTab === "critical" && <ConfigCritical />}
+            {activeTab === "factory" && <ConfigFactoryReset />}
             {activeTab === "admins" && <ConfigAdmins />}
             {activeTab === "logs" && <AuditLogs />}
           </div>
