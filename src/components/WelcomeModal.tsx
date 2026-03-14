@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import DraggableModal from './DraggableModal';
@@ -27,6 +27,22 @@ export default function WelcomeModal({ onClose, onOpenAuthModal }: WelcomeModalP
       window.location.hash = '#auth';
     }
   };
+
+  // Si le hash passe à #auth (clic sur le bouton "bonhomme" ou lien direct),
+  // on ferme immédiatement le modal de bienvenue, même s'il était déjà ouvert.
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash.includes('#auth')) {
+        handleClose();
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    // Vérification immédiate au montage
+    handleHashChange();
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   if (!isVisible) return null;
 

@@ -477,12 +477,19 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
         isOpen={isAuthModalOpen} 
         onClose={() => {
           setIsAuthModalOpen(false);
-          // Si l'URL a '#auth', on l'enlève pour permettre de rouvrir proprement (click répété sur l'icône)
+          // Si l'URL a '#auth', on l'enlève et on force le retour à la page d'accueil
           if (typeof window !== 'undefined' && window.location.hash.includes('#auth')) {
             try {
-              navigate(window.location.pathname + window.location.search, { replace: true });
+              navigate('/', { replace: true });
             } catch (e) {
-              try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch { /* ignore */ }
+              try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
+            }
+          } else {
+            // Même sans hash, on force le retour à la home après fermeture manuelle du modal
+            try {
+              navigate('/', { replace: true });
+            } catch (e) {
+              try { window.history.replaceState(null, '', '/'); } catch { /* ignore */ }
             }
           }
         }}

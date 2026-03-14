@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, BookOpen, Bell, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 
-// Capture the pathname at module evaluation (i.e. initial page load)
-const __INITIAL_PATHNAME = typeof window !== 'undefined' ? window.location.pathname : '/';
 // Header/Footer provided by Layout
 import HomepageHero from "@/components/HomepageHero";
 import SectionTitle from "@/components/SectionTitle";
@@ -14,10 +12,7 @@ import GalleryCard from "@/components/GalleryCard";
 import EventCard from "@/components/EventCard";
 // AuthModal is now controlled globally in Header
 import VideoPlayerModal from "@/components/VideoPlayerModal";
-import AdvertisementPopup from "@/components/AdvertisementPopup";
-import WelcomeModal from "@/components/WelcomeModal";
 import { useHomepageContent } from "@/hooks/useHomepageContent";
-import { useAdvertisements } from "@/hooks/useAdvertisements";
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
@@ -59,12 +54,9 @@ function getYouTubeEmbedUrl(input?: string) {
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const navigationType = useNavigationType();
   const { user } = useAuth();
   const { profile, isAdmin } = useUser();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [showAdPopup, setShowAdPopup] = useState(false);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [homilies, setHomilies] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [prayers, setPrayers] = useState<any[]>([]);
@@ -75,112 +67,6 @@ const Index = () => {
   // Déterminer le lien des événements selon le rôle
   const eventsLink = isAdmin ? '/admin/events' : '/evenements';
 
-  // Get latest advertisement early so effects can use it
-  const { latestAd } = useAdvertisements();
-  
-  // 🔹 WELCOME MODAL LOGIC - Strict: show ONLY on real page load or reload AND if user is NOT logged in
-  // Runs once on component mount; detection combines Performance API, referrer,
-  // history length and sessionStorage. This reduces false positives on SPA navigation.
-  useEffect(() => {
-    const SESSION_KEY = 'homepage_popup_shown';
-
-    try {
-      const isOnHome = window.location.pathname === '/';
-      if (!isOnHome) return;
-
-      // Do not show welcome modal if user is already logged in
-      if (user) {
-        console.log('[WelcomeModal] User is logged in, skipping welcome modal');
-        setShowWelcomeModal(false);
-        return;
-      }
-
-      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      const navEntry = navEntries && navEntries[0];
-      const perfNav = (performance as unknown as Record<string, unknown>)?.navigation as Record<string, unknown> | undefined;
-      const navType = navEntry?.type ?? (perfNav?.type === 1 ? 'reload' : 'navigate');
-      const isReload = navType === 'reload';
-
-      // If React Router reports a PUSH navigation (link click), do not show
-      // Also skip POP (browser back/forward) when the app wasn't initially loaded on '/'
-      if (navigationType === 'PUSH' || (navigationType === 'POP' && __INITIAL_PATHNAME !== '/')) {
-        console.log('[WelcomeModal] Internal navigation (PUSH/POP) — skipping modal. navigationType=', navigationType);
-        return;
-      }
-
-      const hasSeen = !!sessionStorage.getItem(SESSION_KEY);
-
-      // Consider referrer: if empty or external, more likely a true direct access
-      const isExternalReferrer = !document.referrer || !document.referrer.startsWith(window.location.origin);
-
-      // Short history often means a direct tab open
-      const isHistoryShort = window.history.length <= 1;
-
-      const shouldShow = (
-        // Always show on explicit reload
-        isReload ||
-        // Otherwise show only if not already seen AND likely a direct access
-        (!hasSeen && (isExternalReferrer || isHistoryShort))
-      );
-
-      if (shouldShow) {
-        console.log(`[WelcomeModal] Showing modal (navType=${navType}, referrer=${document.referrer || 'none'}, history=${window.history.length})`);
-        setShowWelcomeModal(true);
-        sessionStorage.setItem(SESSION_KEY, 'true');
-      } else {
-        console.log(`[WelcomeModal] Not showing modal (navType=${navType}, hasSeen=${hasSeen}, referrer=${document.referrer || 'none'}, history=${window.history.length})`);
-      }
-    } catch (e) {
-      console.error('[WelcomeModal] detection error', e);
-    }
-  }, [navigationType, user]);
-
-  // Advertisement popup: show AFTER welcome modal is closed (not on initial load)
-  // Only show if welcome modal has been closed and ad hasn't been seen
-  useEffect(() => {
-    if (!latestAd) return;
-
-    try {
-      const AD_SEEN_KEY = `ad-seen-${latestAd.id}`;
-      const hasSeenAd = !!localStorage.getItem(AD_SEEN_KEY);
-
-      // Do not show ad if welcome modal is still visible
-      if (showWelcomeModal) {
-        console.log('[AdvertisementPopup] Welcome modal is visible, delaying ad display');
-        setShowAdPopup(false);
-        return;
-      }
-
-      if (navigationType === 'PUSH' || (navigationType === 'POP' && __INITIAL_PATHNAME !== '/')) {
-        console.log('[AdvertisementPopup] Internal navigation (PUSH/POP) — skipping ad modal. navigationType=', navigationType);
-        setShowAdPopup(false);
-        return;
-      }
-
-      // Show ad only after welcome modal is closed and if not seen
-      if (!hasSeenAd && !showWelcomeModal) {
-        setShowAdPopup(true);
-      } else {
-        setShowAdPopup(false);
-      }
-    } catch (e) {
-      console.error('[AdvertisementPopup] detection error', e);
-    }
-  }, [latestAd, navigationType, showWelcomeModal]);
-  
-  const handleWelcomeModalClose = () => {
-    console.log('[WelcomeModal] Modal closed by user. Advertisement can now be shown.');
-    setShowWelcomeModal(false);
-    // The advertisement will now show because showWelcomeModal is false
-    // and the useEffect for advertisement will be triggered
-  };
-
-  const handleWelcomeOpenAuth = (mode: 'login' | 'register') => {
-    console.log('[WelcomeModal] Opening auth modal with mode:', mode);
-    // Use window.location.hash directly to trigger Header's useEffect
-    window.location.hash = '#auth';
-  };
-  
   // Get all dynamic content from the hook
   const {
     hero,
@@ -219,16 +105,7 @@ const Index = () => {
 
 
   
-  // Get latest advertisement (moved earlier)
   const queryClient = useQueryClient();
-  // Debug: Log when latestAd changes
-  useEffect(() => {
-    if (latestAd) {
-      console.log('Latest advertisement loaded:', latestAd.title);
-    } else {
-      console.log('No advertisement available');
-    }
-  }, [latestAd]);
 
   // Fetch homilies
   useEffect(() => {
@@ -315,16 +192,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header provided by Layout */}
 
-      {/* AuthModal moved to Header to avoid duplicate modals */}
-
-      {/* Welcome Modal - Shows on initial page load */}
-      {showWelcomeModal && (
-        <WelcomeModal 
-          onClose={handleWelcomeModalClose} 
-          onOpenAuthModal={handleWelcomeOpenAuth}
-        />
-      )}
-
+      {/* AuthModal moved à Header; aucun WelcomeModal global */}
       <VideoPlayerModal
         video={selectedVideo}
         isOpen={!!selectedVideo}
@@ -340,14 +208,6 @@ const Index = () => {
           latestVideos={latestVideos as any}
           onOpenVideo={(video) => handleVideoSelect(video as any)}
         />
-
-        {/* Latest Advertisement Popup */}
-        {latestAd && showAdPopup && (
-          <AdvertisementPopup 
-            ad={latestAd} 
-            onClose={() => setShowAdPopup(false)} 
-          />
-        )}
 
         {/* Photo Gallery Section */}
         <section className="py-12 lg:py-16">
