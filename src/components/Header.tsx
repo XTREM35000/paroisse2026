@@ -157,7 +157,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   )}
               </div>
               
-              {/* Titres dynamiques - avec animations */}
+              {/* Titres dynamiques - avec badge d'état de connexion */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -169,10 +169,16 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                     <h1 className="text-sm lg:text-base font-semibold text-foreground leading-tight animate-glow-text">
                       {headerConfig.main_title}
                     </h1>
-                    {/* Badge de statut animé */}
-                    <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white animate-badge-color-shift shadow-md">
-                      Actif
-                    </span>
+                    {/* Badge de statut animé : vert si connecté, gris sinon */}
+                    {user ? (
+                      <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white animate-badge-color-shift shadow-md">
+                        Actif
+                      </span>
+                    ) : (
+                      <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-slate-500 to-slate-700 text-slate-100 shadow-md">
+                        Inactif
+                      </span>
+                    )}
                   </div>
                 )}
                 {headerConfig?.subtitle && (
