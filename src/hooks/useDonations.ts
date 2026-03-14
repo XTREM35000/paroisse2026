@@ -43,32 +43,24 @@ export const useDonations = () => {
         .from("donations")
         .select(`
           id,
-          donor_id,
-          donor_name,
-          donor_email,
+          user_id,
+          payer_name,
+          payer_email,
+          payer_phone,
           amount,
           currency,
-          amount_value,
-          amount_currency,
           payment_method,
           payment_status,
-          type,
-          description,
-          purpose,
-          donation_date,
-          notes,
+          intention_message,
           metadata,
           is_anonymous,
-          is_verified,
-          is_active,
           created_at,
           updated_at
         `)
         .order("created_at", { ascending: false })
         .limit(filters?.limit || 100);
 
-      if (filters?.userId) query = query.eq("donor_id", filters.userId);
-      if (filters?.type) query = query.eq("type", filters.type);
+      if (filters?.userId) query = query.eq("user_id", filters.userId);
 
       const { data, error } = await query;
 

@@ -1,22 +1,23 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Heart } from "lucide-react"
 import { useLocation } from "react-router-dom"
 
 import PaymentLogosSection from "@/components/donations/PaymentLogosSection"
 import PaymentMethodSelector from "@/components/donations/PaymentMethodSelector"
-import { Button } from "@/components/ui/button"
 import HeroBanner from "@/components/HeroBanner"
 import usePageHero from "@/hooks/usePageHero"
+import useRoleCheck from "@/hooks/useRoleCheck"
 
 // Imports des modals de paiement
 import StripeDonationModal from "@/components/donations/StripeDonationModal"
 import MobileMoneyDonationModal from "@/components/donations/MobileMoneyDonationModal"
-import CashDonationModal from "@/components/donations/CashDonationModal"
+import CashIntentionModal from "@/components/donations/CashIntentionModal"
+import CashReceiptAdminSection from "@/components/donations/CashReceiptAdminSection"
 
 export default function Donate() {
   const [method, setMethod] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
+  const { isAdmin } = useRoleCheck()
 
   const location = useLocation()
   const { data: hero, save: saveHero } = usePageHero(location.pathname)
@@ -105,6 +106,8 @@ export default function Donate() {
           </p>
         </motion.div>
 
+        {isAdmin && <CashReceiptAdminSection />}
+
         {/* Modals de paiement - rendu conditionnel */}
         {method === "stripe" && (
           <StripeDonationModal
@@ -121,7 +124,7 @@ export default function Donate() {
         )}
 
         {method === "cash" && (
-          <CashDonationModal
+          <CashIntentionModal
             open={open}
             onClose={handleCloseModal}
           />
