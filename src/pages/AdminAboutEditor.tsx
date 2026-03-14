@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Save, X, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import HeroBanner from '@/components/HeroBanner';
 
 // Types pour les métadonnées spécifiques
 interface ButtonMetadata {
@@ -101,8 +102,11 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={btn.variant || 'primary'}
                 onChange={(e) => {
                   const newButtons = [...buttons];
-                  newButtons[index] = { ...newButtons[index], variant: e.target.value as 'primary' | 'secondary' | 'outline' };
-                  onChange({ buttons: newButtons as ButtonMetadata[] });
+                  newButtons[index] = { 
+                    ...newButtons[index], 
+                    variant: e.target.value as 'primary' | 'secondary' | 'outline' 
+                  };
+                  onChange({ buttons: newButtons });
                 }}
               >
                 <option value="primary">Primary</option>
@@ -125,7 +129,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
             variant="outline"
             onClick={() => {
               const newButtons = [...buttons, { text: '', link: '/', variant: 'primary' as const }];
-              onChange({ buttons: newButtons } as unknown as MetadataType);
+              onChange({ buttons: newButtons });
             }}
           >
             <Plus className="h-4 w-4 mr-2" /> Ajouter un bouton
@@ -148,7 +152,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={item.icon || ''}
                 onChange={(e) => {
                   const newItems = [...items];
-                  newItems[index].icon = e.target.value;
+                  newItems[index] = { ...newItems[index], icon: e.target.value };
                   onChange({ items: newItems });
                 }}
               />
@@ -157,7 +161,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={item.text || ''}
                 onChange={(e) => {
                   const newItems = [...items];
-                  newItems[index].text = e.target.value;
+                  newItems[index] = { ...newItems[index], text: e.target.value };
                   onChange({ items: newItems });
                 }}
                 className="flex-1"
@@ -203,7 +207,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                     value={card.title || ''}
                     onChange={(e) => {
                       const newCards = [...cards];
-                      newCards[index].title = e.target.value;
+                      newCards[index] = { ...newCards[index], title: e.target.value };
                       onChange({ cards: newCards });
                     }}
                   />
@@ -212,7 +216,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                     value={card.description || ''}
                     onChange={(e) => {
                       const newCards = [...cards];
-                      newCards[index].description = e.target.value;
+                      newCards[index] = { ...newCards[index], description: e.target.value };
                       onChange({ cards: newCards });
                     }}
                   />
@@ -222,7 +226,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                       value={card.icon || ''}
                       onChange={(e) => {
                         const newCards = [...cards];
-                        newCards[index].icon = e.target.value;
+                        newCards[index] = { ...newCards[index], icon: e.target.value };
                         onChange({ cards: newCards });
                       }}
                     />
@@ -231,7 +235,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                       value={card.color || 'blue'}
                       onChange={(e) => {
                         const newCards = [...cards];
-                        newCards[index].color = e.target.value;
+                        newCards[index] = { ...newCards[index], color: e.target.value };
                         onChange({ cards: newCards });
                       }}
                     >
@@ -292,7 +296,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                   value={item.label || ''}
                   onChange={(e) => {
                     const newItems = [...items];
-                    newItems[index].label = e.target.value;
+                    newItems[index] = { ...newItems[index], label: e.target.value };
                     onChange({ items: newItems });
                   }}
                 />
@@ -302,7 +306,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={item.value || ''}
                 onChange={(e) => {
                   const newItems = [...items];
-                  newItems[index].value = e.target.value;
+                  newItems[index] = { ...newItems[index], value: e.target.value };
                   onChange({ items: newItems });
                 }}
               />
@@ -311,7 +315,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
                 value={item.icon || ''}
                 onChange={(e) => {
                   const newItems = [...items];
-                  newItems[index].icon = e.target.value;
+                  newItems[index] = { ...newItems[index], icon: e.target.value };
                   onChange({ items: newItems });
                 }}
               />
@@ -358,7 +362,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
               <Input
                 value={ctaMetadata?.button_text || ''}
                 onChange={(e) => onChange({ 
-                  ...ctaMetadata, 
+                  ...ctaMetadata,
                   button_text: e.target.value,
                   button_link: ctaMetadata?.button_link || '/contact',
                   button_variant: ctaMetadata?.button_variant || 'primary'
@@ -370,7 +374,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
               <Input
                 value={ctaMetadata?.button_link || ''}
                 onChange={(e) => onChange({ 
-                  ...ctaMetadata, 
+                  ...ctaMetadata,
                   button_text: ctaMetadata?.button_text || 'Nous Écrire',
                   button_link: e.target.value,
                   button_variant: ctaMetadata?.button_variant || 'primary'
@@ -384,7 +388,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ section, onChange }) =>
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={ctaMetadata?.button_variant || 'primary'}
               onChange={(e) => onChange({ 
-                ...ctaMetadata, 
+                ...ctaMetadata,
                 button_text: ctaMetadata?.button_text || 'Nous Écrire',
                 button_link: ctaMetadata?.button_link || '/contact',
                 button_variant: e.target.value as 'primary' | 'secondary' | 'outline' | 'ghost'
@@ -447,8 +451,7 @@ const AdminAboutEditor: React.FC = () => {
 
       // Invalider le cache et forcer un refetch immédiat
       await queryClient.invalidateQueries({ queryKey: ['about-page'] });
-      // Refetch immédiatement pour mettre à jour la page publique
-      queryClient.refetchQueries({ queryKey: ['about-page'] });
+      await queryClient.refetchQueries({ queryKey: ['about-page'] });
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       toast({
@@ -521,7 +524,7 @@ const AdminAboutEditor: React.FC = () => {
 
       // Invalider et refetch immédiatement
       await queryClient.invalidateQueries({ queryKey: ['about-page'] });
-      queryClient.refetchQueries({ queryKey: ['about-page'] });
+      await queryClient.refetchQueries({ queryKey: ['about-page'] });
     } catch (error) {
       console.error('Erreur lors du déplacement:', error);
       toast({
@@ -546,7 +549,7 @@ const AdminAboutEditor: React.FC = () => {
 
       // Invalider et refetch immédiatement
       await queryClient.invalidateQueries({ queryKey: ['about-page'] });
-      queryClient.refetchQueries({ queryKey: ['about-page'] });
+      await queryClient.refetchQueries({ queryKey: ['about-page'] });
     } catch (error) {
       console.error('Erreur lors de la modification:', error);
       toast({
@@ -559,9 +562,16 @@ const AdminAboutEditor: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Chargement des sections...</div>
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeroBanner
+          title="Page À propos"
+          subtitle="Gérez la page &quot;Qui sommes-nous ?&quot; de la paroisse"
+          showBackButton
+        />
+        <div className="flex-1 container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Chargement des sections...</div>
+          </div>
         </div>
       </div>
     );
@@ -569,311 +579,328 @@ const AdminAboutEditor: React.FC = () => {
 
   if (!sections || sections.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Administration — Page À propos</h1>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">Aucune section trouvée</p>
-              <Button onClick={() => window.location.reload()}>
-                Recharger la page
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeroBanner
+          title="Page À propos"
+          subtitle="Gérez la page &quot;Qui sommes-nous ?&quot; de la paroisse"
+          showBackButton
+        />
+        <div className="flex-1 container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Aucune section trouvée</p>
+                <Button onClick={() => window.location.reload()}>
+                  Recharger la page
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-bold">
-          Page &laquo; À propos &raquo;
-        </h1>
-        <p className="text-muted-foreground leading-relaxed">
-          Structurez l’histoire de la paroisse en sections simples : un titre clair, un court texte
-          et, si besoin, une image illustratrice. Commencez par choisir une section dans la colonne
-          de gauche, puis ajustez son contenu dans l’éditeur.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeroBanner
+        title="Page À propos"
+        subtitle="Gérez la page &quot;Qui sommes-nous ?&quot; de la paroisse"
+        showBackButton
+      />
 
-      <div className="grid lg:grid-cols-4 gap-6 items-start">
-        {/* Liste des sections */}
-        <div className="lg:col-span-1">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Sections de la page</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {sections.sort((a, b) => a.display_order - b.display_order).map((section) => (
-                  <div
-                    key={section.id}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      editingSection?.id === section.id
-                        ? 'bg-primary/10 border border-primary/20'
-                        : 'hover:bg-accent'
-                    }`}
-                    onClick={() => setEditingSection(section)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium truncate">
-                          {section.title || section.section_key}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {section.content_type}
-                          </Badge>
-                          <div className="flex items-center gap-1">
-                            <Switch
-                              checked={section.is_active}
-                              onClick={(e) => e.stopPropagation()}
-                              onCheckedChange={(checked) => handleToggleActive(section.id, checked)}
-                            />
-                            <span className="text-xs text-muted-foreground">
-                              {section.is_active ? 'Actif' : 'Inactif'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveSectionOrder(section.id, 'up');
-                          }}
-                          disabled={section.display_order <= 1}
-                        >
-                          <MoveUp className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveSectionOrder(section.id, 'down');
-                          }}
-                          disabled={section.display_order >= sections.length}
-                        >
-                          <MoveDown className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex-1 container mx-auto px-4 py-10">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-bold">
+            Page &laquo; À propos &raquo;
+          </h1>
+          <p className="text-muted-foreground leading-relaxed">
+            Structurez l&apos;histoire de la paroisse en sections simples : un titre clair, un court texte
+            et, si besoin, une image illustratrice. Commencez par choisir une section dans la colonne
+            de gauche, puis ajustez son contenu dans l&apos;éditeur.
+          </p>
         </div>
 
-        {/* Éditeur */}
-        <div className="lg:col-span-3">
-          {editingSection ? (
+        <div className="grid lg:grid-cols-4 gap-6 items-start">
+          {/* Liste des sections */}
+          <div className="lg:col-span-1">
             <Card className="shadow-sm">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>
-                    Édition: {editingSection.title || editingSection.section_key}
-                  </CardTitle>
-                  <Badge variant="outline">
-                    {editingSection.content_type}
-                  </Badge>
-                </div>
+                <CardTitle>Sections de la page</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="general" className="space-y-4">
-                  <TabsList>
-                    <TabsTrigger value="general">Texte &amp; en‑tête</TabsTrigger>
-                    <TabsTrigger value="content">Paragraphe</TabsTrigger>
-                    <TabsTrigger value="metadata">Mise en page</TabsTrigger>
-                    <TabsTrigger value="image">Image de section</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="general" className="space-y-4">
-                    <p className="text-xs text-muted-foreground">
-                      Définissez le titre, le sous‑titre et l’icône qui apparaîtront pour cette section sur la page publique.
-                    </p>
-                    <div>
-                      <Label htmlFor="title">Titre</Label>
-                      <Input
-                        id="title"
-                        value={editingSection.title || ''}
-                        onChange={(e) => setEditingSection({
-                          ...editingSection,
-                          title: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="subtitle">Sous-titre</Label>
-                      <Input
-                        id="subtitle"
-                        value={editingSection.subtitle || ''}
-                        onChange={(e) => setEditingSection({
-                          ...editingSection,
-                          subtitle: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="icon">Icône (nom Lucide)</Label>
-                      <Input
-                        id="icon"
-                        value={editingSection.icon || ''}
-                        onChange={(e) => setEditingSection({
-                          ...editingSection,
-                          icon: e.target.value
-                        })}
-                        placeholder="heart, users, church, etc."
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="is-active"
-                        checked={editingSection.is_active}
-                        onCheckedChange={(checked) => setEditingSection({
-                          ...editingSection,
-                          is_active: checked
-                        })}
-                      />
-                      <Label htmlFor="is-active">Section active</Label>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="content" className="space-y-4">
-                    <div>
-                      <Label htmlFor="content">Contenu principal de la section</Label>
-                      <Textarea
-                        id="content"
-                        value={editingSection.content || ''}
-                        onChange={(e) => setEditingSection({
-                          ...editingSection,
-                          content: e.target.value
-                        })}
-                        rows={6}
-                        className="font-mono text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Vous pouvez utiliser des retours à la ligne pour aérer le texte.
-                      </p>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="metadata" className="space-y-4">
-                    <p className="text-xs text-muted-foreground">
-                      Options avancées (listes, cartes, boutons, contacts…) pour affiner la mise en page. Laissez vide si vous ne les utilisez pas.
-                    </p>
-                    <MetadataEditor
-                      section={editingSection}
-                      onChange={(metadata) => setEditingSection({
-                        ...editingSection,
-                        // @ts-expect-error - MetadataType is compatible at runtime with Json
-                        metadata
-                      })}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="image" className="space-y-4">
-                    <div>
-                      <Label>
-                        {editingSection.section_key === 'about_hero' 
-                          ? 'Image de fond du Hero Banner' 
-                          : 'Image de la section'}
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {editingSection.section_key === 'about_hero' 
-                          ? 'Définissez l\'image de fond du banner principal de la page à propos. Cette image sera affichée avec un overlay semi-transparent.'
-                          : 'Téléchargez ou collez l\'URL d\'une image pour cette section.'}
-                      </p>
-                      <div className="mt-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="cursor-pointer"
-                        />
-                      </div>
-                      {editingSection.image_url && (
-                        <div className="mt-4">
-                          <p className="text-sm font-medium mb-2">Image actuelle:</p>
-                          <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden border">
-                            <img
-                              src={editingSection.image_url}
-                              alt="Preview"
-                              className="w-full h-full object-cover"
-                            />
+                <div className="space-y-2">
+                  {sections
+                    .sort((a, b) => a.display_order - b.display_order)
+                    .map((section) => (
+                      <div
+                        key={section.id}
+                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                          editingSection?.id === section.id
+                            ? 'bg-primary/10 border border-primary/20'
+                            : 'hover:bg-accent'
+                        }`}
+                        onClick={() => setEditingSection(section)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium truncate">
+                              {section.title || section.section_key}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {section.content_type}
+                              </Badge>
+                              <div className="flex items-center gap-1">
+                                <Switch
+                                  checked={section.is_active}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onCheckedChange={(checked) =>
+                                    handleToggleActive(section.id, checked)
+                                  }
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {section.is_active ? 'Actif' : 'Inactif'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Input
-                              value={editingSection.image_url}
-                              readOnly
-                              className="text-xs"
-                            />
+                          <div className="flex gap-1">
                             <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingSection({
-                                  ...editingSection,
-                                  image_url: null
-                                });
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveSectionOrder(section.id, 'up');
                               }}
+                              disabled={section.display_order <= 1}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <MoveUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveSectionOrder(section.id, 'down');
+                              }}
+                              disabled={section.display_order >= sections.length}
+                            >
+                              <MoveDown className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditingSection(
-                      sections.find(s => s.id === editingSection.id) || null
-                    )}
-                  >
-                    <X className="h-4 w-4 mr-2" /> Annuler
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        Sauvegarde...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" /> Sauvegarder
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Aucune section sélectionnée</h3>
-                  <p className="text-muted-foreground">
-                    Sélectionnez une section dans la liste pour commencer à éditer.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Éditeur */}
+          <div className="lg:col-span-3">
+            {editingSection ? (
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>
+                      Édition: {editingSection.title || editingSection.section_key}
+                    </CardTitle>
+                    <Badge variant="outline">
+                      {editingSection.content_type}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="general" className="space-y-4">
+                    <TabsList>
+                      <TabsTrigger value="general">Texte & en‑tête</TabsTrigger>
+                      <TabsTrigger value="content">Paragraphe</TabsTrigger>
+                      <TabsTrigger value="metadata">Mise en page</TabsTrigger>
+                      <TabsTrigger value="image">Image de section</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="general" className="space-y-4">
+                      <p className="text-xs text-muted-foreground">
+                        Définissez le titre, le sous‑titre et l&apos;icône qui apparaîtront pour cette section sur la page publique.
+                      </p>
+                      <div>
+                        <Label htmlFor="title">Titre</Label>
+                        <Input
+                          id="title"
+                          value={editingSection.title || ''}
+                          onChange={(e) => setEditingSection({
+                            ...editingSection,
+                            title: e.target.value
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="subtitle">Sous-titre</Label>
+                        <Input
+                          id="subtitle"
+                          value={editingSection.subtitle || ''}
+                          onChange={(e) => setEditingSection({
+                            ...editingSection,
+                            subtitle: e.target.value
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="icon">Icône (nom Lucide)</Label>
+                        <Input
+                          id="icon"
+                          value={editingSection.icon || ''}
+                          onChange={(e) => setEditingSection({
+                            ...editingSection,
+                            icon: e.target.value
+                          })}
+                          placeholder="heart, users, church, etc."
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="is-active"
+                          checked={editingSection.is_active}
+                          onCheckedChange={(checked) => setEditingSection({
+                            ...editingSection,
+                            is_active: checked
+                          })}
+                        />
+                        <Label htmlFor="is-active">Section active</Label>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="content" className="space-y-4">
+                      <div>
+                        <Label htmlFor="content">Contenu principal de la section</Label>
+                        <Textarea
+                          id="content"
+                          value={editingSection.content || ''}
+                          onChange={(e) => setEditingSection({
+                            ...editingSection,
+                            content: e.target.value
+                          })}
+                          rows={6}
+                          className="font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Vous pouvez utiliser des retours à la ligne pour aérer le texte.
+                        </p>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="metadata" className="space-y-4">
+                      <p className="text-xs text-muted-foreground">
+                        Options avancées (listes, cartes, boutons, contacts…) pour affiner la mise en page. Laissez vide si vous ne les utilisez pas.
+                      </p>
+                      <MetadataEditor
+                        section={editingSection}
+                        onChange={(metadata) => setEditingSection({
+                          ...editingSection,
+                          metadata: metadata as unknown as Json
+                        })}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="image" className="space-y-4">
+                      <div>
+                        <Label>
+                          {editingSection.section_key === 'about_hero' 
+                            ? 'Image de fond du Hero Banner' 
+                            : 'Image de la section'}
+                        </Label>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {editingSection.section_key === 'about_hero' 
+                            ? 'Définissez l\'image de fond du banner principal de la page à propos. Cette image sera affichée avec un overlay semi-transparent.'
+                            : 'Téléchargez ou collez l\'URL d\'une image pour cette section.'}
+                        </p>
+                        <div className="mt-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="cursor-pointer"
+                          />
+                        </div>
+                        {editingSection.image_url && (
+                          <div className="mt-4">
+                            <p className="text-sm font-medium mb-2">Image actuelle:</p>
+                            <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden border">
+                              <img
+                                src={editingSection.image_url}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <Input
+                                value={editingSection.image_url}
+                                readOnly
+                                className="text-xs"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingSection({
+                                    ...editingSection,
+                                    image_url: null
+                                  });
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingSection(
+                        sections.find(s => s.id === editingSection.id) || null
+                      )}
+                    >
+                      <X className="h-4 w-4 mr-2" /> Annuler
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                          Sauvegarde...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" /> Sauvegarder
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Aucune section sélectionnée</h3>
+                    <p className="text-muted-foreground">
+                      Sélectionnez une section dans la liste pour commencer à éditer.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

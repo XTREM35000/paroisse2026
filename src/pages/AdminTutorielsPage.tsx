@@ -22,7 +22,7 @@ interface SupabaseResponse<T> {
   error: { message: string } | null;
 }
 export default function AdminTutorielsPage() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { show: showToast } = useToast();
   const { profile, isLoading: userLoading } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -197,7 +197,11 @@ export default function AdminTutorielsPage() {
     return <div className="p-6">Vérification du profil...</div>;
   }
 
-  const roleStr = typeof profile?.role === 'string' ? profile.role.toLowerCase() : '';
+  const roleStr = typeof role === 'string'
+    ? role.toLowerCase()
+    : typeof profile?.role === 'string'
+      ? profile.role.toLowerCase()
+      : '';
   const isAdmin = ['admin', 'super_admin', 'administrateur'].includes(roleStr);
   const isModerator = ['moderateur', 'moderator'].includes(roleStr) || isAdmin;
 

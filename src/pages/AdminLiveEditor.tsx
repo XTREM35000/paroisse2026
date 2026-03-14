@@ -33,6 +33,7 @@ import {
 } from '@/lib/supabase/mediaQueries';
 import { ProviderManager, streamManager } from '@/lib/providers';
 import type { ProviderType } from '@/lib/providers/types';
+import HeroBanner from '@/components/HeroBanner';
 
 const AdminLiveEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -214,27 +215,48 @@ const AdminLiveEditor: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="w-full max-w-md">
-          <CardHeader><CardTitle>Accès refusé</CardTitle></CardHeader>
-          <CardContent><p className="text-sm text-muted-foreground">Vous n'avez pas les droits nécessaires pour administrer cette page.</p></CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeroBanner
+          title="Direct"
+          subtitle="Configurez vos diffusions en direct"
+          showBackButton
+        />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="w-full max-w-md">
+            <CardHeader><CardTitle>Accès refusé</CardTitle></CardHeader>
+            <CardContent><p className="text-sm text-muted-foreground">Vous n'avez pas les droits nécessaires pour administrer cette page.</p></CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6 bg-background">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeroBanner
+        title="Direct"
+        subtitle="Configurez vos diffusions en direct"
+        showBackButton
+      />
+      <div className="flex-1 max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-accent rounded transition" title="Retour"><ArrowLeft className="w-5 h-5" /></button>
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-accent rounded transition"
+              title="Retour"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <div>
               <h1 className="text-3xl font-bold">Gestion des Directs</h1>
               <p className="text-sm text-muted-foreground mt-1">Créez et gérez les diffusions live</p>
             </div>
           </div>
-          <Button onClick={handleAddNew} size="lg"><Plus className="w-4 h-4 mr-2"/>Nouveau Direct</Button>
+          <Button onClick={handleAddNew} size="lg">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau Direct
+          </Button>
         </div>
 
         <StreamEditorModal

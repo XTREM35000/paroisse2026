@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { uploadFile } from "@/lib/supabase/storage";
 import type { NavigationItem } from "@/hooks/useHeaderConfig";
 import useRoleCheck from '@/hooks/useRoleCheck';
+import HeroBanner from '@/components/HeroBanner';
 
 // use shared `supabase` client from integrations
 const AdminHomepageEditor = () => {
@@ -459,8 +460,13 @@ const AdminHomepageEditor = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeroBanner
+        title="Accueil du site"
+        subtitle="Personnalisez la page d'accueil de votre paroisse"
+        showBackButton
+      />
+      <div className="flex-1 container mx-auto px-4 max-w-4xl py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

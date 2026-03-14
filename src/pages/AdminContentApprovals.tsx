@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, X, Clock, AlertCircle } from 'lucide-react';
 import useContentApprovals from '@/hooks/useContentApprovals';
 import useRoleCheck from '@/hooks/useRoleCheck';
+import HeroBanner from '@/components/HeroBanner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,11 +32,18 @@ export default function AdminContentApprovals() {
 
   if (!isAdmin) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <AlertCircle className="h-12 w-12 mx-auto text-red-600 mb-4" />
-          <h2 className="text-xl font-semibold text-red-900 mb-2">Accès refusé</h2>
-          <p className="text-red-700">Seuls les administrateurs peuvent accéder à cette page.</p>
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeroBanner
+          title="Approbations"
+          subtitle="Validez les contenus en attente de publication"
+          showBackButton
+        />
+        <div className="flex-1 container mx-auto px-4 py-12">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-red-600 mb-4" />
+            <h2 className="text-xl font-semibold text-red-900 mb-2">Accès refusé</h2>
+            <p className="text-red-700">Seuls les administrateurs peuvent accéder à cette page.</p>
+          </div>
         </div>
       </div>
     );
@@ -183,13 +191,19 @@ export default function AdminContentApprovals() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Approbations de contenu</h1>
-        <p className="text-muted-foreground">
-          Gérez les vidéos et images en attente d'approbation. Les contenus rejetés sont supprimés immédiatement.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeroBanner
+        title="Approbations"
+        subtitle="Validez les contenus en attente d'approbation"
+        showBackButton
+      />
+      <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Approbations de contenu</h1>
+          <p className="text-muted-foreground">
+            Gérez les vidéos et images en attente d'approbation. Les contenus rejetés sont supprimés immédiatement.
+          </p>
+        </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
@@ -245,50 +259,51 @@ export default function AdminContentApprovals() {
         </div>
       )}
 
-      {/* Reject Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent aria-describedby="reject-desc">
-          <DialogHeader>
-            <DialogTitle>Rejeter le contenu</DialogTitle>
-            <DialogDescription id="reject-desc">
-              {selectedItem && getContentTitle(selectedItem)}
-            </DialogDescription>
-          </DialogHeader>
+        {/* Reject Dialog */}
+        <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+          <DialogContent aria-describedby="reject-desc">
+            <DialogHeader>
+              <DialogTitle>Rejeter le contenu</DialogTitle>
+              <DialogDescription id="reject-desc">
+                {selectedItem && getContentTitle(selectedItem)}
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Raison du rejet (facultatif)
-              </label>
-              <Textarea
-                placeholder="Expliquez pourquoi ce contenu est rejeté..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="min-h-32"
-              />
-            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Raison du rejet (facultatif)
+                </label>
+                <Textarea
+                  placeholder="Expliquez pourquoi ce contenu est rejeté..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="min-h-32"
+                />
+              </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowRejectDialog(false);
-                  setRejectReason('');
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleReject}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Traitement...' : 'Confirmer le rejet'}
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRejectDialog(false);
+                    setRejectReason('');
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleReject}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Traitement...' : 'Confirmer le rejet'}
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

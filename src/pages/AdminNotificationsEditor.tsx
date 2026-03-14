@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import HeroBanner from '@/components/HeroBanner';
 
 const AdminNotificationsEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -48,9 +49,20 @@ const AdminNotificationsEditor: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <div className="p-6">
-        <h2 className="text-xl font-semibold">Accès refusé</h2>
-        <p className="text-sm text-muted-foreground">Vous n'avez pas les droits nécessaires pour administrer les notifications.</p>
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeroBanner
+          title="Notifications"
+          subtitle="Gérez les alertes envoyées aux fidèles"
+          showBackButton
+        />
+        <div className="flex-1 container mx-auto px-4 py-8">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+            <h2 className="text-xl font-semibold text-red-900">Accès refusé</h2>
+            <p className="text-sm text-red-800 mt-1">
+              Vous n'avez pas les droits nécessaires pour administrer les notifications.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -120,17 +132,21 @@ const AdminNotificationsEditor: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button className="btn-ghost p-2 rounded" onClick={() => navigate(-1)} title="Retour">
-            <ArrowLeft />
-          </button>
-          <h1 className="text-2xl font-bold">Administration — Notifications</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeroBanner
+        title="Notifications"
+        subtitle="Gérez les alertes envoyées aux fidèles"
+        showBackButton
+      />
 
-      <div className="max-w-5xl">
+      <div className="flex-1 max-w-5xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Administration — Notifications</h1>
+          <p className="text-sm text-muted-foreground">
+            Envoyez des notifications ciblées aux membres de la paroisse par email (et plus tard push/app).
+          </p>
+        </div>
+
         {/* Message Content */}
         <section className="bg-card rounded-lg border border-border p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Contenu du message</h2>
