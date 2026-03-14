@@ -1,19 +1,25 @@
-import React, { createContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 import type { Profile } from '@/types/database';
+import { AuthContext } from './auth-context-def';
 
-export interface AuthState {
-  session: Session | null;
-  user: User | null;
-  profile: Profile | null;
-  role: string | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+/** Raw profile row from DB (select *), may include role and nullable fields */
+interface RawProfileRow {
+  display_name?: string | null;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  date_of_birth?: string | null;
+  is_active?: boolean;
+  notification_preferences?: Profile['notification_preferences'];
+  role?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
-
-export const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -40,17 +46,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('AuthContext: error fetching profile', error);
         }
 
-        const mergedProfile = data ? {
-          ...data,
-          display_name: (data as any).display_name ?? (data as any).full_name ?? '',
-          location: (data as any).location ?? '',
-          date_of_birth: (data as any).date_of_birth ?? '',
-          is_active: typeof (data as any).is_active === 'boolean' ? (data as any).is_active : true,
-          notification_preferences: (data as any).notification_preferences ?? { email: true, push: false, sms: false },
-        } : null;
+        const row = data as RawProfileRow | null;
+        const mergedProfile: Profile | null = row
+          ? {
+              id: session.user.id,
+              email: session.user.email ?? null,
+              full_name: row.full_name ?? null,
+              display_name: row.display_name ?? row.full_name ?? '',
+              avatar_url: row.avatar_url ?? null,
+              bio: row.bio ?? null,
+              phone: row.phone ?? null,
+              location: row.location ?? '',
+              date_of_birth: row.date_of_birth ?? '',
+              is_active: typeof row.is_active === 'boolean' ? row.is_active : true,
+              notification_preferences: row.notification_preferences ?? { email: true, push: false, sms: false },
+              created_at: row.created_at ?? new Date().toISOString(),
+              updated_at: row.updated_at ?? new Date().toISOString(),
+            }
+          : null;
 
         setProfile(mergedProfile);
-        setRole((data as any)?.role || session.user.user_metadata?.role || null);
+        setRole(row?.role ?? session.user.user_metadata?.role ?? null);
 
         try {
           localStorage.setItem('ff_profile_cache', JSON.stringify({ data, cachedAt: Date.now() }));
@@ -110,4 +126,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Déplacé dans useAuthContext.ts pour respecter react-refresh/only-export-components
+// AuthContext and AuthState are exported from ./auth-context-def for react-refresh

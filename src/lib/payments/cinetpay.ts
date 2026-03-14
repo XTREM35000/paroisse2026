@@ -1,93 +1,55 @@
-import { PaymentInitResult, PaymentVerifyResult } from './types';
+const CINETPAY_BASE_URL =
+  import.meta.env.VITE_CINETPAY_BASE_URL || 'https://api.cinetpay.com/v1';
 
-const CINETPAY_BASE = 'https://api-checkout.cinetpay.com';
-
-function getEnv(key: string) {
-  return (import.meta.env as any)[key];
+export interface CinetPayAuthResponse {
+  code: number;
+  status: string;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
 }
 
-export const initCinetPayPayment = async (
-  amount: number,
-  currency: 'XOF' | 'EUR' | 'USD',
-  customerName: string,
-  customerEmail: string,
-  customerPhone?: string,
-  donationId?: string
-): Promise<PaymentInitResult> => {
-  const apikey = getEnv('VITE_CINETPAY_API_KEY');
-  const site_id = getEnv('VITE_CINETPAY_SITE_ID');
-  const notify_url = getEnv('VITE_PAYMENT_SUCCESS_URL');
+export async function getCinetPayToken(): Promise<string> {
+  const response = await fetch(`${CINETPAY_BASE_URL}/oauth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      api_key: import.meta.env.VITE_CINETPAY_API_KEY,
+      api_password: import.meta.env.VITE_CINETPAY_API_PASSWORD,
+    }),
+  });
 
-  if (!apikey || !site_id) {
-    throw new Error('CinetPay configuration manquante');
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      (error as { message?: string }).message || 'Échec authentification CinetPay'
+    );
   }
 
-  const transaction_id = donationId || `don_${Date.now()}`;
+  const data: CinetPayAuthResponse = await response.json();
+  return data.access_token;
+}
 
-  const payload = {
-    apikey,
-    site_id,
-    transaction_id,
-    amount: Math.round(amount),
-    currency,
-    description: `Don - ${customerName}`,
-    client_name: customerName,
-    client_email: customerEmail,
-    client_phone: customerPhone,
-    notify_url,
-  } as any;
+export async function initCinetPayPayment(paymentData: Record<string, unknown>) {
+  const token = await getCinetPayToken();
 
-  try {
-    const res = await fetch(`${CINETPAY_BASE}/v2/payment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+  const response = await fetch(`${CINETPAY_BASE_URL}/payment`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(paymentData),
+  });
 
-    const data = await res.json();
+  return response.json();
+}
 
-    // Response shape can vary, try common fields
-    const paymentUrl = data?.data?.payment_url || data?.data?.invoice_url || data?.data?.checkout_url || data?.checkout_url;
-
-    return {
-      paymentUrl,
-      transactionId: transaction_id,
-      raw: data,
-    };
-  } catch (err) {
-    throw new Error(`CinetPay init failed: ${(err as Error).message}`);
-  }
-};
-
-export const verifyCinetPayPayment = async (transactionId: string): Promise<PaymentVerifyResult> => {
-  const apikey = getEnv('VITE_CINETPAY_API_KEY');
-  const site_id = getEnv('VITE_CINETPAY_SITE_ID');
-
-  if (!apikey || !site_id) {
-    throw new Error('CinetPay configuration manquante');
-  }
-
-  try {
-    const url = `${CINETPAY_BASE}/v2/payment/check?transaction_id=${encodeURIComponent(
-      transactionId
-    )}&apikey=${encodeURIComponent(apikey)}&site_id=${encodeURIComponent(site_id)}`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    // CinetPay returns different statuses; common accepted value: "ACCEPTED"
-    const statusRaw = data?.data?.status || data?.status || data?.data?.cpm_result || null;
-    const status = statusRaw === 'ACCEPTED' || statusRaw === 'ACCEPTED' ? 'success' : statusRaw === 'CREATED' ? 'pending' : 'failed';
-
-    // Try to extract donation identifier if passed in metadata/custom field
-    const donationId = data?.data?.cpm_custom || data?.data?.metadata?.donationId || undefined;
-
-    return {
-      status,
-      donationId,
-      raw: data,
-    };
-  } catch (err) {
-    throw new Error(`CinetPay verify failed: ${(err as Error).message}`);
-  }
-};
+/**
+ * Vérifie la signature du webhook CinetPay (côté serveur).
+ * À implémenter selon la doc CinetPay si une signature est fournie.
+ */
+export function verifyCinetPayWebhook(_payload: unknown): boolean {
+  // TODO: implémenter la vérification de signature si CinetPay la fournit
+  return true;
+}

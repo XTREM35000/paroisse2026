@@ -1,85 +1,61 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { corsHeaders } from "../_shared/cors.ts"  
+import { corsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { donationId } = await req.json()
+    const { paymentData } = await req.json();
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    )
+    const apiKey = Deno.env.get("CINETPAY_API_KEY");
+    const apiPassword = Deno.env.get("CINETPAY_API_PASSWORD");
+    const baseUrl = Deno.env.get("CINETPAY_BASE_URL") || "https://api.cinetpay.com/v1";
 
-    const { data: donation, error } = await supabase
-      .from("donations")
-      .select("*")
-      .eq("id", donationId)
-      .single()
-
-    if (error || !donation) {
+    if (!apiKey || !apiPassword) {
       return new Response(
-        JSON.stringify({ error: "Donation not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+        JSON.stringify({ error: "CinetPay configuration manquante" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // URLs de callback (à ajuster avec tes vraies URLs en production)
-    const baseUrl = "https://www.nd-compassion.ci"
-    const notifyUrl = "https://cghwsbkxcjsutqwzdbwe.supabase.co/functions/v1/cinetpay-webhook"
-    const returnUrl = `${baseUrl}/donation-success`
-
-    const payload = {
-      apikey: Deno.env.get("CINETPAY_API_KEY")!,
-      site_id: Deno.env.get("CINETPAY_SITE_ID")!,
-      transaction_id: donation.id,
-      amount: donation.amount,
-      currency: donation.currency || "XOF",
-      description: "Don - Paroisse Compassion",
-      notify_url: notifyUrl,
-      return_url: returnUrl,
-      channels: "ALL",
-      customer_name: donation.payer_name || "Donateur",
-      customer_email: donation.payer_email,
-      customer_phone: donation.payer_phone,
-    }
-
-    const response = await fetch("https://api-checkout.cinetpay.com/v2/payment", {
+    const authResponse = await fetch(`${baseUrl}/oauth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+      body: JSON.stringify({
+        api_key: apiKey,
+        api_password: apiPassword,
+      }),
+    });
 
-    const result = await response.json()
-    console.log("Réponse CinetPay:", result)
-
-    if (result.code === "201" && result.data?.payment_url) {
-      // Mettre à jour le don avec l'ID de transaction CinetPay
-      await supabase
-        .from("donations")
-        .update({ 
-          transaction_id: result.data.transaction_id,
-          payment_status: "pending" 
-        })
-        .eq("id", donationId)
-
+    if (!authResponse.ok) {
+      const err = await authResponse.json().catch(() => ({}));
       return new Response(
-        JSON.stringify({ payment_url: result.data.payment_url }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
-    } else {
-      return new Response(
-        JSON.stringify({ error: result.description || "Erreur CinetPay" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+        JSON.stringify({ error: (err as { message?: string }).message || "Échec authentification CinetPay" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const { access_token } = await authResponse.json();
+
+    const paymentResponse = await fetch(`${baseUrl}/payment`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(paymentData),
+    });
+
+    const result = await paymentResponse.json();
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
   }
-})
+});

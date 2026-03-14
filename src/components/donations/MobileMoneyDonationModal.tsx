@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCinetPay } from "@/hooks/useCinetPay";
+import { useCreateDonation } from "@/hooks/useCreateDonation";
 
 type MobileMoneyProvider = "mtn" | "orange" | "moov" | "wave";
 type Step = "provider" | "payment";
@@ -66,13 +67,15 @@ export default function MobileMoneyDonationModal({
   open,
   onClose,
 }: MobileMoneyDonationModalProps) {
+  const { processPayment, loading } = useCinetPay();
+  const { createDonation } = useCreateDonation();
+
   const [step, setStep] = useState<Step>("provider");
   const [provider, setProvider] = useState<MobileMoneyProvider>("mtn");
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [phoneTouched, setPhoneTouched] = useState(false);
 
@@ -129,43 +132,36 @@ export default function MobileMoneyDonationModal({
       return;
     }
 
-    setLoading(true);
+    const amountNum = Number(amount);
+    const parts = (name || "Donateur").trim().split(/\s+/);
+    const firstName = parts[0] || "Donateur";
+    const lastName = parts.slice(1).join(" ") || "";
 
     try {
-      const { data: donation, error } = await supabase
-        .from("donations")
-        .insert({
-          amount: Number(amount),
-          currency: "XOF",
-          payment_method: "cinetpay",
-          payment_status: "pending",
-          payer_name: name || "Donateur",
-          payer_email: email,
-          payer_phone: formattedPhone,
-          is_anonymous: !name,
-          is_active: true,
-          metadata: { provider },
-        })
-        .select()
-        .single();
+      const donation = await createDonation({
+        amount: amountNum,
+        currency: "XOF",
+        payment_method: "cinetpay",
+        payer_name: name || "Donateur",
+        payer_email: email,
+        payer_phone: formattedPhone,
+        is_anonymous: !name,
+      });
 
-      if (error) throw error;
+      const paymentMethod =
+        provider === "orange" ? "OM" : provider === "mtn" ? "MTN" : provider === "moov" ? "MOOV" : undefined;
 
-      const { data, error: invokeError } = await supabase.functions.invoke(
-        "create-cinetpay-payment",
-        { body: { donationId: donation.id, provider } }
-      );
-
-      if (invokeError) throw invokeError;
-
-      if (data?.payment_url) {
-        window.location.href = data.payment_url;
-      }
+      await processPayment({
+        amount: amountNum,
+        client_first_name: firstName,
+        client_last_name: lastName,
+        client_email: email,
+        client_phone_number: formattedPhone,
+        payment_method: paymentMethod,
+        donationId: donation.id,
+      });
     } catch (error) {
       console.error("Erreur:", error);
-      alert("Erreur lors de la création du paiement");
-    } finally {
-      setLoading(false);
     }
   };
 
