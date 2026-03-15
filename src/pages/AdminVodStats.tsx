@@ -16,16 +16,16 @@ const AdminVodStats: React.FC = () => {
       <HeroBanner
         title="Statistiques VOD"
         subtitle="Performance de vos vidéos à la demande"
-        showBackButton={false}
+        showBackButton={true}
         backgroundImage={hero?.image_url}
         onBgSave={saveHero}
       />
 
       <main className="flex-1 py-10 lg:py-14">
         <div className="container mx-auto px-4 space-y-8">
-          {loading || !stats ? (
+          {loading ? (
             <StatsSkeleton />
-          ) : (
+          ) : stats ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard title="Vidéos (30 jours)" value={stats.totalVideos} />
@@ -61,6 +61,17 @@ const AdminVodStats: React.FC = () => {
                   </div>
                 </section>
               )}
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatCard title="Vidéos (30 jours)" value={0} subtitle="Aucune vidéo enregistrée sur la période" />
+                <StatCard title="Vues totales" value={0} />
+                <StatCard title="Likes totaux" value={0} />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Publiez des vidéos et revenez sur cette page pour visualiser leurs performances.
+              </p>
             </>
           )}
         </div>

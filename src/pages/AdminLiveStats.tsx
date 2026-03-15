@@ -28,16 +28,16 @@ const AdminLiveStats: React.FC = () => {
       <HeroBanner
         title="Statistiques Live"
         subtitle="Vue d'ensemble des performances de vos directs"
-        showBackButton={false}
+        showBackButton={true}
         backgroundImage={hero?.image_url}
         onBgSave={saveHero}
       />
 
       <main className="flex-1 py-10 lg:py-14">
         <div className="container mx-auto px-4 space-y-8">
-          {loading || !stats ? (
+          {loading ? (
             <StatsSkeleton />
-          ) : (
+          ) : stats ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="Viewers actuels"
@@ -56,6 +56,17 @@ const AdminLiveStats: React.FC = () => {
                 value={stats.live_id}
               />
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatCard title="Viewers actuels" value={0} subtitle="Aucun direct actif trouvé" />
+                <StatCard title="Pic de viewers" value={0} />
+                <StatCard title="Vues totales ce live" value={0} />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Aucun live actif n'a été détecté. Lancez un direct pour voir les statistiques en temps réel.
+              </p>
+            </>
           )}
         </div>
       </main>

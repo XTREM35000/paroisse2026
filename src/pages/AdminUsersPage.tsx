@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Edit, Upload } from 'lucide-react';
 import { updateProfileRole } from '@/lib/supabase/rpc';
+import useRoleCheck from '@/hooks/useRoleCheck';
 
 interface User {
   id: string;
@@ -38,6 +39,8 @@ const AdminUsersPage: React.FC = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { hasRole } = useRoleCheck();
+  const isSuperAdmin = hasRole('super_admin');
 
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
@@ -103,6 +106,7 @@ const AdminUsersPage: React.FC = () => {
     if (['admin', 'administrateur'].includes(lower)) return 'admin';
     if (['pretre', 'priest'].includes(lower)) return 'pretre';
     if (['diacre'].includes(lower)) return 'diacre';
+    if (['super_admin', 'superadmin', 'super-admin'].includes(lower)) return 'super_admin';
     return 'membre';
   };
 
@@ -115,6 +119,7 @@ const AdminUsersPage: React.FC = () => {
     if (['admin', 'administrateur'].includes(lower)) return 'Admin';
     if (['pretre', 'priest'].includes(lower)) return 'Prêtre';
     if (['diacre'].includes(lower)) return 'Diacre';
+    if (['super_admin', 'superadmin', 'super-admin'].includes(lower)) return 'Super Admin';
     return 'Membre';
   };
 
@@ -164,6 +169,16 @@ const AdminUsersPage: React.FC = () => {
         normalizedCurrent,
         normalizedForm,
       });
+
+      // Seuls les super_admin peuvent attribuer le rôle super_admin
+      if (normalizedForm === 'super_admin' && !isSuperAdmin) {
+        toast({
+          title: 'Action non autorisée',
+          description: 'Seul un Super Admin peut attribuer ou retirer le rôle super_admin.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       let avatar_url = form.avatar_url;
 
@@ -450,6 +465,9 @@ const AdminUsersPage: React.FC = () => {
                   <option value="admin">Admin</option>
                   <option value="pretre">Prêtre</option>
                   <option value="diacre">Diacre</option>
+                  <option value="super_admin" disabled={!isSuperAdmin}>
+                    Super Admin {isSuperAdmin ? '' : '(réservé)'}
+                  </option>
                 </select>
               </div>
             </div>

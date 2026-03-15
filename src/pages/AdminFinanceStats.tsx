@@ -16,16 +16,16 @@ const AdminFinanceStats: React.FC = () => {
       <HeroBanner
         title="Statistiques Financières"
         subtitle="Suivi des dons et des contributions"
-        showBackButton={false}
+        showBackButton={true}
         backgroundImage={hero?.image_url}
         onBgSave={saveHero}
       />
 
       <main className="flex-1 py-10 lg:py-14">
         <div className="container mx-auto px-4 space-y-8">
-          {loading || !stats ? (
+          {loading ? (
             <StatsSkeleton />
-          ) : (
+          ) : stats ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
@@ -87,6 +87,27 @@ const AdminFinanceStats: React.FC = () => {
                   </div>
                 </div>
               </section>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatCard
+                  title="Dons mois en cours"
+                  value="0 F"
+                  subtitle="Aucun don complété pour le moment"
+                />
+                <StatCard
+                  title="Total dons année"
+                  value="0 F"
+                />
+                <StatCard
+                  title="Donateurs uniques"
+                  value={0}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Lorsque des dons seront enregistrés, cette page affichera automatiquement les montants et répartitions.
+              </p>
             </>
           )}
         </div>

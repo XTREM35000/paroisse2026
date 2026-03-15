@@ -18,6 +18,7 @@ import {
 // Types Supabase
 import type { ChatRoom, ChatMessage, Profile } from '@/types/database';
 import { cn } from '@/lib/utils';
+import HeroBanner from '@/components/HeroBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Extension du type ChatRoom avec métadonnées locales
@@ -25,6 +26,8 @@ interface ExtendedChatRoom extends ChatRoom {
   lastMessage?: string;
   unreadCount?: number;
   lastMessageTime?: Date;
+  lastSeenAt?: Date | null;
+  isOnline?: boolean;
 }
 
 // Type pour les messages avec infos d'envoyeur
@@ -177,19 +180,29 @@ export default function ChatPage() {
       if (profileErr) throw profileErr;
 
       // Créer des conversations virtuelles pour chaque profil
-      const enrichedRooms = (profiles || []).map((profile) => ({
-        id: profile.id, // Utiliser l'ID du profil comme identifiant
-        name: profile.full_name || 'Utilisateur',
-        description: profile.bio || '',
-        type: 'direct',
-        is_private: true,
-        member_count: 2,
-        lastMessage: undefined,
-        lastMessageTime: undefined,
-        unreadCount: 0,
-        avatar_url: profile.avatar_url,
-        email: profile.email,
-      })) as ExtendedChatRoom[];
+      const enrichedRooms = (profiles || []).map((p) => {
+        const lastSeenAt =
+          p.last_seen_at ? new Date(p.last_seen_at as string) : null;
+        const isOnline =
+          lastSeenAt !== null &&
+          Date.now() - lastSeenAt.getTime() < 2 * 60 * 1000; // 2 minutes
+
+        return {
+          id: p.id, // Utiliser l'ID du profil comme identifiant
+          name: p.full_name || 'Utilisateur',
+          description: p.bio || '',
+          type: 'direct',
+          is_private: true,
+          member_count: 2,
+          lastMessage: undefined,
+          lastMessageTime: undefined,
+          unreadCount: 0,
+          avatar_url: p.avatar_url,
+          email: p.email,
+          lastSeenAt,
+          isOnline,
+        } as ExtendedChatRoom;
+      });
 
       // Enrich rooms with latest message and unread count if a private room exists
       const enrichedWithMeta = await Promise.all(
@@ -269,6 +282,22 @@ export default function ChatPage() {
           return r;
         })
       );
+
+      // Trier : en ligne d'abord, puis par dernier message récent, puis par nom
+      enrichedWithMeta.sort((a, b) => {
+        const aOnline = a.isOnline ? 1 : 0;
+        const bOnline = b.isOnline ? 1 : 0;
+        if (aOnline !== bOnline) return bOnline - aOnline;
+
+        if (a.lastMessageTime && b.lastMessageTime) {
+          return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
+        }
+
+        if (a.lastMessageTime && !b.lastMessageTime) return -1;
+        if (!a.lastMessageTime && b.lastMessageTime) return 1;
+
+        return a.name.localeCompare(b.name);
+      });
 
       setRooms(enrichedWithMeta);
 
@@ -608,10 +637,19 @@ export default function ChatPage() {
   // ====================================
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-bold mb-2 text-foreground">Chat</h2>
-          <p className="text-muted-foreground">Vous devez être connecté pour accéder au chat</p>
+      <div className="min-h-screen flex flex-col bg-background">
+        <HeroBanner
+          title="Chat"
+          subtitle="Discutez en direct avec les membres de la communauté"
+          showBackButton={true}
+        />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <h2 className="text-2xl font-bold mb-2 text-foreground">Chat</h2>
+            <p className="text-muted-foreground">
+              Vous devez être connecté pour accéder au chat.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -623,7 +661,12 @@ export default function ChatPage() {
   // Rendu: Layout WhatsApp-like
   // ====================================
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-background overflow-hidden">
+      <HeroBanner
+        title="Chat"
+        subtitle="Interface inspirée de WhatsApp pour vos conversations privées"
+        showBackButton={true}
+      />
       {/* Layout principal: Sidebar + Chat */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Conversations (masqué sur mobile si une conversation est sélectionnée) */}

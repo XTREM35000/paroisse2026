@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { uploadFile } from '@/lib/supabase/storage';
 import { Trash2, RotateCcw, Save, ImageIcon } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface PageContentManagerData {
   heroTitle: string;
@@ -100,6 +101,7 @@ export default function PageContentManager({
   path,
 }: PageContentManagerProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [heroTitle, setHeroTitle] = useState(currentData.heroTitle);
   const [heroSubtitle, setHeroSubtitle] = useState(currentData.heroSubtitle);
   const [heroImage, setHeroImage] = useState(currentData.heroImage);

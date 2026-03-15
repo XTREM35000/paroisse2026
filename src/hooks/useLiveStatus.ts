@@ -9,6 +9,7 @@ export function useLiveStatus() {
 
   useEffect(() => {
     let cancelled = false;
+    let pollTimer: number | null = null;
 
     const load = async () => {
       try {
@@ -40,8 +41,14 @@ export function useLiveStatus() {
       )
       .subscribe();
 
+    // Fallback : petit polling toutes les 30s pour refléter un changement même si Realtime est inactif
+    pollTimer = window.setInterval(() => {
+      void load();
+    }, 30_000);
+
     return () => {
       cancelled = true;
+      if (pollTimer) window.clearInterval(pollTimer);
       supabase.removeChannel(channel);
     };
   }, []);
