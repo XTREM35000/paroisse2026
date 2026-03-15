@@ -155,15 +155,17 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
         <div className="flex items-center justify-between h-16">
           {/* Zone gauche : menu burger + logo + titre */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-muted-foreground"
-              onClick={() => setIsMobileMenuOpen(prev => !prev)}
-              title="Menu mobile"
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden text-muted-foreground"
+                onClick={() => setIsMobileMenuOpen(prev => !prev)}
+                title="Menu mobile"
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
 
             <Link to={isAdmin ? "/admin" : "/"} className="flex items-center gap-2 flex-shrink-0 group">
               {/* Logo dynamique avec animation 3D + étoiles dorées */}
@@ -193,12 +195,12 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   )}
               </div>
               
-              {/* Titres dynamiques - avec badge d'état de connexion */}
+              {/* Titres dynamiques */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
-                className={`relative ${isCompactHeader ? "sr-only" : "hidden sm:block"}`}
+                className="relative"
               >
                 {headerConfig?.main_title && (
                   <div className="flex items-center gap-2">
@@ -216,7 +218,17 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
             </Link>
 
             {/* Navigation Menu - Desktop */}
-            <nav className="hidden md:flex items-center gap-2 ml-4">
+            <nav className="hidden md:flex items-center gap-3 ml-3">
+              {/* Badge Actif / Inactif juste avant "Accueil" */}
+              {isConnected ? (
+                <span className="inline-block px-2 py-0.5 text-[0.7rem] font-bold rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white animate-badge-color-shift shadow-md">
+                  Actif
+                </span>
+              ) : (
+                <span className="inline-block px-2 py-0.5 text-[0.7rem] font-bold rounded-full bg-gradient-to-r from-slate-500 to-slate-700 text-slate-100 shadow-md">
+                  Inactif
+                </span>
+              )}
               {(headerConfig?.navigation_items || []).map((item, index) => (
                 <Link 
                   key={index}
@@ -252,23 +264,10 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
             </nav>
           </div>
 
-          {/* Zone droite : badges (si espace) + actions avec priorité */}
+          {/* Zone droite : badge Direct + actions avec priorité */}
           <div className="flex items-center gap-2">
-            {/* Badges Actif/Inactif + Live : visibles si espace */}
-            {!isCompactHeader && (
-              <div className="hidden xs:flex items-center gap-2">
-                {isConnected ? (
-                  <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-emerald-400 to-green-500 text-white animate-badge-color-shift shadow-md">
-                    Actif
-                  </span>
-                ) : (
-                  <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-slate-500 to-slate-700 text-slate-100 shadow-md">
-                    Inactif
-                  </span>
-                )}
-                <LiveStatusBadge isLive={isLiveActive} />
-              </div>
-            )}
+            {/* Badge Direct : toujours visible */}
+            <LiveStatusBadge isLive={isLiveActive} />
 
             {/* Search (champ animé) */}
             <AnimatePresence>
