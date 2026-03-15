@@ -1,104 +1,122 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
-import DraggableModal from './DraggableModal';
+import React, { useState, useEffect, useCallback } from 'react';
+
+const STORAGE_KEY = 'welcome-splash-shown';
 
 interface WelcomeModalProps {
-  onClose: () => void;
+  onClose?: () => void;
   onOpenAuthModal?: (mode: 'login' | 'register') => void;
+  autoCloseDelayMs?: number;
 }
 
-export default function WelcomeModal({ onClose, onOpenAuthModal }: WelcomeModalProps) {
-  const [isVisible, setIsVisible] = useState(true);
-  const navigate = useNavigate();
+export default function WelcomeModal({
+  onClose,
+  autoCloseDelayMs = 10000,
+}: WelcomeModalProps) {
+  const [visible, setVisible] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(5);
 
-  const handleClose = () => {
-    setIsVisible(false);
-    onClose();
-  };
-
-  const handleConnect = () => {
-    setIsVisible(false);
-    onClose();
-
-    if (onOpenAuthModal) {
-      onOpenAuthModal('login');
-    } else {
-      window.location.hash = '#auth';
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    try {
+      sessionStorage.setItem(STORAGE_KEY, '1');
+    } catch {
+      /* ignore */
     }
-  };
+    onClose?.();
+  }, [onClose]);
 
-  // Si le hash passe à #auth (clic sur le bouton "bonhomme" ou lien direct),
-  // on ferme immédiatement le modal de bienvenue, même s'il était déjà ouvert.
   useEffect(() => {
-    const handleHashChange = () => {
-      if (window.location.hash.includes('#auth')) {
-        handleClose();
-      }
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    // Vérification immédiate au montage
-    handleHashChange();
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
+    try {
+      if (sessionStorage.getItem(STORAGE_KEY)) return;
+    } catch {
+      /* ignore */
+    }
+    setVisible(true);
+    setSecondsLeft(Math.ceil(autoCloseDelayMs / 1000));
+    requestAnimationFrame(() => setFadeIn(true));
 
-  if (!isVisible) return null;
+    const closeTimer = setTimeout(handleClose, autoCloseDelayMs);
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearTimeout(closeTimer);
+      clearInterval(interval);
+    };
+  }, [autoCloseDelayMs, handleClose]);
+
+  if (!visible) return null;
 
   return (
-    <DraggableModal
-      open={isVisible}
-      onClose={handleClose}
-      draggableOnMobile
-      center
-      maxWidthClass="max-w-md"
-      title="Bienvenue"
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/95 backdrop-blur-sm"
+      style={{
+        opacity: fadeIn ? 1 : 0,
+        transition: 'opacity 0.6s ease-in-out',
+      }}
+      aria-modal="true"
+      aria-label="Bienvenue"
     >
-      <div className="px-6 pt-6 pb-2 text-center">
-
-        {/* Icon */}
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <img src="/logo.png" alt="Logo" className="h-16 w-16" />
+      <div
+        className="flex flex-col items-center justify-center px-8 max-w-md text-center"
+        style={{
+          opacity: fadeIn ? 1 : 0,
+          transform: fadeIn ? 'scale(1)' : 'scale(0.95)',
+          transition: 'opacity 0.5s ease-out 0.2s, transform 0.5s ease-out 0.2s',
+        }}
+      >
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/20">
+          <img src="/logo.png" alt="Logo" className="h-20 w-20 object-contain" />
         </div>
 
-        {/* Title */}
-        <h3 className="text-xl font-semibold text-foreground mb-2">
+        <h2 className="text-2xl font-bold text-foreground mb-3">
           Heureux de vous accueillir 🙏
-        </h3>
+        </h2>
 
-        {/* Description */}
-        <p className="text-muted-foreground leading-relaxed mb-4">
+        <p className="text-muted-foreground leading-relaxed mb-2">
           Retrouvez les dernières vidéos de messes, homélies et événements
           de votre paroisse.
         </p>
 
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-8">
           Connectez-vous pour commenter, sauvegarder vos vidéos
           et rester informé des nouvelles publications.
         </p>
 
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3 px-6 py-4 border-t border-border bg-muted/30">
-
-        <button
-          onClick={handleConnect}
-          className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition"
+        {/* Compteur 3D */}
+        <div
+          className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-emerald-500 to-teal-600 text-white shadow-2xl"
+          style={{
+            boxShadow:
+              '0 20px 40px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset, 0 1px 0 rgba(255,255,255,0.2) inset',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2)',
+          }}
         >
-          Se connecter
-        </button>
-
-        <button
-          onClick={handleClose}
-          className="flex-1 px-4 py-2.5 rounded-lg border border-border text-foreground font-semibold hover:bg-muted transition"
-        >
-          Continuer
-        </button>
-
+          <span
+            className="text-4xl font-black tabular-nums"
+            style={{
+              textShadow: '0 2px 4px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
+            }}
+          >
+            {secondsLeft}
+          </span>
+          <div
+            className="absolute inset-0 rounded-2xl opacity-30"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%)',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+        <p className="mt-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          seconde{secondsLeft !== 1 ? 's' : ''}
+        </p>
       </div>
-
-    </DraggableModal>
+    </div>
   );
 }

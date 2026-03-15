@@ -106,22 +106,46 @@ export async function findIntentionByToken(token: string): Promise<CashIntention
   return data as CashIntentionRow | null;
 }
 
+/** Cherche un don espèces par code (intention_token ou receipt_number) */
+export async function findCashDonationByCode(code: string): Promise<CashIntentionRow | null> {
+  const c = String(code || '').trim();
+  if (!c) return null;
+  const upper = c.toUpperCase();
+  const { data: byToken } = await supabase
+    .from('donations')
+    .select('*')
+    .eq('payment_method', 'cash')
+    .eq('intention_token', upper)
+    .maybeSingle();
+  if (byToken) return byToken as CashIntentionRow;
+  const { data: byReceipt } = await supabase
+    .from('donations')
+    .select('*')
+    .eq('payment_method', 'cash')
+    .not('receipt_number', 'is', null)
+    .ilike('receipt_number', `%${c}%`)
+    .limit(1);
+  const row = Array.isArray(byReceipt) ? byReceipt[0] : byReceipt;
+  return (row as CashIntentionRow) || null;
+}
+
 export async function validateIntention(
   donationId: string,
   data: ValidateIntentionInput
 ): Promise<void> {
+  const { data: current } = await supabase.from('donations').select('metadata').eq('id', donationId).single();
+  const meta: Record<string, unknown> = { ...((current?.metadata as Record<string, unknown>) ?? {}) };
+  meta.archived_at = new Date().toISOString();
+  meta.archived_reason = 'validated';
+  if (data.receipt_number) meta.receipt_number = data.receipt_number;
+  if (data.notes) meta.notes = data.notes;
+
   const update: Record<string, unknown> = {
     amount: data.actual_amount,
     payment_status: 'completed',
     receipt_number: data.receipt_number ?? null,
+    metadata: meta,
   };
-  if (data.receipt_number || data.notes) {
-    const { data: current } = await supabase.from('donations').select('metadata').eq('id', donationId).single();
-    const meta: Record<string, unknown> = { ...((current?.metadata as Record<string, unknown>) ?? {}) };
-    if (data.receipt_number) meta.receipt_number = data.receipt_number;
-    if (data.notes) meta.notes = data.notes;
-    update.metadata = meta;
-  }
   const { error } = await supabase
     .from('donations')
     .update(update as Record<string, never>)

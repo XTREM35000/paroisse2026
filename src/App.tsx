@@ -70,6 +70,7 @@ import AuthCallback from './pages/AuthCallback';
 import AdminMemberCards from './pages/AdminMemberCards';
 import AdminCertificates from './pages/AdminCertificates';
 import AdminMasterReset from './pages/AdminMasterReset';
+import WelcomeModal from './components/WelcomeModal';
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ const App = () => {
           >
             <ScrollToTop />
             <RedirectHandler />
+            <WelcomeModal autoCloseDelayMs={5000} />
           <Routes>
             <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/connexion" element={<Navigate to="/#auth" replace />} />

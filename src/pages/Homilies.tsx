@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search, BookOpen, Users, Calendar, Play, Plus, Edit2, Trash2, Clock, Zap, Music } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useUser } from "@/hooks/useUser";
 import { useToast } from "@/hooks/use-toast";
+import useRoleCheck from "@/hooks/useRoleCheck";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import HeroBanner from "@/components/HeroBanner";
@@ -31,8 +31,8 @@ const HomilyPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
-  const { profile } = useUser();
   const { toast } = useToast();
+  const { isAdmin } = useRoleCheck();
 
   const [homilies, setHomilies] = useState<Homily[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,11 +40,6 @@ const HomilyPage = () => {
   const [sortBy, setSortBy] = useState<"date" | "priest">("date");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  const isAdmin = !!(
-    profile?.role &&
-    ["admin", "super_admin", "administrateur"].includes(String(profile.role).toLowerCase())
-  );
 
   // Fetch homilies
   useEffect(() => {
@@ -222,36 +217,38 @@ const HomilyPage = () => {
           transition={{ delay: 0.1 }}
           className="bg-card rounded-xl border border-border p-6 mb-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            {/* Search */}
-            <div className="md:col-span-2 relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher une homélie..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-1">
+              {/* Search */}
+              <div className="sm:col-span-2 relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher une homélie..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "date" | "priest")}
+                className="px-4 py-2 rounded-lg bg-background border border-border text-sm font-medium"
+              >
+                <option value="date">Récentes d'abord</option>
+                <option value="priest">Par prêtre</option>
+              </select>
             </div>
 
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "date" | "priest")}
-              className="px-4 py-2 rounded-lg bg-background border border-border text-sm font-medium"
-            >
-              <option value="date">Récentes d'abord</option>
-              <option value="priest">Par prêtre</option>
-            </select>
-
-            {/* Action Button */}
+            {/* Nouvelle homélie - en haut à droite pour Admin/Super_Admin */}
             {isAdmin && (
               <Button
                 onClick={() => {
-                  setShowForm(!showForm);
+                  setShowForm(true);
                   setEditingId(null);
                 }}
-                className="w-full"
+                className="md:ml-4 shrink-0"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle homélie
