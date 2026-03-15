@@ -63,27 +63,33 @@ export default function usePageHero(path: string) {
   });
 
   const mutation = useMutation({
-    mutationFn: async (payload: { path: string; image_url: string | null }) => {
+    mutationFn: async (payload: {
+      path: string;
+      image_url?: string | null;
+      title?: string | null;
+      subtitle?: string | null;
+    }) => {
       try {
+        const body: Record<string, unknown> = {
+          path: payload.path,
+          updated_at: new Date().toISOString(),
+        };
+        if (payload.image_url !== undefined) body.image_url = payload.image_url;
+        if (payload.title !== undefined) body.title = payload.title;
+        if (payload.subtitle !== undefined) body.subtitle = payload.subtitle;
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabaseClient as any)
           .from('page_hero_banners')
-          .upsert(
-            { 
-              path: payload.path, 
-              image_url: payload.image_url, 
-              updated_at: new Date().toISOString() 
-            },
-            { onConflict: 'path' }
-          )
+          .upsert(body, { onConflict: 'path' })
           .select()
           .maybeSingle();
-        
+
         if (error) {
           console.error('Error upserting hero:', error);
           return null;
         }
-        
+
         return data ? (data as PageHero) : null;
       } catch (err) {
         console.error('Error in mutation:', err);
@@ -92,14 +98,25 @@ export default function usePageHero(path: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['page-hero', path] });
-    }
+    },
   });
 
   return {
     ...query,
-    save: async (image_url: string | null): Promise<void> => {
+    save: async (
+      image_urlOrPayload: string | null | { image_url?: string | null; title?: string | null; subtitle?: string | null }
+    ): Promise<void> => {
       try {
-        await mutation.mutateAsync({ path, image_url });
+        if (image_urlOrPayload === null || typeof image_urlOrPayload === 'string') {
+          await mutation.mutateAsync({ path, image_url: image_urlOrPayload });
+        } else {
+          await mutation.mutateAsync({
+            path,
+            image_url: image_urlOrPayload.image_url,
+            title: image_urlOrPayload.title,
+            subtitle: image_urlOrPayload.subtitle,
+          });
+        }
       } catch (err) {
         console.warn('Could not save hero:', err);
       }

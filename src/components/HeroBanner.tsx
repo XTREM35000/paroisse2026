@@ -1,14 +1,30 @@
 // src\components\HeroBanner.tsx
 
 import { motion } from "framer-motion";
-import { Calendar, ChevronRight, ArrowLeft } from "lucide-react";
+import { Calendar, ChevronRight, ArrowLeft, Pencil } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import HeroBgEditor from "@/components/HeroBgEditor";
 import { useState, useEffect } from "react";
 import useRoleCheck from '@/hooks/useRoleCheck';
 import usePageHero from '@/hooks/usePageHero';
-import { getHeroImageUrl } from '@/lib/images';
+import PageContentManager from '@/components/PageContentManager';
+
+const PATH_TO_PAGE: Record<string, string> = {
+  '/videos': 'videos',
+  '/homilies': 'homilies',
+  '/homelies': 'homilies',
+  '/evenements': 'events',
+  '/galerie': 'gallery',
+  '/prayers': 'prayers',
+  '/a-propos': 'about',
+  '/donate': 'donate',
+  '/receipts': 'receipts',
+};
+
+function getPageFromPath(pathname: string): string {
+  const normalized = pathname.replace(/\/$/, '') || '/';
+  return PATH_TO_PAGE[normalized] ?? (normalized.slice(1).replace(/\//g, '_') || 'page');
+}
 
 interface HeroBannerProps {
   title: string;
@@ -38,9 +54,12 @@ const HeroBanner = ({
   // Start without a background to avoid showing a local fallback
   // while we are still resolving the DB-backed hero image.
   const [bg, setBg] = useState<string | undefined>(undefined);
+  const [contentManagerOpen, setContentManagerOpen] = useState(false);
   const { isAdmin } = useRoleCheck();
-  // provide a fallback save for pages that don't pass `onBgSave`
   const { data: hero, isLoading: heroLoading, save: saveHero } = usePageHero(location.pathname);
+  const pageKey = getPageFromPath(location.pathname);
+  const displayTitle = hero?.title ?? title;
+  const displaySubtitle = hero?.subtitle ?? subtitle;
 
   // Determine the background in a "user-first" way:
   // - If the DB has a hero.image_url -> use it immediately
@@ -103,9 +122,30 @@ const HeroBanner = ({
         <div className="absolute inset-0 cross-pattern opacity-10" />
       </div>
 
-      {/* Editor button for non-index pages (admins only) */}
+      {/* Bouton crayon : ouvrir le modal de gestion du contenu (admins seulement) */}
       {location.pathname !== '/' && isAdmin && (
-        <HeroBgEditor current={bg} onSave={handleBgSave} bucket={bucket} />
+        <>
+          <Button
+            size="icon"
+            onClick={() => setContentManagerOpen(true)}
+            title="Gérer le contenu de la page (hero, suppression, réinitialisation)"
+            className="absolute top-3 right-3 z-40 bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <PageContentManager
+            page={pageKey}
+            path={location.pathname}
+            open={contentManagerOpen}
+            onClose={() => setContentManagerOpen(false)}
+            currentData={{
+              heroTitle: hero?.title ?? title,
+              heroSubtitle: hero?.subtitle ?? subtitle,
+              heroImage: hero?.image_url ?? bg ?? '',
+            }}
+            onSaved={(data) => setBg(data.heroImage || undefined)}
+          />
+        </>
       )}
 
       {/* Content */}
@@ -149,7 +189,7 @@ const HeroBanner = ({
             transition={{ delay: 0.3 }}
             className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight mb-2 md:mb-4 drop-shadow-lg"
           >
-            {title}
+            {displayTitle}
           </motion.h1>
 
           {/* Subtitle/Description */}
@@ -159,7 +199,7 @@ const HeroBanner = ({
             transition={{ delay: 0.4 }}
             className="text-sm md:text-lg lg:text-xl text-primary-foreground/80 mb-4 md:mb-8 leading-relaxed max-w-2xl"
           >
-            {description || subtitle}
+            {description || displaySubtitle}
           </motion.p>
 
           {/* CTA Buttons - Only show on homepage */}
