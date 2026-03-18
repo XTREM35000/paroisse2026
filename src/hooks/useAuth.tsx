@@ -1,40 +1,8 @@
 
 
-import { supabase } from '@/integrations/supabase/client';
+// This file intentionally re-exports the context-based `useAuth` hook
+// so that imports from '@/hooks/useAuth' resolve to the AuthContext hook
+// used across the app (login, signOut, etc.).
 
-export const useAuth = () => {
-  const signInWithEmail = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { data: null, error };
-    }
-  };
-
-  const signInWithFacebook = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: {
-          redirectTo: window.location.origin + '/auth/callback',
-          scopes: 'email,public_profile',
-        },
-      });
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      return { data: null, error };
-    }
-  };
-
-  return { signInWithEmail, signInWithFacebook };
-};
+export { useAuth } from './useAuthHook';
 
