@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNotification } from '@/components/ui/notification-system';
 import { slugify } from '@/lib/slugify';
+import { useParoisse } from '@/contexts/ParoisseContext';
 // Supabase types can be deeply nested; keep the runtime code simple and use narrow casts where necessary.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sb = supabase as unknown as any;
@@ -42,6 +43,8 @@ export const useVideos = (limit = 4, category?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { notifySuccess, notifyError } = useNotification();
+  const { paroisse } = useParoisse();
+  const paroisseId = paroisse?.id;
 
   // Ensure slug uniqueness helper (similar to useEvents)
   const ensureUniqueSlug = async (base: string) => {
@@ -101,6 +104,9 @@ export const useVideos = (limit = 4, category?: string) => {
         }
       }
 
+      // Filter by selected paroisse when available
+      if (paroisseId) query = query.eq('paroisse_id', paroisseId);
+
       // appliquer limite/catégorie après
       if (limit) query = query.limit(limit);
       if (category) query = query.eq('category', category);
@@ -129,7 +135,7 @@ export const useVideos = (limit = 4, category?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [limit, category, notifyError]);
+  }, [limit, category, notifyError, paroisseId]);
 
   useEffect(() => {
     fetchVideos();
@@ -161,6 +167,7 @@ export const useVideos = (limit = 4, category?: string) => {
         duration: videoData.duration,
         created_at: videoData.created_at,
         status, // pending for members, approved for admins
+        ...(paroisseId ? { paroisse_id: paroisseId } : {}),
         ...(slug && { slug }), // Include slug if generated or provided
       };
 

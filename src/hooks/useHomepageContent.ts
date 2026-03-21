@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { HomepageSection, HomepageContentData, MassTimesData, ContactData, GalleryDisplayData, VideoDisplayData, EventDisplayData } from '@/types/homepage';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const homepageSectionsTable = 'homepage_sections' as any;
@@ -10,6 +11,9 @@ const homepageSectionsTable = 'homepage_sections' as any;
  * Combine les sections éditables avec les données des tables existantes
  */
 export const useHomepageContent = () => {
+  const { paroisse } = useParoisse();
+  const paroisseId = paroisse?.id;
+
   // Récupérer toutes les sections de la homepage
   const { data: sections = [], isLoading: sectionsLoading } = useQuery({
     queryKey: ['homepage-sections'],
@@ -31,7 +35,7 @@ export const useHomepageContent = () => {
 
   // Récupérer les 4 dernières photos de la galerie (préférer les images approuvées, sinon compléter avec les images publiques)
   const { data: latestPhotos = [], isLoading: photosLoading } = useQuery({
-    queryKey: ['homepage-gallery'],
+    queryKey: ['homepage-gallery', paroisseId ?? null],
     queryFn: async ({ signal }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       try {
@@ -49,23 +53,27 @@ export const useHomepageContent = () => {
         const approvedIds = (approvedImgs || []).map((r: any) => r.content_id);
 
         // Récupérer les images publiques (is_public=true)
-        const { data: publicImgs = [], error: publicErr } = await sb
+        let publicQuery = sb
           .from('gallery_images')
           .select('id, title, description, thumbnail_url, image_url, created_at')
           .eq('is_public', true)
           .order('created_at', { ascending: false })
           .limit(4);
+        if (paroisseId) publicQuery = publicQuery.eq('paroisse_id', paroisseId);
+        const { data: publicImgs = [], error: publicErr } = await publicQuery;
 
         if (publicErr) console.error('Erreur galerie publique:', publicErr);
 
         // Récupérer aussi les images référencées dans content_approvals
         let approvedImgsData: any[] = [];
         if (approvedIds.length > 0) {
-          const { data, error } = await sb
+          let approvedQuery = sb
             .from('gallery_images')
             .select('id, title, description, thumbnail_url, image_url, created_at')
             .in('id', approvedIds)
             .order('created_at', { ascending: false });
+          if (paroisseId) approvedQuery = approvedQuery.eq('paroisse_id', paroisseId);
+          const { data, error } = await approvedQuery;
           if (error) console.error('Erreur galerie (approuvées):', error);
           approvedImgsData = data || [];
         }
@@ -95,7 +103,7 @@ export const useHomepageContent = () => {
 
   // Récupérer les 4 dernières vidéos (combiner vidéos référencées comme approuvées, status 'approved' et flag 'published' si présents)
   const { data: latestVideos = [], isLoading: videosLoading } = useQuery({
-    queryKey: ['homepage-videos'],
+    queryKey: ['homepage-videos', paroisseId ?? null],
     queryFn: async ({ signal }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       try {
@@ -103,23 +111,27 @@ export const useHomepageContent = () => {
         const sb = supabase as any;
 
         // Récupérer les 4 dernières vidéos dont le statut est "approved" (ignore content_approvals table)
-        const { data: approvedData = [], error } = await sb
+        let approvedQuery = sb
           .from('videos')
           .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
           .limit(4);
+        if (paroisseId) approvedQuery = approvedQuery.eq('paroisse_id', paroisseId);
+        const { data: approvedData = [], error } = await approvedQuery;
         if (error) console.error('Erreur récupération vidéos homepage:', error);
         // approvedIds logic removed - not needed any more
 
         // Essayer aussi de récupérer les vidéos ayant status='approved' (si colonne disponible)
         let statusData: any[] = [];
         try {
-          const { data, error } = await sb
+          let statusQuery = sb
             .from('videos')
             .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
             .eq('status', 'approved')
             .order('created_at', { ascending: false });
+          if (paroisseId) statusQuery = statusQuery.eq('paroisse_id', paroisseId);
+          const { data, error } = await statusQuery;
           if (!error) statusData = data || [];
         } catch (err) {
           // colonne 'status' inexistante ou autre erreur non bloquante
@@ -129,11 +141,13 @@ export const useHomepageContent = () => {
         // Essayer aussi le flag 'published' si présent
         let publishedData: any[] = [];
         try {
-          const { data, error } = await sb
+          let publishedQuery = sb
             .from('videos')
             .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
             .eq('published', true)
             .order('created_at', { ascending: false });
+          if (paroisseId) publishedQuery = publishedQuery.eq('paroisse_id', paroisseId);
+          const { data, error } = await publishedQuery;
           if (!error) publishedData = data || [];
         } catch (err) {
           // colonne 'published' inexistante ou autre erreur non bloquante
@@ -153,11 +167,13 @@ export const useHomepageContent = () => {
 
         // Fallback: si rien obtenu, récupérer les 4 vidéos les plus récentes
         if (combined.length === 0) {
-          const { data, error } = await sb
+          let fallbackQuery = sb
             .from('videos')
             .select('id, title, description, thumbnail_url, video_url, video_storage_path, views, created_at')
             .order('created_at', { ascending: false })
             .limit(4);
+          if (paroisseId) fallbackQuery = fallbackQuery.eq('paroisse_id', paroisseId);
+          const { data, error } = await fallbackQuery;
           if (error) {
             console.error('Erreur fallback vidéos:', error);
             return [];
@@ -181,7 +197,7 @@ export const useHomepageContent = () => {
 
   // Récupérer les 2 derniers événements (créés ou à venir)
   const { data: upcomingEvents = [], isLoading: eventsLoading } = useQuery({
-    queryKey: ['homepage-events'],
+    queryKey: ['homepage-events', paroisseId ?? null],
     queryFn: async ({ signal }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       try {
@@ -190,10 +206,12 @@ export const useHomepageContent = () => {
           return [];
         }
 
-        const { data, error } = await (supabase.from('events') as any)
+        let eventsQuery = (supabase.from('events') as any)
           .select('id, title, description, start_date, end_date, location, image_url')
           .order('created_at', { ascending: false })
           .limit(2);
+        if (paroisseId) eventsQuery = eventsQuery.eq('paroisse_id', paroisseId);
+        const { data, error } = await eventsQuery;
 
         // Check again after async operation
         if (signal?.aborted) {
@@ -203,10 +221,12 @@ export const useHomepageContent = () => {
         if (error) {
           if (error.code === '42703') {
             console.warn('events: colonne manquante, retenter avec sélection réduite', error.message);
-            const { data: reduced } = await (supabase.from('events') as any)
+            let reducedQuery = (supabase.from('events') as any)
               .select('id, title, description, start_date, location')
               .order('created_at', { ascending: false })
               .limit(2);
+            if (paroisseId) reducedQuery = reducedQuery.eq('paroisse_id', paroisseId);
+            const { data: reduced } = await reducedQuery;
             return reduced || [];
           }
           console.error('Erreur événements:', error);

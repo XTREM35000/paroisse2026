@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { isParoisseAutoPromptDone } from '@/lib/paroisseStorage';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -74,8 +75,263 @@ import AdminMemberCards from './pages/AdminMemberCards';
 import AdminCertificates from './pages/AdminCertificates';
 import AdminMasterReset from './pages/AdminMasterReset';
 import WelcomeModal from './components/WelcomeModal';
+import { ParoisseProvider, useParoisse } from '@/contexts/ParoisseContext';
+import { ParoisseSelector } from '@/components/ParoisseSelector';
+
+/** Mettre à `false` une fois le flux paroisse validé — force l’ouverture du modal à chaque chargement (ignore stockage / paroisse courante). */
+const FORCE_PAROISSE_MODAL_ON_LAUNCH = true;
 
 const queryClient = new QueryClient();
+
+const AppInner = () => {
+  const { paroisse, isLoading, isSelectorOpen, setSelectorOpen } = useParoisse();
+
+  /** Après choix / restauration paroisse, ou prompt déjà terminé — alors seulement le splash welcome peut s'afficher. */
+  const [paroisseGateDone, setParoisseGateDone] = useState(false);
+
+  const handleParoisseSelectorClose = useCallback(() => {
+    setSelectorOpen(false);
+    setParoisseGateDone(true);
+  }, [setSelectorOpen]);
+
+  /** Mode forcé : ouverture au montage + dès que le chargement liste termine (au cas où le 1er tick échoue). */
+  useEffect(() => {
+    if (!FORCE_PAROISSE_MODAL_ON_LAUNCH) return;
+    setSelectorOpen(true);
+  }, [setSelectorOpen, isLoading]);
+
+  /**
+   * Logique normale (désactivée si FORCE_PAROISSE_MODAL_ON_LAUNCH).
+   */
+  useEffect(() => {
+    if (FORCE_PAROISSE_MODAL_ON_LAUNCH) return;
+
+    if (isLoading) return;
+
+    if (paroisse) {
+      setSelectorOpen(false);
+      setParoisseGateDone(true);
+      return;
+    }
+
+    if (isParoisseAutoPromptDone()) {
+      setSelectorOpen(false);
+      setParoisseGateDone(true);
+      return;
+    }
+
+    setSelectorOpen(true);
+  }, [isLoading, paroisse, setSelectorOpen]);
+
+  return (
+    <>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <ScrollToTop />
+        <RedirectHandler />
+        {paroisseGateDone ? <WelcomeModal autoCloseDelayMs={5000} /> : null}
+        <Routes>
+          <Route path="/" element={<Layout><Index /></Layout>} />
+          <Route path="/connexion" element={<Navigate to="/#auth" replace />} />
+          <Route path="/inscription" element={<Navigate to="/?mode=register#auth" replace />} />
+          <Route path="/auth" element={<Layout><Index /></Layout>} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/email-confirmed" element={<EmailConfirmedPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/data-deletion" element={<DataDeletionPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="/videos" element={<Layout><VideosPage /></Layout>} />
+          <Route path="/videos/:id" element={<Layout><VideoDetail /></Layout>} />
+          <Route path="/galerie" element={<Layout><GalleryPage /></Layout>} />
+          <Route path="/evenements" element={<Layout><EventsPage /></Layout>} />
+          <Route path="/evenements/:slug" element={<Layout><Index /></Layout>} />
+          <Route path="/a-propos" element={<Layout><AboutPage /></Layout>} />
+          <Route path="/help" element={<Layout><HelpPage /></Layout>} />
+          <Route path="/lexique" element={<Layout><LexiquePage /></Layout>} />
+          <Route path="/prospect" element={<Layout><DocProjetPage /></Layout>} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout><ProfilePage /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminDashboard /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/stats-live"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminLiveStats /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/stats-vod"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminVodStats /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/stats-finances"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminFinanceStats /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/homepage"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminHomepageEditor /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/live"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminLiveEditor /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/notifications"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminNotificationsEditor /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/approvals"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminContentApprovals /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/about"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminAboutEditor /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/events"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminEvents />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/chat" element={<Layout><ChatPage /></Layout>} />
+          <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
+          <Route path="/affiche" element={<Layout><PublicitePage /></Layout>} />
+          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/dashboard/analytics" element={<Layout><DashboardAnalytics /></Layout>} />
+          <Route path="/radio" element={<Layout><Podcasts /></Layout>} />
+          <Route path="/documents" element={<Layout><Documents /></Layout>} />
+          <Route path="/live" element={<Layout><Live /></Layout>} />
+          <Route path="/dev/supabase-debug" element={<Layout><DevSupabaseDebug /></Layout>} />
+          <Route path="/dev/test-password-reset" element={<PasswordResetTestPage />} />
+          <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
+          <Route path="/homilies" element={<Layout><Homilies /></Layout>} />
+          <Route path="/prayers" element={<Layout><Prayers /></Layout>} />
+          <Route path="/verse" element={<Layout><Verse /></Layout>} />
+          <Route path="/directory" element={<Layout><Directory /></Layout>} />
+          <Route path="/donate" element={<Layout><Donate /></Layout>} />
+          <Route path="/donation-success" element={<Layout><DonationSuccess /></Layout>} />
+          <Route
+            path="/admin/donate"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AdminDonate /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
+          <Route path="/donations" element={<Layout><DonationsHistory /></Layout>} />
+          <Route path="/receipts" element={<Layout><Receipts /></Layout>} />
+          <Route
+            path="/admin/users"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminUsers /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/settings"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminSettings /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/ads"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminAds /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/master-reset"
+            element={
+              <ProtectedRoute requiredRole="super_admin">
+                <Layout><AdminMasterReset /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/tutoriels"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminTutorielsPage /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/directory"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/member-cards"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminMemberCards /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/certificates"
+            element={<ProtectedRoute requiredRole="admin"><Layout><AdminCertificates /></Layout></ProtectedRoute>}
+          />
+          <Route
+            path="/admin/members"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><MembersPage /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/add-member"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <Layout><AddMemberForm /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/membres" element={<Layout><MembersPage /></Layout>} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<Layout><NotFound /></Layout>} />
+        </Routes>
+      </BrowserRouter>
+
+      <ParoisseSelector open={isSelectorOpen} onClose={handleParoisseSelectorClose} />
+    </>
+  );
+};
 
 const App = () => {
   // Debugging: track visibility changes (gardé)
@@ -104,199 +360,10 @@ const App = () => {
           <ThemeProvider>
           <AuthProvider>
           <ToastProvider>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <ScrollToTop />
-            <RedirectHandler />
-            <WelcomeModal autoCloseDelayMs={5000} />
-          <Routes>
-            <Route path="/" element={<Layout><Index /></Layout>} />
-            <Route path="/connexion" element={<Navigate to="/#auth" replace />} />
-            <Route path="/inscription" element={<Navigate to="/?mode=register#auth" replace />} />
-            <Route path="/auth" element={<Layout><Index /></Layout>} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/email-confirmed" element={<EmailConfirmedPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/data-deletion" element={<DataDeletionPage />} />
-            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-            <Route path="/videos" element={<Layout><VideosPage /></Layout>} />
-            <Route path="/videos/:id" element={<Layout><VideoDetail /></Layout>} />
-            <Route path="/galerie" element={<Layout><GalleryPage /></Layout>} />
-            <Route path="/evenements" element={<Layout><EventsPage /></Layout>} />
-            <Route path="/evenements/:slug" element={<Layout><Index /></Layout>} />
-            <Route path="/a-propos" element={<Layout><AboutPage /></Layout>} />
-            <Route path="/help" element={<Layout><HelpPage /></Layout>} />
-            <Route path="/lexique" element={<Layout><LexiquePage /></Layout>} />
-            <Route path="/prospect" element={<Layout><DocProjetPage /></Layout>} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout><ProfilePage /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminDashboard /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/stats-live"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminLiveStats /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/stats-vod"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminVodStats /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/stats-finances"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminFinanceStats /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/homepage"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminHomepageEditor /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/live"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminLiveEditor /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/notifications"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminNotificationsEditor /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/approvals"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminContentApprovals /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/about"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminAboutEditor /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/events"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminEvents />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/chat" element={<Layout><ChatPage /></Layout>} />
-            <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
-            <Route path="/affiche" element={<Layout><PublicitePage /></Layout>} />
-            <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-            <Route path="/dashboard/analytics" element={<Layout><DashboardAnalytics /></Layout>} />
-            <Route path="/radio" element={<Layout><Podcasts /></Layout>} />
-            <Route path="/documents" element={<Layout><Documents /></Layout>} />
-            <Route path="/live" element={<Layout><Live /></Layout>} />
-            <Route path="/dev/supabase-debug" element={<Layout><DevSupabaseDebug /></Layout>} />
-            <Route path="/dev/test-password-reset" element={<PasswordResetTestPage />} />
-            <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
-            <Route path="/homilies" element={<Layout><Homilies /></Layout>} />
-            <Route path="/prayers" element={<Layout><Prayers /></Layout>} />
-            <Route path="/verse" element={<Layout><Verse /></Layout>} />
-            <Route path="/directory" element={<Layout><Directory /></Layout>} />
-            
-            {/* ✅ Routes de donation - placées stratégiquement */}
-            <Route path="/donate" element={<Layout><Donate /></Layout>} />
-            <Route path="/donation-success" element={<Layout><DonationSuccess /></Layout>} />
-            
-            <Route
-              path="/admin/donate"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Layout><AdminDonate /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
-            <Route path="/donations" element={<Layout><DonationsHistory /></Layout>} />
-            <Route path="/receipts" element={<Layout><Receipts /></Layout>} />
-            <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><Layout><AdminUsers /></Layout></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><Layout><AdminSettings /></Layout></ProtectedRoute>} />
-            <Route path="/admin/ads" element={<ProtectedRoute requiredRole="admin"><Layout><AdminAds /></Layout></ProtectedRoute>} />
-            <Route
-              path="/admin/master-reset"
-              element={
-                <ProtectedRoute requiredRole="super_admin">
-                  <Layout><AdminMasterReset /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/tutoriels"
-              element={<ProtectedRoute requiredRole="admin"><Layout><AdminTutorielsPage /></Layout></ProtectedRoute>}
-            />
-            <Route
-              path="/admin/directory"
-              element={<ProtectedRoute requiredRole="admin"><Layout><AdminDirectoryEditor /></Layout></ProtectedRoute>}
-            />
-            <Route
-              path="/admin/member-cards"
-              element={<ProtectedRoute requiredRole="admin"><Layout><AdminMemberCards /></Layout></ProtectedRoute>}
-            />
-            <Route
-              path="/admin/certificates"
-              element={<ProtectedRoute requiredRole="admin"><Layout><AdminCertificates /></Layout></ProtectedRoute>}
-            />
-            <Route path="/admin/members" element={
-              <ProtectedRoute requiredRole="admin">
-                <Layout><MembersPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/add-member" element={
-              <ProtectedRoute requiredRole="admin">
-                <Layout><AddMemberForm /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/membres" element={<Layout><MembersPage /></Layout>} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            
-            {/* ✅ Route catch-all - TOUJOURS À LA FIN */}
-            <Route path="*" element={<Layout><NotFound /></Layout>} />
-          </Routes>
-        </BrowserRouter>
-        </ToastProvider>
+          <ParoisseProvider>
+            <AppInner />
+          </ParoisseProvider>
+          </ToastProvider>
         </AuthProvider>
         </ThemeProvider>
       </NotificationProvider>

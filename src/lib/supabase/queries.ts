@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export async function getVideoById(id: string) {
-  const { data, error } = await supabase.from("videos").select("*").eq("id", id).maybeSingle();
+export async function getVideoById(id: string, paroisseId?: string) {
+  let query = supabase.from("videos").select("*").eq("id", id);
+  if (paroisseId) query = query.eq("paroisse_id", paroisseId);
+
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   if (!data) return null;
 
@@ -27,12 +30,18 @@ export async function getVideoById(id: string) {
   return null;
 }
 
-export async function incrementViewCount(id: string) {
+export async function incrementViewCount(id: string, paroisseId?: string) {
   try {
-    const { data, error } = await supabase.from("videos").select("views").eq("id", id).maybeSingle();
+    let query = supabase.from("videos").select("views").eq("id", id);
+    if (paroisseId) query = query.eq("paroisse_id", paroisseId);
+
+    const { data, error } = await query.maybeSingle();
     if (error) return console.warn(error);
     const next = (data?.views ?? 0) + 1;
-    const { error: err } = await supabase.from("videos").update({ views: next }).eq("id", id);
+    let updateQuery = supabase.from("videos").update({ views: next }).eq("id", id);
+    if (paroisseId) updateQuery = updateQuery.eq("paroisse_id", paroisseId);
+
+    const { error: err } = await updateQuery;
     if (err) console.warn(err);
   } catch (e) {
     console.warn(e);

@@ -18,6 +18,7 @@ export async function fetchGalleryImages(options?: {
   categoryId?: string;
   userId?: string;
   isPublic?: boolean;
+  paroisseId?: string;
   limit?: number;
   offset?: number;
   search?: string;
@@ -37,6 +38,7 @@ export async function fetchGalleryImages(options?: {
     if (options?.categoryId) query = query.eq('category_id', options.categoryId);
     if (options?.userId) query = query.eq('user_id', options.userId);
     if (options?.isPublic !== undefined) query = query.eq('is_public', options.isPublic);
+    if (options?.paroisseId) query = query.eq('paroisse_id', options.paroisseId);
     if (options?.search) query = query.or(`title.ilike.%${options.search}%,description.ilike.%${options.search}%`);
 
     // === Access control: hide non-approved images for non-admins (client-side guard) ===

@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import SectionTitle from '@/components/SectionTitle';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 interface Announcement {
   id: string;
@@ -39,6 +40,8 @@ const AnnouncementsPage = () => {
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
   const { profile } = useUser();
   const { toast } = useToast();
+  const { paroisse } = useParoisse();
+  const paroisseId = paroisse?.id;
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [headerConfig, setHeaderConfig] = useState<HeaderConfig | null>(null);
@@ -110,10 +113,13 @@ const AnnouncementsPage = () => {
         setLoading(true);
 
         // Première tentative: essayer la jointure via le cache de schéma (si la FK existe)
-        const attempt = await supabase
+        let attemptQuery = supabase
           .from("announcements" as any)
           .select(`id, title, content, created_at, created_by, image_url, profiles (full_name)`)
           .order("created_at", { ascending: false });
+        if (paroisseId) attemptQuery = attemptQuery.eq('paroisse_id', paroisseId);
+
+        const attempt = await attemptQuery;
 
         if (!attempt.error) {
           const data = attempt.data as any[] || [];
@@ -128,10 +134,13 @@ const AnnouncementsPage = () => {
         // Si erreur PGRST200 (relation absente), fallback: récupérer annonces puis profils par lot
         console.warn('Announce relation select failed, falling back to separate queries:', attempt.error, JSON.stringify(attempt.error));
 
-        const { data, error } = await supabase
+        let fallbackQuery = supabase
           .from('announcements' as any)
           .select('id, title, content, created_at, created_by, image_url')
           .order('created_at', { ascending: false });
+        if (paroisseId) fallbackQuery = fallbackQuery.eq('paroisse_id', paroisseId);
+
+        const { data, error } = await fallbackQuery;
 
         if (error) {
           console.error('Announcements query failed on fallback:', error, JSON.stringify(error));
@@ -175,7 +184,7 @@ const AnnouncementsPage = () => {
     };
 
     fetchAnnouncements();
-  }, [toast]);
+  }, [toast, paroisseId]);
 
   const filteredAnnouncements = useMemo(() => {
     return announcements.filter(
@@ -547,6 +556,7 @@ const AnnouncementsPage = () => {
             title: formData.title,
             content: formData.content,
             created_by: profile?.id,
+            ...(paroisseId ? { paroisse_id: paroisseId } : {}),
           },
         ]);
 
@@ -561,10 +571,14 @@ const AnnouncementsPage = () => {
       setIsModalOpen(false);
 
       // Refresh list
-      const { data } = await supabase
+      let refreshQuery = supabase
         .from("announcements" as any)
         .select(`id, title, content, created_at, created_by, image_url, profiles (full_name)`)
         .order("created_at", { ascending: false });
+
+      if (paroisseId) refreshQuery = refreshQuery.eq('paroisse_id', paroisseId);
+
+      const { data } = await refreshQuery;
         
       const transformedData = (Array.isArray(data) ? data as any[] : []).map((item: {
         id: string;

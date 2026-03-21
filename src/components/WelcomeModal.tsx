@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-
-const STORAGE_KEY = 'welcome-splash-shown';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { WELCOME_SPLASH_SESSION_KEY } from '@/lib/welcomeSplashStorage';
 
 interface WelcomeModalProps {
   onClose?: () => void;
@@ -16,19 +15,27 @@ export default function WelcomeModal({
   const [fadeIn, setFadeIn] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(5);
 
+  // Évite de relancer l'effet à chaque rendu parent (onClose inline) → timer réinitialisé en boucle.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   const handleClose = useCallback(() => {
     setVisible(false);
     try {
-      sessionStorage.setItem(STORAGE_KEY, '1');
+      sessionStorage.setItem(WELCOME_SPLASH_SESSION_KEY, '1');
     } catch {
       /* ignore */
     }
-    onClose?.();
-  }, [onClose]);
+    onCloseRef.current?.();
+  }, []);
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem(STORAGE_KEY)) return;
+      if (sessionStorage.getItem(WELCOME_SPLASH_SESSION_KEY)) {
+        // Déjà affiché pendant cette session: informer le parent qu'on est terminé.
+        onCloseRef.current?.();
+        return;
+      }
     } catch {
       /* ignore */
     }

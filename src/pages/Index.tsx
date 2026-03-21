@@ -21,6 +21,7 @@ import type { Video } from "@/types/database";
 import EventDetailModal from '@/components/EventDetailModal';
 import LiveHeroSection from "@/components/LiveHeroSection";
 import { useEventModal } from '@/contexts/EventModalContext';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 // Pas de données mockées en dur pour la galerie — utiliser le contenu dynamique
 
@@ -56,6 +57,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, isAdmin } = useUser();
+  const { paroisse } = useParoisse();
+  const paroisseId = paroisse?.id;
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [homilies, setHomilies] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -111,10 +114,13 @@ const Index = () => {
   useEffect(() => {
     const fetchHomilies = async () => {
       try {
-        const { data, error } = await (supabase.from('homilies') as any)
+        let query = (supabase.from('homilies') as any)
           .select('id, title, priest_name, description, homily_date, video_url')
           .order('homily_date', { ascending: false })
           .limit(3);
+        if (paroisseId) query = query.eq('paroisse_id', paroisseId);
+
+        const { data, error } = await query;
         if (error) {
           console.warn('Erreur homilies:', error);
         }
@@ -128,17 +134,20 @@ const Index = () => {
       }
     };
     fetchHomilies();
-  }, []);
+  }, [paroisseId]);
 
   // Fetch announcements
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const { data, error } = await (supabase as any).from('announcements')
+        let query = (supabase as any).from('announcements')
           .select('id, title, content, created_at, image_url')
           .eq('is_active', true)
           .order('created_at', { ascending: false })
           .limit(3);
+        if (paroisseId) query = query.eq('paroisse_id', paroisseId);
+
+        const { data, error } = await query;
         if (error) {
           console.warn('Erreur announcements:', error);
         }
@@ -152,17 +161,20 @@ const Index = () => {
       }
     };
     fetchAnnouncements();
-  }, []);
+  }, [paroisseId]);
 
   // Fetch prayers
   useEffect(() => {
     const fetchPrayers = async () => {
       try {
-        const { data, error } = await (supabase as any).from('prayer_intentions')
+        let query = (supabase as any).from('prayer_intentions')
           .select('id, title, content, category, created_at')
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
           .limit(3);
+        if (paroisseId) query = query.eq('paroisse_id', paroisseId);
+
+        const { data, error } = await query;
         if (error) {
           console.warn('Erreur prayers:', error);
         }
@@ -176,7 +188,7 @@ const Index = () => {
       }
     };
     fetchPrayers();
-  }, []);
+  }, [paroisseId]);
 
   // Auth modal controlled centrally in Header; Index no longer renders AuthModal
 

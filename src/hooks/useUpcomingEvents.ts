@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 interface Event {
   id: string;
@@ -18,14 +19,20 @@ export const useUpcomingEvents = (limit = 10) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { paroisse } = useParoisse();
+  const paroisseId = paroisse?.id;
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         // Récupérer TOUS les événements sans filtre de date d'abord
-        const { data, error: fetchError } = await supabase
+        // Multi-paroisses: filter only when selected
+        let query = supabase
           .from('events')
-          .select('id, title, description, start_date, location, image_url')
+          .select('id, title, description, start_date, location, image_url');
+        if (paroisseId) query = query.eq('paroisse_id', paroisseId);
+
+        const { data, error: fetchError } = await query
           .order('start_date', { ascending: true })
           .limit(limit);
         
@@ -70,7 +77,7 @@ export const useUpcomingEvents = (limit = 10) => {
     };
     
     fetchEvents();
-  }, [limit]);
+  }, [limit, paroisseId]);
 
   return { events, loading, error };
 };

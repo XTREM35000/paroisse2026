@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen, FileText, CheckCircle2, Award } from 'lucide-react';
+import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen, FileText, CheckCircle2, Award, Building2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 export const MENU_GROUPS = [
   {
@@ -100,6 +101,7 @@ export interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const { profile, isAdmin, hasRole, isModerator } = useRoleCheck();
   const isSuperAdmin = hasRole('super_admin');
+  const { setSelectorOpen } = useParoisse();
   const navRef = useRef<HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -272,6 +274,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
           );
         })}
       </nav>
+
+      {/* Bottom action: switch paroisse */}
+      <div className="sticky bottom-0 bg-card/95 backdrop-blur border-t border-border/50 px-2 py-3">
+        <button
+          type="button"
+          onClick={() => setSelectorOpen(true)}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-accent/50 text-muted-foreground"
+          title="Changer de paroisse"
+        >
+          <Building2 className="h-4 w-4 flex-shrink-0" />
+          {!isCollapsed && <span className="text-sm">Changer de paroisse</span>}
+        </button>
+      </div>
     </aside>
   );
 };

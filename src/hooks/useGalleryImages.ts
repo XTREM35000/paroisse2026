@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchGalleryImages } from '@/lib/supabase/galleryQueries';
 import type { GalleryImage } from '@/types/database';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 export function useGalleryImages(initialLimit = 20) {
   const [images, setImages] = useState<GalleryImage[]>([]);
@@ -8,6 +9,8 @@ export function useGalleryImages(initialLimit = 20) {
   const [error, setError] = useState<Error | null>(null);
   const offsetRef = useRef(0);
   const [hasMore, setHasMore] = useState(true);
+  const { paroisse } = useParoisse();
+  const paroisseId = paroisse?.id;
 
   const loadMore = useCallback(async () => {
     setLoading(true);
@@ -29,7 +32,7 @@ export function useGalleryImages(initialLimit = 20) {
       let data: GalleryImage[] = [];
 
       // Unified fetch using server-side-aware helper which applies visibility filters
-      const res = await fetchGalleryImages({ limit: initialLimit, offset: offsetRef.current });
+      const res = await fetchGalleryImages({ limit: initialLimit, offset: offsetRef.current, paroisseId });
       if (!res) {
         const err = new Error('Impossible de charger les images - Supabase n\'a pas répondu');
         setError(err);
@@ -54,7 +57,7 @@ export function useGalleryImages(initialLimit = 20) {
     } finally {
       setLoading(false);
     }
-  }, [initialLimit]);
+  }, [initialLimit, paroisseId]);
 
   const refresh = useCallback(async () => {
     console.log('🔄 Rafraîchissement de la galerie');
