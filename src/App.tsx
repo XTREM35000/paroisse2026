@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { isParoisseAutoPromptDone } from '@/lib/paroisseStorage';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -79,8 +78,11 @@ import WelcomeModal from './components/WelcomeModal';
 import { ParoisseProvider, useParoisse } from '@/contexts/ParoisseContext';
 import { ParoisseSelector } from '@/components/ParoisseSelector';
 
-/** Mettre à `false` une fois le flux paroisse validé — force l’ouverture du modal à chaque chargement (ignore stockage / paroisse courante). */
-const FORCE_PAROISSE_MODAL_ON_LAUNCH = true;
+/**
+ * Debug uniquement : `true` = ouvre le sélecteur à chaque chargement (ignore la paroisse sauvegardée).
+ * En production, laisser à `false`.
+ */
+const FORCE_PAROISSE_MODAL_ON_LAUNCH = false;
 
 const queryClient = new QueryClient();
 
@@ -102,7 +104,9 @@ const AppInner = () => {
   }, [setSelectorOpen, isLoading]);
 
   /**
-   * Logique normale (désactivée si FORCE_PAROISSE_MODAL_ON_LAUNCH).
+   * Logique par défaut : après chargement des paroisses, si aucune paroisse n’est restaurée
+   * depuis `localStorage` → ouvrir le modal (y compris au rechargement, utilisateur connecté ou non).
+   * Ne plus utiliser `ff_paroisse_welcome_seen` pour masquer ce modal : ça bloquait le rechargement.
    */
   useEffect(() => {
     if (FORCE_PAROISSE_MODAL_ON_LAUNCH) return;
@@ -115,12 +119,7 @@ const AppInner = () => {
       return;
     }
 
-    if (isParoisseAutoPromptDone()) {
-      setSelectorOpen(false);
-      setParoisseGateDone(true);
-      return;
-    }
-
+    setParoisseGateDone(false);
     setSelectorOpen(true);
   }, [isLoading, paroisse, setSelectorOpen]);
 

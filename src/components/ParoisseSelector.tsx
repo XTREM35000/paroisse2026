@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useParoisse, type Paroisse } from '@/contexts/ParoisseContext';
 import { useAuthContext } from '@/contexts/useAuthContext';
-import { getStoredParoisseId, markParoisseAutoPromptDone } from '@/lib/paroisseStorage';
 
 interface ParoisseSelectorProps {
   open: boolean;
@@ -24,9 +23,8 @@ export const ParoisseSelector: React.FC<ParoisseSelectorProps> = ({ open, onClos
   const isSuperAdmin = role === 'super_admin';
 
   const handleDismiss = useCallback(() => {
-    if (!getStoredParoisseId()) {
-      markParoisseAutoPromptDone();
-    }
+    // Ne plus persister de flag « prompt vu » : au prochain rechargement, sans paroisse en localStorage,
+    // le sélecteur se rouvrira (comportement attendu après connexion / F5).
     onClose();
   }, [onClose]);
 

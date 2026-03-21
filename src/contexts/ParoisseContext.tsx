@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  STORAGE_SELECTED_PAROISSE,
-  markParoisseAutoPromptDone,
-} from '@/lib/paroisseStorage';
+import { STORAGE_SELECTED_PAROISSE } from '@/lib/paroisseStorage';
 
 export interface Paroisse {
   id: string;
@@ -47,7 +44,13 @@ export const ParoisseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const found = (data as Paroisse[]).find((p) => p.id === saved);
         if (found) {
           setParoisseState(found);
-          markParoisseAutoPromptDone();
+        } else {
+          // ID plus dans la liste (paroisse désactivée / supprimée) → éviter un état « connecté sans paroisse » silencieux
+          try {
+            localStorage.removeItem(STORAGE_SELECTED_PAROISSE);
+          } catch {
+            /* ignore */
+          }
         }
       }
     } catch (error) {
@@ -61,7 +64,6 @@ export const ParoisseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setParoisseState(p);
     try {
       localStorage.setItem(STORAGE_SELECTED_PAROISSE, p.id);
-      markParoisseAutoPromptDone();
     } catch {
       // ignore storage errors (privacy mode, etc.)
     }
