@@ -13,14 +13,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-async function sha256Hex(input: string) {
-  const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
@@ -42,13 +34,16 @@ Deno.serve(async (req) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     const { data: row, error: selectError } = await supabaseAdmin
-      .from("email_otps")
-      .select("email, user_id, code_hash, expires_at, attempts")
+      .from("email_otp_codes")
+      .select("id, email, user_id, code, expires_at, attempts, used")
       .eq("email", normalizedEmail)
+      .eq("used", false)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (selectError) {
-      console.error(`[${requestId}] email_otps select error`, selectError);
+      console.error(`[${requestId}] email_otp_codes select error`, selectError);
       return jsonResponse({ error: "Impossible de vérifier le code" }, 500);
     }
     if (!row) return jsonResponse({ success: false, error: "Code expiré ou introuvable" }, 400);
@@ -58,20 +53,19 @@ Deno.serve(async (req) => {
 
     const expiresAt = row.expires_at ? new Date(row.expires_at).getTime() : 0;
     if (!expiresAt || Date.now() > expiresAt) {
-      await supabaseAdmin.from("email_otps").delete().eq("email", normalizedEmail);
+      await supabaseAdmin.from("email_otp_codes").update({ used: true }).eq("id", row.id);
       return jsonResponse({ success: false, error: "Code expiré. Regénérez un code." }, 400);
     }
 
-    const providedHash = await sha256Hex(code.trim());
-    if (providedHash !== row.code_hash) {
+    if (code.trim() !== row.code) {
       await supabaseAdmin
-        .from("email_otps")
+        .from("email_otp_codes")
         .update({ attempts: attempts + 1 })
-        .eq("email", normalizedEmail);
+        .eq("id", row.id);
       return jsonResponse({ success: false, error: "Code incorrect" }, 400);
     }
 
-    await supabaseAdmin.from("email_otps").delete().eq("email", normalizedEmail);
+    await supabaseAdmin.from("email_otp_codes").update({ used: true }).eq("id", row.id);
 
     if (row.user_id) {
       const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(row.user_id, {

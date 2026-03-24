@@ -17,6 +17,8 @@ import { RestoreFromFileModal } from '@/components/admin-master/RestoreFromFileM
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+import { ensureProfileExists } from '@/utils/ensureProfileExists';
+import { uploadPendingAvatar } from '@/utils/uploadPendingAvatar';
 
 type FormState = {
   heroTitle: string;
@@ -358,6 +360,14 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
         password: adminPassword,
       });
       if (signInErr) throw signInErr;
+
+      const {
+        data: { user: signedInUser },
+      } = await supabase.auth.getUser();
+      if (signedInUser?.id) {
+        await ensureProfileExists(signedInUser.id);
+        await uploadPendingAvatar(signedInUser.id);
+      }
 
       markCompleted();
       onClose();

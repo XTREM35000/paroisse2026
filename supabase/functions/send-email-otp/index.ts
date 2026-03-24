@@ -1,4 +1,3 @@
-import { Resend } from "https://esm.sh/resend";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS = {
@@ -12,14 +11,6 @@ function jsonResponse(body: unknown, status = 200) {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
-}
-
-async function sha256Hex(input: string) {
-  const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 function generateOtp4() {
@@ -41,51 +32,48 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const normalizedEmail = email.toLowerCase().trim();
     const otp = generateOtp4();
-    const code_hash = await sha256Hex(otp);
-    const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const expires_at = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    const { error: upsertError } = await supabaseAdmin.from("email_otps").upsert({
-      email: email.toLowerCase().trim(),
-      user_id: typeof user_id === "string" ? user_id : null,
-      code_hash,
-      expires_at,
-      attempts: 0,
-    });
-    if (upsertError) {
-      console.error(`[${requestId}] email_otps upsert error`, upsertError);
+    // Keep one active code per email
+    const { error: cleanError } = await supabaseAdmin
+      .from("email_otp_codes")
+      .delete()
+      .eq("email", normalizedEmail)
+      .eq("used", false);
+    if (cleanError) {
+      console.error(`[${requestId}] email_otp_codes cleanup error`, cleanError);
       return jsonResponse({ error: "Impossible de générer le code" }, 500);
     }
 
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendKey) return jsonResponse({ error: "RESEND_API_KEY manquant" }, 500);
+    const { error: insertError } = await supabaseAdmin.from("email_otp_codes").insert({
+      email: normalizedEmail,
+      code: otp,
+      user_id: typeof user_id === "string" ? user_id : null,
+      expires_at,
+      used: false,
+      attempts: 0,
+    });
+    if (insertError) {
+      console.error(`[${requestId}] email_otp_codes insert error`, insertError);
+      return jsonResponse({ error: "Impossible de générer le code" }, 500);
+    }
 
-    const resend = new Resend(resendKey);
-    const from = Deno.env.get("RESEND_FROM_EMAIL") || "don@paroisse.org";
-
-    const subject = "Votre code de confirmation (OTP)";
-    const html = `
-      <div style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height: 1.5;">
-        <h2 style="margin:0 0 12px 0;">Code de confirmation</h2>
-        <p style="margin:0 0 12px 0;">Voici votre code OTP à 4 chiffres :</p>
-        <div style="font-size: 32px; letter-spacing: 6px; font-weight: 700; padding: 12px 16px; display:inline-block; border: 1px solid #e5e7eb; border-radius: 10px; background:#f9fafb;">
-          ${otp}
-        </div>
-        <p style="margin:12px 0 0 0; color:#6b7280; font-size: 12px;">
-          Ce code expire dans 10 minutes. Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.
-        </p>
-      </div>
-    `;
-
-    const { error: sendError } = await resend.emails.send({
-      from,
-      to: email,
-      subject,
-      html,
+    const { error: sendError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: normalizedEmail,
+      options: {
+        redirectTo: Deno.env.get("OTP_REDIRECT_TO") ?? "https://www.nd-compassion.ci/auth/callback",
+        data: {
+          otp_code: otp,
+          otp_expires_at: expires_at,
+        },
+      },
     });
 
     if (sendError) {
-      console.error(`[${requestId}] resend error`, sendError);
+      console.error(`[${requestId}] supabase auth generateLink error`, sendError);
       return jsonResponse({ error: "Échec de l'envoi de l'email" }, 502);
     }
 
