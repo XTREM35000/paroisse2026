@@ -33,6 +33,7 @@ export const ParoisseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('paroisses')
         .select('*')
         .eq('is_active', true)
+        .neq('slug', 'system')
         .order('nom');
 
       if (error) throw error;

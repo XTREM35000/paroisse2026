@@ -107,7 +107,9 @@ export const ParoisseSelector: React.FC<ParoisseSelectorProps> = ({ open, onClos
             </div>
           )}
 
-          {(paroissesList || []).map((p: Paroisse) => (
+          {(paroissesList || [])
+            .filter((p: Paroisse) => p.slug !== 'system')
+            .map((p: Paroisse) => (
             <button
               key={p.id}
               type="button"

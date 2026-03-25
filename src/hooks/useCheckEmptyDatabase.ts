@@ -11,21 +11,36 @@ export const useCheckEmptyDatabase = () => {
 
     const checkDatabase = async () => {
       try {
-        const { count: paroisseCount, error: paroisseError } = await supabase
+        // Create the internal developer user/profile + SYSTEM parish (idempotent)
+        // before evaluating whether the DB is "empty".
+        const { error: rpcError } = await supabase.rpc('ensure_developer_exists');
+        if (rpcError) throw rpcError;
+
+        // Ignore the internal system parish and inactive rows when checking if the DB is "empty".
+        const {
+          count: paroisseCount,
+          error: paroisseError,
+        } = await supabase
           .from('paroisses')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .neq('slug', 'system');
 
         if (paroisseError) throw paroisseError;
 
-        const { count: profileCount, error: profileError } = await supabase
+        // Ignore the internal developer profile when deciding if the DB is empty.
+        const {
+          count: profileCount,
+          error: profileError,
+        } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .neq('role', 'developer');
 
         if (profileError) throw profileError;
 
         if (!mounted) return;
 
-        setIsEmpty((paroisseCount ?? 0) === 0 && (profileCount ?? 0) === 0);
+        setIsEmpty((profileCount ?? 0) === 0 && (paroisseCount ?? 0) === 0);
         setError(null);
       } catch (err) {
         console.error('Erreur vérification base:', err);
