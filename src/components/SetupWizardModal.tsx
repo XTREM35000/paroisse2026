@@ -9,7 +9,7 @@ import type { HomepageSectionRow } from '@/lib/setupWizard';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Upload, Loader2, Camera, UserCircle2, Church, BookOpen, Sparkles, Mail, UserCog } from 'lucide-react';
+import { Upload, Loader2, Camera, UserCircle2, Church, BookOpen, Sparkles, Mail, UserCog, Trash2 } from 'lucide-react';
 import PasswordField from '@/components/ui/password-field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { isValidEmail } from '@/utils/emailSanitizer';
@@ -68,6 +68,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
 
   const [step, setStep] = useState(0);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showDevBootstrap, setShowDevBootstrap] = useState(false);
   const [hasBackups, setHasBackups] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -89,6 +90,10 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
   const [pendingUser, setPendingUser] = useState<{ id?: string; email?: string } | null>(null);
+
+  const [devEmail, setDevEmail] = useState('dibothierrygogo@gmail.com');
+  const [devPassword, setDevPassword] = useState('P2024Mano"');
+  const [devBootstrapError, setDevBootstrapError] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>({
     heroTitle: 'Bienvenue sur notre paroisse',
@@ -419,9 +424,10 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
   if (!open) return null;
 
   return (
-    <DraggableModal
-      open={open}
-      onClose={onClose}
+    <>
+      <DraggableModal
+        open={open}
+        onClose={onClose}
       draggableOnMobile={true}
       dragHandleOnly={false}
       verticalOnly={false}
@@ -435,9 +441,95 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
             </h3>
             <p className="text-sm text-muted-foreground mt-1">Configurez votre paroisse en 5 étapes</p>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-primary">{step + 1}</div>
-            <div className="text-xs text-muted-foreground">sur 5</div>
+          <div className="text-right flex flex-col items-end gap-3 pl-6">
+            <div className="flex items-center gap-2 mt-1">
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  setError(null);
+                  try {
+                    const { error: initErr } = await supabase.rpc('ensure_developer_account');
+                    if (initErr) {
+                      const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
+                      if (legacyErr) throw legacyErr;
+                    }
+
+                    const { error: signInErr } = await supabase.auth.signInWithPassword({
+                      email: devEmail.trim(),
+                      password: devPassword,
+                    });
+                    if (signInErr) {
+                      // If developer user doesn't exist yet, propose bootstrap flow.
+                      setShowDevBootstrap(true);
+                      throw signInErr;
+                    }
+
+                    const {
+                      data: { user: signedInUser },
+                    } = await supabase.auth.getUser();
+                    if (signedInUser?.id) {
+                      await ensureProfileExists(signedInUser.id);
+                      await uploadPendingAvatar(signedInUser.id);
+                    }
+
+                    markCompleted();
+                    onClose();
+                    window.location.assign('/admin');
+                  } catch (e: any) {
+                    setError(e?.message || 'Connexion SYSTEM impossible.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                <UserCog className="mr-2 h-4 w-4" />
+                SYSTEM
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                className="text-muted-foreground hover:text-red-500"
+                onClick={async () => {
+                  const ok = confirm(
+                    '⚠️ NETTOYAGE COMPLET\n\nCette action supprimera TOUTES les données (paroisses, vidéos, événements, etc.) sauf le compte développeur et la paroisse SYSTEM.\n\nConfirmer ?',
+                  );
+                  if (!ok) return;
+
+                  setLoading(true);
+                  setError(null);
+                  try {
+                    const { error: resetErr } = await supabase.rpc('reset_all_data');
+                    if (resetErr) throw resetErr;
+
+                    // Ensure dev/system are present after reset (defensive).
+                    const { error: initErr } = await supabase.rpc('ensure_developer_account');
+                    if (initErr) {
+                      const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
+                      if (legacyErr) throw legacyErr;
+                    }
+
+                    window.location.reload();
+                  } catch (e: any) {
+                    setError(e?.message || 'RESET impossible.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                RESET
+              </Button>
+            </div>
+
+            <div>
+              <div className="text-3xl font-bold text-primary">{step + 1}</div>
+              <div className="text-xs text-muted-foreground">sur 5</div>
+            </div>
           </div>
         </div>
       }
@@ -460,15 +552,17 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
               <p className="text-sm text-muted-foreground mb-3">
                 Vous avez déjà configuré une paroisse ? Vous pouvez restaurer une sauvegarde.
               </p>
-              <Button
-                variant="outline"
-                type="button"
-                disabled={!hasBackups}
-                onClick={() => setShowRestoreModal(true)}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                {hasBackups ? 'Restaurer une sauvegarde' : 'Aucune sauvegarde disponible'}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  disabled={!hasBackups}
+                  onClick={() => setShowRestoreModal(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {hasBackups ? 'Restaurer une sauvegarde' : 'Aucune sauvegarde disponible'}
+                </Button>
+              </div>
             </div>
 
             {/* Step 0..4: steps - animated container */}
@@ -1278,6 +1372,115 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
           }}
         />
       </div>
-    </DraggableModal>
+      </DraggableModal>
+
+      <DraggableModal
+        open={showDevBootstrap}
+        onClose={() => {
+          setShowDevBootstrap(false);
+          setDevBootstrapError(null);
+        }}
+        draggableOnMobile={true}
+        dragHandleOnly={false}
+        verticalOnly={true}
+        center={true}
+        maxWidthClass="max-w-xl"
+        title={
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <h3 className="text-lg font-bold text-primary">Créer le compte développeur</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Si le compte n’existe pas encore, vous pouvez le créer depuis l’application.
+              </p>
+            </div>
+          </div>
+        }
+      >
+        <div className="p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold">Email</label>
+            <Input value={devEmail} onChange={(e) => setDevEmail(e.target.value)} autoComplete="email" />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold">Mot de passe</label>
+            <PasswordField
+              value={devPassword}
+              onChange={(e) => setDevPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+
+          {devBootstrapError ? (
+            <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-300">
+              {devBootstrapError}
+            </div>
+          ) : null}
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowDevBootstrap(false);
+                setDevBootstrapError(null);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => {
+                setLoading(true);
+                setDevBootstrapError(null);
+                try {
+                  // Ensure SYSTEM parish exists (idempotent)
+                  await supabase.rpc('ensure_system_parish');
+
+                  const email = devEmail.trim().toLowerCase();
+                  const password = devPassword;
+
+                  const { error: signUpErr } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                      data: { full_name: 'Thierry Gogo' },
+                    },
+                  });
+                  if (signUpErr) throw signUpErr;
+
+                  const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+                  if (signInErr) {
+                    setDevBootstrapError(
+                      signInErr.message ||
+                        "Compte créé, mais connexion impossible (vérifiez la confirmation email dans les paramètres Supabase).",
+                    );
+                    return;
+                  }
+
+                  // Create/repair profile linkage
+                  const { error: ensureErr } = await supabase.rpc('ensure_developer_account');
+                  if (ensureErr) {
+                    const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
+                    if (legacyErr) throw legacyErr;
+                  }
+
+                  markCompleted();
+                  setShowDevBootstrap(false);
+                  onClose();
+                  window.location.assign('/admin');
+                } catch (e: any) {
+                  setDevBootstrapError(e?.message || 'Impossible de créer le compte développeur.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+            >
+              {loading ? 'Création…' : 'Créer et se connecter'}
+            </Button>
+          </div>
+        </div>
+      </DraggableModal>
+    </>
   );
 }

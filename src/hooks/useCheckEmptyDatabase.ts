@@ -13,8 +13,12 @@ export const useCheckEmptyDatabase = () => {
       try {
         // Create the internal developer user/profile + SYSTEM parish (idempotent)
         // before evaluating whether the DB is "empty".
-        const { error: rpcError } = await supabase.rpc('ensure_developer_exists');
-        if (rpcError) throw rpcError;
+        const { error: rpcError } = await supabase.rpc('ensure_developer_account');
+        if (rpcError) {
+          // Backward compatibility with older DB state/migrations.
+          const { error: legacyError } = await supabase.rpc('ensure_developer_exists');
+          if (legacyError) throw legacyError;
+        }
 
         // Ignore the internal system parish and inactive rows when checking if the DB is "empty".
         const {

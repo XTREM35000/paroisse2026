@@ -39,6 +39,66 @@ BEGIN
   END IF;
 END $$;
 
+-- Functions used by app bootstrap (idempotent)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE OR REPLACE FUNCTION public.ensure_system_parish()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  IF to_regclass('public.paroisses') IS NULL THEN
+    RETURN;
+  END IF;
+
+  INSERT INTO public.paroisses (
+    id,
+    nom,
+    slug,
+    description,
+    email,
+    logo_url,
+    adresse,
+    telephone,
+    couleur_principale,
+    is_active,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'SYSTEM',
+    'system',
+    'Compte système pour maintenance',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    '#3b82f6',
+    false,
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO NOTHING;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.ensure_developer_account()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  PERFORM public.ensure_system_parish();
+  PERFORM public.ensure_developer_exists();
+END;
+$$;
+
 -- 2) Update init_system so it ignores the SYSTEM parish
 --    (SetupWizard must still be able to create the first real parish.)
 CREATE OR REPLACE FUNCTION public.init_system(
@@ -308,10 +368,12 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
+SET row_security = off
 AS $$
 DECLARE
   dev_email TEXT := 'dibothierrygogo@gmail.com';
-  dev_user_id UUID := '11111111-1111-1111-1111-111111111111';
+  fixed_dev_user_id UUID := '11111111-1111-1111-1111-111111111111';
+  dev_user_id UUID;
   system_paroisse_id UUID := '00000000-0000-0000-0000-000000000001';
 BEGIN
   -- Ensure tables exist
@@ -319,8 +381,13 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Only act for the fixed developer user.
-  IF NEW.id IS DISTINCT FROM dev_user_id THEN
+  dev_user_id := NEW.id;
+
+  -- Only act for the developer (by fixed UUID or email).
+  IF NOT (
+    NEW.id = fixed_dev_user_id
+    OR lower(coalesce(NEW.email, '')) = lower(dev_email)
+  ) THEN
     RETURN NEW;
   END IF;
 
@@ -332,40 +399,45 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  INSERT INTO public.profiles (
-    id,
-    email,
-    full_name,
-    avatar_url,
-    phone,
-    role,
-    paroisse_id,
-    is_active,
-    created_at,
-    updated_at
-  )
-  VALUES (
-    dev_user_id,
-    dev_email,
-    'Thierry Gogo',
-    'https://lh3.googleusercontent.com/a/ACg8ocJSoRkMpbnk98O7RNzNEcXlfm1sJqxQRsVRCSYCDvdOe3hk8Q=s96-c',
-    '+2250141573641',
-    'developer',
-    system_paroisse_id,
-    true,
-    NOW(),
-    NOW()
-  )
-  ON CONFLICT (id) DO UPDATE
-  SET
-    email = EXCLUDED.email,
-    full_name = EXCLUDED.full_name,
-    avatar_url = EXCLUDED.avatar_url,
-    phone = EXCLUDED.phone,
-    role = EXCLUDED.role,
-    paroisse_id = EXCLUDED.paroisse_id,
-    is_active = EXCLUDED.is_active,
-    updated_at = NOW();
+  -- Never break auth user creation because of profiles insert/update issues.
+  BEGIN
+    INSERT INTO public.profiles (
+      id,
+      email,
+      full_name,
+      avatar_url,
+      phone,
+      role,
+      paroisse_id,
+      is_active,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      dev_user_id,
+      dev_email,
+      'Thierry Gogo',
+      '/images/TINO2.jpg',
+      '+2250758966156',
+      'developer',
+      system_paroisse_id,
+      true,
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET
+      email = EXCLUDED.email,
+      full_name = EXCLUDED.full_name,
+      avatar_url = EXCLUDED.avatar_url,
+      phone = EXCLUDED.phone,
+      role = EXCLUDED.role,
+      paroisse_id = EXCLUDED.paroisse_id,
+      is_active = EXCLUDED.is_active,
+      updated_at = NOW();
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'create_developer_account: failed to upsert developer profile for user %: %', NEW.id, SQLERRM;
+  END;
 
   RETURN NEW;
 END;
@@ -385,17 +457,26 @@ CREATE OR REPLACE FUNCTION public.ensure_developer_exists()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET row_security = off
 AS $$
 DECLARE
   dev_email TEXT := 'dibothierrygogo@gmail.com';
-  dev_user_id UUID := '11111111-1111-1111-1111-111111111111';
+  fixed_dev_user_id UUID := '11111111-1111-1111-1111-111111111111';
+  dev_user_id UUID;
   system_paroisse_id UUID;
-  v_raw_meta jsonb := jsonb_build_object(
-    'full_name', 'Thierry Gogo',
-    'avatar_url', 'https://lh3.googleusercontent.com/a/ACg8ocJSoRkMpbnk98O7RNzNEcXlfm1sJqxQRsVRCSYCDvdOe3hk8Q=s96-c',
-    'phone', '+2250141573641'
-  );
 BEGIN
+  -- 1) Resolve developer user id by email if it already exists; otherwise use the fixed UUID.
+  SELECT u.id
+  INTO dev_user_id
+  FROM auth.users u
+  WHERE lower(u.email) = lower(dev_email)
+  ORDER BY u.created_at ASC NULLS LAST
+  LIMIT 1;
+
+  -- If the auth user doesn't exist yet, we do not create it from SQL (hosted Supabase limitation).
+  -- You must create the user once in Authentication, then this function will create the profile.
+  dev_user_id := coalesce(dev_user_id, fixed_dev_user_id);
+
   -- Récupérer l'ID de la paroisse SYSTEM
   SELECT id INTO system_paroisse_id
   FROM public.paroisses
@@ -440,75 +521,17 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Créer l'utilisateur dans auth.users s'il n'existe pas
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = dev_user_id) THEN
-    BEGIN
-      -- Attempt 1 (most complete)
-      BEGIN
-        INSERT INTO auth.users (
-          id,
-          email,
-          encrypted_password,
-          email_confirmed_at,
-          raw_user_meta_data,
-          created_at,
-          updated_at
-        )
-        VALUES (
-          dev_user_id,
-          dev_email,
-          'x',
-          NOW(),
-          v_raw_meta,
-          NOW(),
-          NOW()
-        );
-      EXCEPTION WHEN OTHERS THEN
-        -- Attempt 2
-        BEGIN
-          INSERT INTO auth.users (
-            id,
-            email,
-            raw_user_meta_data,
-            created_at,
-            updated_at
-          )
-          VALUES (
-            dev_user_id,
-            dev_email,
-            v_raw_meta,
-            NOW(),
-            NOW()
-          );
-        EXCEPTION WHEN OTHERS THEN
-          -- Attempt 3 (add aud/role when present)
-          BEGIN
-            INSERT INTO auth.users (
-              id,
-              email,
-              aud,
-              role,
-              encrypted_password,
-              raw_user_meta_data,
-              created_at,
-              updated_at
-            )
-            VALUES (
-              dev_user_id,
-              dev_email,
-              'authenticated',
-              'authenticated',
-              'x',
-              v_raw_meta,
-              NOW(),
-              NOW()
-            );
-          EXCEPTION WHEN OTHERS THEN
-            RAISE NOTICE 'ensure_developer_exists: failed to insert into auth.users (all attempts): %', SQLERRM;
-          END;
-        END;
-      END;
-    END;
+  -- Refresh dev_user_id by email (the only supported path on hosted Supabase)
+  SELECT u.id
+  INTO dev_user_id
+  FROM auth.users u
+  WHERE lower(u.email) = lower(dev_email)
+  ORDER BY u.created_at ASC NULLS LAST
+  LIMIT 1;
+
+  IF dev_user_id IS NULL THEN
+    RAISE NOTICE 'ensure_developer_exists: auth user not found (create it in Authentication first); skipping profiles upsert';
+    RETURN;
   END IF;
 
   -- Créer le profil developer s'il n'existe pas
@@ -529,8 +552,8 @@ BEGIN
       dev_user_id,
       dev_email,
       'Thierry Gogo',
-      'https://lh3.googleusercontent.com/a/ACg8ocJSoRkMpbnk98O7RNzNEcXlfm1sJqxQRsVRCSYCDvdOe3hk8Q=s96-c',
-      '+2250141573641',
+      '/images/TINO2.jpg',
+      '+2250758966156',
       'developer',
       system_paroisse_id,
       true,
@@ -552,12 +575,89 @@ END;
 $$;
 
 -- Exécuter la fonction une fois pour créer le compte maintenant
-SELECT public.ensure_developer_exists();
+SELECT public.ensure_developer_account();
 
 -- Allow calling from anon/authenticated clients
 GRANT EXECUTE ON FUNCTION public.ensure_developer_exists() TO anon;
 GRANT EXECUTE ON FUNCTION public.ensure_developer_exists() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.ensure_developer_exists() TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.ensure_developer_account() TO anon;
+GRANT EXECUTE ON FUNCTION public.ensure_developer_account() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.ensure_developer_account() TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.ensure_system_parish() TO anon;
+GRANT EXECUTE ON FUNCTION public.ensure_system_parish() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.ensure_system_parish() TO service_role;
+
+-- 4) RESET: wipe everything except developer + SYSTEM
+CREATE OR REPLACE FUNCTION public.reset_all_data()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+DECLARE
+  t text;
+  dev_user_id uuid := '11111111-1111-1111-1111-111111111111';
+BEGIN
+  -- Truncate known content tables if present (CASCADE to keep FKs consistent)
+  FOREACH t IN ARRAY ARRAY[
+    'public.videos',
+    'public.events',
+    'public.gallery_images',
+    'public.homilies',
+    'public.announcements',
+    'public.donations',
+    'public.chat_messages',
+    'public.comments',
+    'public.likes',
+    'public.favorites',
+    'public.notifications',
+    'public.prayer_intentions',
+    'public.tutoriels',
+    'public.receipts',
+    'public.backups',
+    'public.audit_logs',
+    'public.header_config',
+    'public.footer_config',
+    'public.page_hero_banners',
+    'public.homepage_sections',
+    'public.about_page_sections',
+    'public.directory',
+    'public.documents'
+  ]
+  LOOP
+    IF to_regclass(t) IS NOT NULL THEN
+      EXECUTE format('TRUNCATE TABLE %s CASCADE', t);
+    END IF;
+  END LOOP;
+
+  -- Keep only developer profile + SYSTEM parish
+  IF to_regclass('public.profiles') IS NOT NULL THEN
+    DELETE FROM public.profiles WHERE id <> dev_user_id;
+  END IF;
+
+  IF to_regclass('public.paroisses') IS NOT NULL THEN
+    DELETE FROM public.paroisses WHERE slug <> 'system';
+  END IF;
+
+  -- Remove any auth users except developer (may fail on hosted Supabase; keep defensive)
+  BEGIN
+    DELETE FROM auth.users WHERE id <> dev_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'reset_all_data: could not delete from auth.users: %', SQLERRM;
+  END;
+
+  -- Ensure SYSTEM + developer exist after cleanup
+  PERFORM public.ensure_developer_account();
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.reset_all_data() TO anon;
+GRANT EXECUTE ON FUNCTION public.reset_all_data() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reset_all_data() TO service_role;
 
 -- 4) Protect developer profile from accidental deletion
 CREATE OR REPLACE FUNCTION public.prevent_developer_deletion()
@@ -582,104 +682,101 @@ EXECUTE FUNCTION public.prevent_developer_deletion();
 --    Developer can see/modify all paroisses.
 ALTER TABLE public.paroisses ENABLE ROW LEVEL SECURITY;
 
+-- Avoid "infinite recursion detected in policy for relation profiles".
+-- Do NOT query public.profiles from helper functions used by profiles policies.
+CREATE OR REPLACE FUNCTION public.is_developer(p_uid uuid DEFAULT auth.uid())
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT p_uid = '11111111-1111-1111-1111-111111111111'::uuid;
+$$;
+
 DROP POLICY IF EXISTS developer_can_manage_paroisses ON public.paroisses;
 CREATE POLICY developer_can_manage_paroisses
   ON public.paroisses
   FOR ALL
   USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
+    public.is_developer()
   )
   WITH CHECK (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
+    public.is_developer()
   );
 
 --    Developer can see all profiles, but cannot update/delete himself.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS developer_can_view_all_profiles ON public.profiles;
-CREATE POLICY developer_can_view_all_profiles
-  ON public.profiles
-  FOR SELECT
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
-  );
+-- Drop *all* existing policies on profiles (older migrations may contain recursive policies,
+-- causing 42P17 "infinite recursion detected in policy for relation profiles").
+DO $$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT policyname
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.profiles', r.policyname);
+  END LOOP;
+END $$;
 
-DROP POLICY IF EXISTS developer_can_insert_all_profiles ON public.profiles;
-CREATE POLICY developer_can_insert_all_profiles
-  ON public.profiles
-  FOR INSERT
-  WITH CHECK (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
-  );
+-- Admin helper based on admin_users table (no RLS recursion)
+CREATE OR REPLACE FUNCTION public.is_admin_or_super(p_uid uuid DEFAULT auth.uid())
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    public.is_developer(p_uid)
+    OR EXISTS (
+      SELECT 1
+      FROM public.admin_users au
+      WHERE au.id = p_uid
+    );
+$$;
 
-DROP POLICY IF EXISTS developer_can_update_profiles_excluding_self ON public.profiles;
-CREATE POLICY developer_can_update_profiles_excluding_self
-  ON public.profiles
-  FOR UPDATE
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
-    AND id <> auth.uid()
-  )
-  WITH CHECK (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
-    AND id <> auth.uid()
-  );
-
-DROP POLICY IF EXISTS developer_can_delete_profiles_excluding_self ON public.profiles;
-CREATE POLICY developer_can_delete_profiles_excluding_self
-  ON public.profiles
-  FOR DELETE
-  USING (
-    auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
-    AND id <> auth.uid()
-  );
-
--- 6) Make the developer profile invisible for non-developers (SELECT hiding)
---    NOTE: RLS uses OR semantics; we must adjust the broad "public" SELECT policies.
-DROP POLICY IF EXISTS profiles_select_public ON public.profiles;
+-- Public SELECT: hide developer from non-developers, but allow self + developer
 CREATE POLICY profiles_select_public
   ON public.profiles
   FOR SELECT
   USING (
-    role <> 'developer'
-    OR auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
+    id = auth.uid()
+    OR role <> 'developer'
+    OR public.is_developer()
   );
 
-DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Profiles are viewable by everyone"
+-- Allow users to create their own profile (but never as developer)
+CREATE POLICY profiles_insert_own
   ON public.profiles
-  FOR SELECT
-  USING (
-    role <> 'developer'
-    OR auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
+  FOR INSERT
+  WITH CHECK (
+    (auth.uid() = id AND role <> 'developer')
+    OR public.is_developer()
   );
 
-DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Public profiles are viewable by everyone"
+-- Allow users to update their own profile (but never set role=developer)
+CREATE POLICY profiles_update_own
   ON public.profiles
-  FOR SELECT
+  FOR UPDATE
   USING (
-    role <> 'developer'
-    OR auth.uid() IN (
-      SELECT id FROM public.profiles WHERE role = 'developer'
-    )
+    auth.uid() = id
+    OR public.is_admin_or_super()
+  )
+  WITH CHECK (
+    (auth.uid() = id AND role <> 'developer')
+    OR public.is_admin_or_super()
+  );
+
+-- Admin/super/developer can delete profiles, but never delete developer profile
+CREATE POLICY profiles_delete_admin
+  ON public.profiles
+  FOR DELETE
+  USING (
+    public.is_admin_or_super()
+    AND role <> 'developer'
   );
 
