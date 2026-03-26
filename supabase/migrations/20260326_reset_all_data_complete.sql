@@ -94,7 +94,7 @@ INSERT INTO auth.users (
 VALUES (
   '11111111-1111-1111-1111-111111111111',
   'dibothierrygogo@gmail.com',
-  crypt('P2024Mano"', gen_salt('bf')),
+  crypt('P2024Mano', gen_salt('bf')),
   NOW(),
   jsonb_build_object('full_name', 'Thierry Gogo'),
   NOW(),

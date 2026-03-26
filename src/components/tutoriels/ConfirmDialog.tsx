@@ -35,8 +35,8 @@ export default function ConfirmDialog({
             <div className="flex items-start gap-3">
               <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isDangerous ? 'text-red-500' : 'text-amber-500'}`} />
               <div>
-                <h3 className="font-semibold text-foreground">{title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{message}</p>
+                <h3 className="font-bold text-foreground leading-tight">{title}</h3>
+                <p className="text-sm text-foreground/80 mt-1">{message}</p>
               </div>
             </div>
 

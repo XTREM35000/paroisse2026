@@ -96,6 +96,9 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
   const [pendingUser, setPendingUser] = useState<{ id?: string; email?: string } | null>(null);
 
+  // Intentionally empty by default to avoid accidental auth calls (400) with stale credentials.
+  // Prefill developer credentials so SYSTEM works from a clean UI.
+  // (Do not auto-connect; user still clicks "Se connecter".)
   const [devEmail, setDevEmail] = useState('dibothierrygogo@gmail.com');
   const [devPassword, setDevPassword] = useState('P2024Mano"');
   const [devBootstrapError, setDevBootstrapError] = useState<string | null>(null);
@@ -451,10 +454,10 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
       title={
         <div className="flex items-center justify-between w-full">
           <div>
-            <h3 className="text-2xl font-bold text-primary drop-shadow-sm">
+            <h3 className="text-2xl font-bold text-white drop-shadow-sm">
               Assistant de configuration
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">Configurez votre paroisse en 5 étapes</p>
+            <p className="text-sm text-white/90 mt-1">Configurez votre paroisse en 5 étapes</p>
           </div>
           <div className="text-right flex flex-col items-end gap-3 pl-6">
             <div className="flex items-center gap-2 mt-1">
@@ -464,7 +467,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                     variant="ghost"
                     size="sm"
                     type="button"
-                    className="text-muted-foreground hover:text-foreground"
+                    className="bg-white/10 text-white/90 hover:bg-white/15 hover:text-white"
                     disabled={loading}
                     onClick={() => {
                       setAdminUnlockError(null);
@@ -481,8 +484,8 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                         type="password"
                         inputMode="numeric"
                         maxLength={10}
-                        placeholder="Code (2022)"
-                        className="w-28"
+                        placeholder="Code"
+                        className="w-28 bg-white/10 border-white/20 text-white placeholder:text-white/70 focus-visible:ring-white/40"
                         value={adminCode}
                         disabled={loading}
                         onChange={(e) => {
@@ -506,6 +509,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                         size="sm"
                         type="button"
                         disabled={loading}
+                        className="bg-white/10 text-white hover:bg-white/15 hover:text-white"
                         onClick={() => {
                           if (adminCode.trim() === ADMIN_UNLOCK_CODE) {
                             setAdminUnlocked(true);
@@ -525,46 +529,13 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
               ) : (
                 <>
                   <Button
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
                     type="button"
-                    onClick={async () => {
-                      setLoading(true);
-                      setError(null);
-                      try {
-                        const { error: initErr } = await supabase.rpc('ensure_developer_account');
-                        if (initErr) {
-                          const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
-                          if (legacyErr) throw legacyErr;
-                        }
-
-                        const { error: signInErr } = await supabase.auth.signInWithPassword({
-                          email: devEmail.trim(),
-                          password: devPassword,
-                        });
-                        if (signInErr) {
-                          // Open the bootstrap modal so the operator can correct email/password.
-                          // The modal now avoids `/auth/v1/signup` if the user already exists.
-                          setShowDevBootstrap(true);
-                          return;
-                        }
-
-                        const {
-                          data: { user: signedInUser },
-                        } = await supabase.auth.getUser();
-                        if (signedInUser?.id) {
-                          await ensureProfileExists(signedInUser.id);
-                          await uploadPendingAvatar(signedInUser.id);
-                        }
-
-                        markCompleted();
-                        onClose();
-                        window.location.assign('/admin');
-                      } catch (e: any) {
-                        setError(e?.message || 'Connexion SYSTEM impossible.');
-                      } finally {
-                        setLoading(false);
-                      }
+                    className="text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      setDevBootstrapError(null);
+                      setShowDevBootstrap(true);
                     }}
                   >
                     <UserCog className="mr-2 h-4 w-4" />
@@ -576,35 +547,44 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                     size="sm"
                     type="button"
                     className="text-muted-foreground hover:text-red-500"
-                    disabled={loading}
                     onClick={async () => {
-                      const ok = confirm(
-                        '⚠️ NETTOYAGE COMPLET\n\nCette action supprimera TOUTES les données (paroisses, vidéos, événements, etc.) sauf le compte développeur et la paroisse SYSTEM.\n\nConfirmer ?',
-                      );
-                      if (!ok) return;
+                      if (
+                        !confirm(
+                          '⚠️ NETTOYAGE COMPLET\n\n' +
+                            'Cette action supprimera TOUTES les données (paroisses, vidéos, événements, etc.)\n\n' +
+                            '✅ Le compte développeur et la paroisse SYSTEM seront conservés.\n\n' +
+                            '✅ L\'application reviendra comme une nouvelle installation.\n\n' +
+                            'Confirmer ?',
+                        )
+                      ) {
+                        return;
+                      }
 
-                      setLoading(true);
-                      setError(null);
                       try {
-                        const { error: resetErr } = await supabase.rpc('reset_all_data');
-                        if (resetErr) throw resetErr;
-
-                        // Ensure dev/system are present after reset (defensive).
-                        const { error: initErr } = await supabase.rpc('ensure_developer_account');
-                        if (initErr) {
-                          const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
-                          if (legacyErr) throw legacyErr;
+                        const {
+                          data: { session },
+                        } = await supabase.auth.getSession();
+                        if (!session) {
+                          alert('Veuillez vous connecter avec SYSTEM avant de lancer le RESET.');
+                          return;
                         }
 
+                        const { error } = await supabase.rpc('reset_all_data');
+                        if (error) throw error;
+
+                        alert(
+                          '✅ Nettoyage terminé !\n\n' +
+                            'La base a été réinitialisée.\n' +
+                            'Le compte développeur est prêt.\n\n' +
+                            'La page va se recharger.',
+                        );
                         window.location.reload();
-                      } catch (e: any) {
-                        setError(e?.message || 'RESET impossible.');
-                      } finally {
-                        setLoading(false);
+                      } catch (err: any) {
+                        alert('❌ Erreur lors du nettoyage: ' + (err?.message || String(err)));
                       }
                     }}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-1" />
                     RESET
                   </Button>
                 </>
@@ -612,17 +592,19 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
             </div>
 
             {adminUnlockOpen && !adminUnlocked && adminUnlockError ? (
-              <div className="text-xs text-destructive">{adminUnlockError}</div>
+              <div className="text-xs font-medium text-destructive bg-destructive/10 border border-destructive/30 rounded px-2 py-1">
+                {adminUnlockError}
+              </div>
             ) : null}
 
             <div>
-              <div className="text-3xl font-bold text-primary">{step + 1}</div>
-              <div className="text-xs text-muted-foreground">sur 5</div>
+              <div className="text-3xl font-bold text-white">{step + 1}</div>
+              <div className="text-xs text-white/90">sur 5</div>
             </div>
           </div>
         </div>
       }
-      headerClassName="bg-gradient-to-r from-primary/10 to-transparent"
+      headerClassName="bg-amber-800"
     >
       <div className="bg-background text-foreground rounded-lg shadow-2xl w-full max-w-5xl mx-4 overflow-hidden border border-border">
         {/* Progress Bar */}
@@ -655,7 +637,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
             </div>
 
             {/* Step 0..4: steps - animated container */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="sync">
               {step === 0 && (
                 <motion.div
                   key="step-0"
@@ -1477,8 +1459,8 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
         title={
           <div className="flex items-center justify-between w-full">
             <div>
-              <h3 className="text-lg font-bold text-primary">Créer le compte développeur</h3>
-              <p className="text-xs text-muted-foreground mt-1">
+              <h3 className="text-lg font-bold text-white">Connexion développeur</h3>
+              <p className="text-xs text-white/90 mt-1">
                 Si le compte n’existe pas encore, vous pouvez le créer depuis l’application.
               </p>
             </div>
@@ -1571,14 +1553,21 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                   onClose();
                   window.location.assign('/admin');
                 } catch (e: any) {
-                  setDevBootstrapError(e?.message || 'Impossible de créer le compte développeur.');
+                  const details =
+                    typeof e?.message === 'string'
+                      ? e.message
+                      : typeof e === 'string'
+                        ? e
+                        : JSON.stringify(e ?? {});
+                  console.error('SYSTEM modal sign-in error', e);
+                  setDevBootstrapError(details || 'Impossible de créer le compte développeur.');
                 } finally {
                   setLoading(false);
                 }
               }}
               disabled={loading}
             >
-              {loading ? 'Création…' : 'Créer et se connecter'}
+              {loading ? 'Connexion…' : 'Se connecter'}
             </Button>
           </div>
         </div>
