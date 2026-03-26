@@ -73,6 +73,11 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const ADMIN_UNLOCK_CODE = '2022';
+  const [adminUnlockOpen, setAdminUnlockOpen] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
+  const [adminUnlockError, setAdminUnlockError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [adminFullName, setAdminFullName] = useState('');
@@ -169,6 +174,16 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
     setAdminEmail(prev => (prev.trim() ? prev : form.brandingEmail));
     setAdminPhone(prev => (prev.trim() ? prev : form.footerSuperAdminPhone.trim() || form.footerModeratorPhone.trim()));
   }, [step, form.brandingEmail]);
+
+  // Security/UX: reset the unlock state when the modal closes.
+  useEffect(() => {
+    if (!open) {
+      setAdminUnlockOpen(false);
+      setAdminUnlocked(false);
+      setAdminCode('');
+      setAdminUnlockError(null);
+    }
+  }, [open]);
 
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm(prev => ({ ...prev, [k]: v }));
@@ -443,88 +458,162 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
           </div>
           <div className="text-right flex flex-col items-end gap-3 pl-6">
             <div className="flex items-center gap-2 mt-1">
-              <Button
-                variant="secondary"
-                size="sm"
-                type="button"
-                onClick={async () => {
-                  setLoading(true);
-                  setError(null);
-                  try {
-                    const { error: initErr } = await supabase.rpc('ensure_developer_account');
-                    if (initErr) {
-                      const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
-                      if (legacyErr) throw legacyErr;
-                    }
+              {!adminUnlocked ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    disabled={loading}
+                    onClick={() => {
+                      setAdminUnlockError(null);
+                      setAdminUnlockOpen((v) => !v);
+                    }}
+                  >
+                    <UserCircle2 className="mr-2 h-4 w-4" />
+                    Admin
+                  </Button>
 
-                    const { error: signInErr } = await supabase.auth.signInWithPassword({
-                      email: devEmail.trim(),
-                      password: devPassword,
-                    });
-                    if (signInErr) {
-                      // If developer user doesn't exist yet, propose bootstrap flow.
-                      setShowDevBootstrap(true);
-                      throw signInErr;
-                    }
+                  {adminUnlockOpen ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={10}
+                        placeholder="Code (2022)"
+                        className="w-28"
+                        value={adminCode}
+                        disabled={loading}
+                        onChange={(e) => {
+                          setAdminCode(e.target.value);
+                          setAdminUnlockError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter') return;
+                          if (adminCode.trim() === ADMIN_UNLOCK_CODE) {
+                            setAdminUnlocked(true);
+                            setAdminUnlockOpen(false);
+                            setAdminUnlockError(null);
+                            setAdminCode('');
+                          } else {
+                            setAdminUnlockError('Code incorrect.');
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        type="button"
+                        disabled={loading}
+                        onClick={() => {
+                          if (adminCode.trim() === ADMIN_UNLOCK_CODE) {
+                            setAdminUnlocked(true);
+                            setAdminUnlockOpen(false);
+                            setAdminUnlockError(null);
+                            setAdminCode('');
+                          } else {
+                            setAdminUnlockError('Code incorrect.');
+                          }
+                        }}
+                      >
+                        Valider
+                      </Button>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={async () => {
+                      setLoading(true);
+                      setError(null);
+                      try {
+                        const { error: initErr } = await supabase.rpc('ensure_developer_account');
+                        if (initErr) {
+                          const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
+                          if (legacyErr) throw legacyErr;
+                        }
 
-                    const {
-                      data: { user: signedInUser },
-                    } = await supabase.auth.getUser();
-                    if (signedInUser?.id) {
-                      await ensureProfileExists(signedInUser.id);
-                      await uploadPendingAvatar(signedInUser.id);
-                    }
+                        const { error: signInErr } = await supabase.auth.signInWithPassword({
+                          email: devEmail.trim(),
+                          password: devPassword,
+                        });
+                        if (signInErr) {
+                          // Open the bootstrap modal so the operator can correct email/password.
+                          // The modal now avoids `/auth/v1/signup` if the user already exists.
+                          setShowDevBootstrap(true);
+                          return;
+                        }
 
-                    markCompleted();
-                    onClose();
-                    window.location.assign('/admin');
-                  } catch (e: any) {
-                    setError(e?.message || 'Connexion SYSTEM impossible.');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                <UserCog className="mr-2 h-4 w-4" />
-                SYSTEM
-              </Button>
+                        const {
+                          data: { user: signedInUser },
+                        } = await supabase.auth.getUser();
+                        if (signedInUser?.id) {
+                          await ensureProfileExists(signedInUser.id);
+                          await uploadPendingAvatar(signedInUser.id);
+                        }
 
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                className="text-muted-foreground hover:text-red-500"
-                onClick={async () => {
-                  const ok = confirm(
-                    '⚠️ NETTOYAGE COMPLET\n\nCette action supprimera TOUTES les données (paroisses, vidéos, événements, etc.) sauf le compte développeur et la paroisse SYSTEM.\n\nConfirmer ?',
-                  );
-                  if (!ok) return;
+                        markCompleted();
+                        onClose();
+                        window.location.assign('/admin');
+                      } catch (e: any) {
+                        setError(e?.message || 'Connexion SYSTEM impossible.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    <UserCog className="mr-2 h-4 w-4" />
+                    SYSTEM
+                  </Button>
 
-                  setLoading(true);
-                  setError(null);
-                  try {
-                    const { error: resetErr } = await supabase.rpc('reset_all_data');
-                    if (resetErr) throw resetErr;
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    className="text-muted-foreground hover:text-red-500"
+                    disabled={loading}
+                    onClick={async () => {
+                      const ok = confirm(
+                        '⚠️ NETTOYAGE COMPLET\n\nCette action supprimera TOUTES les données (paroisses, vidéos, événements, etc.) sauf le compte développeur et la paroisse SYSTEM.\n\nConfirmer ?',
+                      );
+                      if (!ok) return;
 
-                    // Ensure dev/system are present after reset (defensive).
-                    const { error: initErr } = await supabase.rpc('ensure_developer_account');
-                    if (initErr) {
-                      const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
-                      if (legacyErr) throw legacyErr;
-                    }
+                      setLoading(true);
+                      setError(null);
+                      try {
+                        const { error: resetErr } = await supabase.rpc('reset_all_data');
+                        if (resetErr) throw resetErr;
 
-                    window.location.reload();
-                  } catch (e: any) {
-                    setError(e?.message || 'RESET impossible.');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                RESET
-              </Button>
+                        // Ensure dev/system are present after reset (defensive).
+                        const { error: initErr } = await supabase.rpc('ensure_developer_account');
+                        if (initErr) {
+                          const { error: legacyErr } = await supabase.rpc('ensure_developer_exists');
+                          if (legacyErr) throw legacyErr;
+                        }
+
+                        window.location.reload();
+                      } catch (e: any) {
+                        setError(e?.message || 'RESET impossible.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    RESET
+                  </Button>
+                </>
+              )}
             </div>
+
+            {adminUnlockOpen && !adminUnlocked && adminUnlockError ? (
+              <div className="text-xs text-destructive">{adminUnlockError}</div>
+            ) : null}
 
             <div>
               <div className="text-3xl font-bold text-primary">{step + 1}</div>
@@ -1439,22 +1528,35 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                   const email = devEmail.trim().toLowerCase();
                   const password = devPassword;
 
-                  const { error: signUpErr } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                      data: { full_name: 'Thierry Gogo' },
-                    },
-                  });
-                  if (signUpErr) throw signUpErr;
-
                   const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
                   if (signInErr) {
-                    setDevBootstrapError(
-                      signInErr.message ||
-                        "Compte créé, mais connexion impossible (vérifiez la confirmation email dans les paramètres Supabase).",
-                    );
-                    return;
+                    const msg = (signInErr.message ?? "").toLowerCase();
+                    const code = (signInErr as any)?.code ? String((signInErr as any).code).toLowerCase() : "";
+                    const userLikelyMissing =
+                      msg.includes("not found") ||
+                      msg.includes("no user") ||
+                      msg.includes("user not") ||
+                      code.includes("user_not") ||
+                      code.includes("not_found");
+
+                    // If the user truly doesn't exist yet, we can attempt a signup + then signin.
+                    if (userLikelyMissing) {
+                      const { error: signUpErr } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                          data: { full_name: 'Thierry Gogo' },
+                        },
+                      });
+                      if (signUpErr) throw signUpErr;
+
+                      const { error: signInAfterSignUpErr } = await supabase.auth.signInWithPassword({ email, password });
+                      if (signInAfterSignUpErr) throw signInAfterSignUpErr;
+                    } else {
+                      // If credentials are wrong, do NOT try to signUp again (it will explode with /auth/v1/signup).
+                      setDevBootstrapError(signInErr.message || "Connexion impossible (vérifiez email/mot de passe).");
+                      return;
+                    }
                   }
 
                   // Create/repair profile linkage
