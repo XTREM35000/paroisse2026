@@ -80,7 +80,9 @@ import { ParoisseProvider, useParoisse } from '@/contexts/ParoisseContext';
 import { SetupProvider } from '@/contexts/SetupContext';
 import { ParoisseSelector } from '@/components/ParoisseSelector';
 import SetupWizardModal from '@/components/SetupWizardModal';
-import { useCheckEmptyDatabase } from '@/hooks/useCheckEmptyDatabase';
+import { supabase } from '@/integrations/supabase/client';
+import { syncDeveloperAccess } from '@/lib/initializeDeveloper';
+import { markAppInitialized, runAppInitialization } from '@/lib/appInitializer';
 
 /**
  * Debug uniquement : `true` = ouvre le sélecteur à chaque chargement (ignore la paroisse sauvegardée).
@@ -92,8 +94,8 @@ const queryClient = new QueryClient();
 
 const AppInner = () => {
   const { paroisse, isLoading, isSelectorOpen, setSelectorOpen } = useParoisse();
-  const { loading: checkDbLoading, isEmpty } = useCheckEmptyDatabase();
   const [showSetupWizardAuto, setShowSetupWizardAuto] = useState(false);
+  const [firstLaunchCheckDone, setFirstLaunchCheckDone] = useState(false);
 
   /** Après choix / restauration paroisse, ou prompt déjà terminé — alors seulement le splash welcome peut s'afficher. */
   const [paroisseGateDone, setParoisseGateDone] = useState(false);
@@ -129,20 +131,24 @@ const AppInner = () => {
     setSelectorOpen(true);
   }, [isLoading, paroisse, setSelectorOpen]);
 
-  // Ouvrir automatiquement le SetupWizard si la base est vide
   useEffect(() => {
-    if (checkDbLoading) return;
-    if (isEmpty) setShowSetupWizardAuto(true);
-  }, [checkDbLoading, isEmpty]);
+    let mounted = true;
+    const initializeOnFirstLoad = async () => {
+      const status = await runAppInitialization();
+      if (!mounted) return;
 
-  // Pendant le check initial de la DB, afficher un spinner global
-  if (checkDbLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-12 h-12 border-4 border-primary rounded-full animate-spin border-t-transparent" />
-      </div>
-    );
-  }
+      if (status.shouldForceSetupWizard) {
+        setShowSetupWizardAuto(true);
+      }
+      setFirstLaunchCheckDone(true);
+    };
+
+    // Non-bloquant: le rendu de l'UI continue pendant l'initialisation.
+    void initializeOnFirstLoad();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div>
@@ -155,7 +161,15 @@ const AppInner = () => {
   <ScrollToTop />
         <RedirectHandler />
         {paroisseGateDone ? <WelcomeModal autoCloseDelayMs={5000} /> : null}
-  <SetupWizardModal open={showSetupWizardAuto} onClose={() => setShowSetupWizardAuto(false)} />
+        <SetupWizardModal
+          open={showSetupWizardAuto}
+          onClose={() => {
+            setShowSetupWizardAuto(false);
+            if (firstLaunchCheckDone) {
+              markAppInitialized();
+            }
+          }}
+        />
         <Routes>
           <Route path="/" element={<Layout><Index /></Layout>} />
           <Route path="/connexion" element={<Navigate to="/#auth" replace />} />
@@ -366,6 +380,38 @@ const AppInner = () => {
 };
 
 const App = () => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeDeveloperSync = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('[App] Impossible de vérifier la session pour create-developer:', error);
+          return;
+        }
+
+        if (!data.session?.user) {
+          console.debug('[App] Pas d’utilisateur authentifié, create-developer ignoré.');
+          return;
+        }
+
+        // Non bloquant pour l'UI : l'appel n'est pas attendu ici.
+        void syncDeveloperAccess();
+      } catch (err) {
+        console.error('[App] Erreur inattendue pendant l’initialisation developer:', err);
+      }
+    };
+
+    void initializeDeveloperSync();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Debugging: track visibility changes (gardé)
   React.useEffect(() => {
     const onVisibilityChange = () => {

@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { ensureProfileExists } from '@/utils/ensureProfileExists';
 import { uploadPendingAvatar } from '@/utils/uploadPendingAvatar';
+import { markAppInitialized } from '@/lib/appInitializer';
 
 type FormState = {
   heroTitle: string;
@@ -60,7 +61,13 @@ type ImageField = 'heroImageUrl' | 'brandingLogo' | 'headerLogo';
 
 const WIZARD_STEPS = 5;
 
-export default function SetupWizardModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+type SetupWizardModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onSetupCompleted?: (payload: { paroisseId: string }) => void;
+};
+
+export default function SetupWizardModal({ open, onClose, onSetupCompleted }: SetupWizardModalProps) {
   const { markCompleted } = useSetup();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -95,6 +102,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
   const [pendingUser, setPendingUser] = useState<{ id?: string; email?: string } | null>(null);
+  const [pendingParishId, setPendingParishId] = useState<string | null>(null);
 
   // Intentionally empty by default to avoid accidental auth calls (400) with stale credentials.
   // Prefill developer credentials so SYSTEM works from a clean UI.
@@ -402,7 +410,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
         headerSubtitle: form.headerSubtitle,
       };
 
-      const { authData } = await initFirstParoisseAndUser(
+      const { authData, paroisseId } = await initFirstParoisseAndUser(
         setupPayload,
         {
           full_name: adminFullName.trim(),
@@ -418,13 +426,28 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
       await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
 
       if (authData.session) {
+        if (authData.user?.id) {
+          const { error: memberError } = await supabase
+            .from('parish_members')
+            .upsert(
+              { parish_id: paroisseId, user_id: authData.user.id, role: 'super_admin' },
+              { onConflict: 'parish_id,user_id' },
+            );
+          if (memberError) {
+            console.warn('[SetupWizard] Unable to enforce super_admin membership:', memberError);
+          }
+        }
+
+        markAppInitialized();
         markCompleted();
+        onSetupCompleted?.({ paroisseId });
         onClose();
-        window.location.assign('/admin');
+        window.location.assign('/dashboard');
         return;
       }
 
       // OTP email instead of confirmation link
+      setPendingParishId(paroisseId);
       setPendingUser({
         id: authData.user?.id,
         email: authData.user?.email ?? adminEmail.trim(),
@@ -475,13 +498,32 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
         data: { user: signedInUser },
       } = await supabase.auth.getUser();
       if (signedInUser?.id) {
+        const parishIdForMembership =
+          pendingParishId || localStorage.getItem('selectedParoisse') || '';
+        if (parishIdForMembership) {
+          const { error: memberError } = await supabase
+            .from('parish_members')
+            .upsert(
+              { parish_id: parishIdForMembership, user_id: signedInUser.id, role: 'super_admin' },
+              { onConflict: 'parish_id,user_id' },
+            );
+          if (memberError) {
+            // We don't fail the flow because a DB trigger may have already added the membership.
+            console.warn('[SetupWizard] super_admin membership fallback failed:', memberError);
+          }
+        }
         await ensureProfileExists(signedInUser.id);
         await uploadPendingAvatar(signedInUser.id);
       }
 
+      const storedParoisseId = pendingParishId || localStorage.getItem('selectedParoisse') || '';
+      if (storedParoisseId) {
+        onSetupCompleted?.({ paroisseId: storedParoisseId });
+      }
+      markAppInitialized();
       markCompleted();
       onClose();
-      window.location.assign('/admin');
+      window.location.assign('/dashboard');
     } catch (e: any) {
       setOtpError(e?.message || 'Impossible de vérifier le code.');
     } finally {
@@ -576,46 +618,29 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                       <Input
                         type="password"
                         inputMode="numeric"
-                        maxLength={10}
+                        maxLength={4}
                         placeholder="Code"
                         className="w-28 bg-white/10 border-white/20 text-white placeholder:text-white/70 focus-visible:ring-white/40"
                         value={adminCode}
                         disabled={loading}
                         onChange={(e) => {
-                          setAdminCode(e.target.value);
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          setAdminCode(digits);
                           setAdminUnlockError(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key !== 'Enter') return;
-                          if (adminCode.trim() === ADMIN_UNLOCK_CODE) {
-                            setAdminUnlocked(true);
-                            setAdminUnlockOpen(false);
-                            setAdminUnlockError(null);
-                            setAdminCode('');
-                          } else {
-                            setAdminUnlockError('Code incorrect.');
+
+                          if (digits.length === 4) {
+                            if (digits === ADMIN_UNLOCK_CODE) {
+                              setAdminUnlocked(true);
+                              setAdminUnlockOpen(false);
+                              setAdminUnlockError(null);
+                              setAdminCode('');
+                            } else {
+                              setAdminUnlockError('Code incorrect.');
+                              setAdminCode('');
+                            }
                           }
                         }}
                       />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        type="button"
-                        disabled={loading}
-                        className="bg-white/10 text-white hover:bg-white/15 hover:text-white"
-                        onClick={() => {
-                          if (adminCode.trim() === ADMIN_UNLOCK_CODE) {
-                            setAdminUnlocked(true);
-                            setAdminUnlockOpen(false);
-                            setAdminUnlockError(null);
-                            setAdminCode('');
-                          } else {
-                            setAdminUnlockError('Code incorrect.');
-                          }
-                        }}
-                      >
-                        Valider
-                      </Button>
                     </div>
                   ) : null}
                 </>
@@ -625,7 +650,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                     variant="ghost"
                     size="sm"
                     type="button"
-                    className="text-muted-foreground hover:text-primary"
+                    className="bg-white text-black hover:bg-white/90"
                     onClick={() => {
                       setDevBootstrapError(null);
                       setShowDevBootstrap(true);
@@ -639,7 +664,7 @@ export default function SetupWizardModal({ open, onClose }: { open: boolean; onC
                     variant="ghost"
                     size="sm"
                     type="button"
-                    className="text-muted-foreground hover:text-red-500"
+                    className="bg-white text-black hover:bg-white/90"
                     onClick={async () => {
                       if (
                         !confirm(
