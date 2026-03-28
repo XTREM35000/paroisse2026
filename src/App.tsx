@@ -99,6 +99,8 @@ const AppInner = () => {
   const { user, role, loading: authLoading } = useAuthContext();
   const [showSetupWizardAuto, setShowSetupWizardAuto] = useState(false);
   const [firstLaunchCheckDone, setFirstLaunchCheckDone] = useState(false);
+  // Flag pour bloquer la réouverture du wizard après finalisation
+  const [isSetupFinalized, setIsSetupFinalized] = useState(false);
 
   const isPlatformDeveloper =
     !!user &&
@@ -190,7 +192,7 @@ const AppInner = () => {
         <RedirectHandler />
         {paroisseGateDone ? <WelcomeModal autoCloseDelayMs={5000} /> : null}
         <SetupWizardModal
-          open={showSetupWizardAuto}
+          open={showSetupWizardAuto && !isSetupFinalized}
           onClose={() => {
             setShowSetupWizardAuto(false);
             if (firstLaunchCheckDone) {
@@ -198,8 +200,10 @@ const AppInner = () => {
             }
           }}
           onSetupCompleted={() => {
-            console.info('[App] SetupWizard onSetupCompleted — fermeture forcée du modal');
+            console.info('[App] onSetupCompleted - wizard à fermer');
+            setIsSetupFinalized(true); // ← IMPORTANT : bloque toute réouverture
             setShowSetupWizardAuto(false);
+            console.info('[App] setupCompleted flag = true');
           }}
         />
         <Routes>

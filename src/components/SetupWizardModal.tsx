@@ -69,6 +69,13 @@ type SetupWizardModalProps = {
   onSetupCompleted?: (payload: { paroisseId: string }) => void;
 };
 
+  const { markCompleted } = useSetup();
+  const { user, refreshProfile } = useAuth();
+  const { reloadParoisses } = useParoisse();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const isDeveloperUser =
+    user?.user_metadata?.role === 'developer' || user?.app_metadata?.role === 'developer';
 export default function SetupWizardModal({ open, onClose, onSetupCompleted }: SetupWizardModalProps) {
   const { markCompleted } = useSetup();
   const { user, refreshProfile } = useAuth();
@@ -77,6 +84,9 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   const queryClient = useQueryClient();
   const isDeveloperUser =
     user?.user_metadata?.role === 'developer' || user?.app_metadata?.role === 'developer';
+
+  // Ajout du flag pour empêcher les appels multiples
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const [step, setStep] = useState(0);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
@@ -350,34 +360,45 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
   /** Après signup/OTP : recharger paroisses (liste était vide au 1er montage), profil auth, puis fermer le wizard. */
   const finalizeSetupAfterAuth = async (parishId: string, signedInUser: ReturnType<typeof useAuth> extends { user: infer U } ? U : never, targetPath: string) => {
-    console.info('[SetupWizard] finalizeSetupAfterAuth: début', { parishId, targetPath });
+    if (isCompleting) {
+      console.warn('[SetupWizard] finalizeSetupAfterAuth: déjà en cours, appel ignoré');
+      return;
+    }
+    setIsCompleting(true);
+    console.info('[SetupWizard] finalizeSetupAfterAuth - début', { parishId, targetPath });
     try {
       await reloadParoisses();
-      console.info('[SetupWizard] finalizeSetupAfterAuth: reloadParoisses terminé');
+      console.info('[SetupWizard] reloadParoisses terminé');
     } catch (e) {
       console.warn('[SetupWizard] reloadParoisses', e);
     }
     try {
       await refreshProfile();
-      console.info('[SetupWizard] finalizeSetupAfterAuth: refreshProfile terminé');
+      console.info('[SetupWizard] refreshProfile terminé');
     } catch (e) {
       console.warn('[SetupWizard] refreshProfile', e);
     }
     try {
       await queryClient.invalidateQueries({ queryKey: ['header-config'] });
       await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
     } catch {
       /* ignore */
     }
 
     markCompleted();
-    console.info('[SetupWizard] finalizeSetupAfterAuth: markCompleted()');
+    console.info('[SetupWizard] markCompleted()');
     markAppInitialized();
 
     if (parishId) {
-      onSetupCompleted?.({ paroisseId: parishId });
-      console.info('[SetupWizard] finalizeSetupAfterAuth: onSetupCompleted');
+      if (onSetupCompleted) {
+        console.info('[SetupWizard] onSetupCompleted - notification parent');
+        onSetupCompleted({ paroisseId: parishId });
+      }
     }
+
+    // Petit délai pour laisser le parent réagir
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     setShowOtp(false);
     setPendingParishId(null);
@@ -385,13 +406,19 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     setStep(0);
 
     onClose();
-    console.info('[SetupWizard] finalizeSetupAfterAuth: onClose() appelé');
+    console.info('[SetupWizard] onClose() appelé');
 
     window.requestAnimationFrame(() => {
-      console.info('[SetupWizard] finalizeSetupAfterAuth: navigate →', targetPath);
+      console.info('[SetupWizard] navigation déclenchée →', targetPath);
       navigate(targetPath, { replace: true });
     });
+    
   };
+  // Remettre le flag à false après la séquence
+  useEffect(() => {
+    if (!isCompleting) return;
+    return () => setIsCompleting(false);
+  }, [isCompleting]);
 
   const enforceSetupUserSuperAdmin = async (userId: string, parishId: string) => {
     const { error: profileRoleError } = await supabase
@@ -589,7 +616,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
         signedInUser?.app_metadata?.role === 'developer' ||
         isDeveloperUser;
       const target = signedInIsDeveloper ? '/developer/admin' : '/dashboard';
-      await finalizeSetupAfterAuth(storedParoisseId || pendingParishId || '', target);
+      await finalizeSetupAfterAuth(storedParoisseId || pendingParishId || '', signedInUser, target);
     } catch (e: any) {
       setOtpError(e?.message || 'Impossible de vérifier le code.');
     } finally {
