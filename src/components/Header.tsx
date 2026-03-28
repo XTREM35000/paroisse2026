@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, User, UserCircle, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, BookOpen, FileText, MoreVertical } from "lucide-react";
+import { User, UserCircle, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, FileText, MoreVertical } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
 const AuthModal = lazy(() => import("./AuthModal"));
 const ForgotPasswordModal = lazy(() => import("./ForgotPasswordModal"));
@@ -57,7 +57,6 @@ const useHeaderSpace = () => {
 
 const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }: HeaderProps) => {
   // All hooks FIRST, in strict order
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -246,15 +245,6 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   <span>{item.label}</span>
                 </Link>
               ))}
-              {/* Lexique Link - Accessible à tous */}
-              <Link 
-                to="/lexique"
-                className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                title="Lexique du site"
-              >
-                <BookOpen className="h-4 w-4" />
-                <span>Lexique</span>
-              </Link>
               {/* Prospect Link - Accessible à tous */}
               <Link 
                 to="/prospect"
@@ -272,37 +262,9 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
             {/* Badge Direct : toujours visible */}
             <LiveStatusBadge isLive={isLiveActive} />
 
-            {/* Search (champ animé) */}
-            <AnimatePresence>
-              {isSearchOpen && (
-                <motion.div
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: 160, opacity: 1 }}
-                  exit={{ width: 0, opacity: 0 }}
-                  className="overflow-hidden mr-2"
-                >
-                  <Input
-                    type="search"
-                    placeholder="Rechercher..."
-                    className="h-9 bg-muted/50 text-sm"
-                    autoFocus
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {/* Icônes supplémentaires : recherche + aide + lexique + chat + notifications */}
+            {/* Icônes supplémentaires : aide + chat + notifications */}
             {isFullHeader ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="text-muted-foreground hover:text-foreground"
-                  title="Rechercher"
-                >
-                  <Search className="h-5 w-5" />
-                </Button>
-
                 <Button
                   variant="ghost"
                   size="icon"
@@ -311,16 +273,6 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   title="Aide"
                 >
                   <HelpCircle className="h-5 w-5" />
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate('/lexique?mobile=1')}
-                  className="text-muted-foreground hover:text-foreground"
-                  title="Lexique"
-                >
-                  <BookOpen className="h-5 w-5" />
                 </Button>
 
                 {user && (
@@ -380,20 +332,10 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setIsSearchOpen(true)}
-                  >
-                    <Search className="mr-2 h-4 w-4" /> Recherche
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
+                    <DropdownMenuItem
                     onClick={() => navigate("/help")}
                   >
                     <HelpCircle className="mr-2 h-4 w-4" /> Aide
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigate('/lexique?mobile=1')}
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" /> Lexique
                   </DropdownMenuItem>
                   {user && (
                     <>

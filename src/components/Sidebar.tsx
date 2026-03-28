@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, BookOpen, FileText, CheckCircle2, Award, Building2 } from 'lucide-react';
+import { Home, Video, Image, Calendar, Users, CreditCard, Settings, MessageSquare, BarChart3, ChevronLeft, ChevronRight, Bell, Search, X, FileText, CheckCircle2, Award, Building2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
 import { useParoisse } from '@/contexts/ParoisseContext';
@@ -10,7 +10,6 @@ export const MENU_GROUPS = [
     title: 'Tableau de bord',
     items: [
       { label: 'Vue d\'ensemble', href: '/dashboard', icon: Home },
-      { label: 'Lexique', href: '/lexique', icon: BookOpen },
       { label: 'Prospect', href: '/prospect', icon: FileText },
     ],
   },
