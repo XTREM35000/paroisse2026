@@ -20,6 +20,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ensureProfileExists } from '@/utils/ensureProfileExists';
 import { uploadPendingAvatar } from '@/utils/uploadPendingAvatar';
 import { markAppInitialized } from '@/lib/appInitializer';
+import { STORAGE_SELECTED_PAROISSE } from '@/lib/paroisseStorage';
+import { useParoisse } from '@/contexts/ParoisseContext';
 
 type FormState = {
   heroTitle: string;
@@ -69,7 +71,8 @@ type SetupWizardModalProps = {
 
 export default function SetupWizardModal({ open, onClose, onSetupCompleted }: SetupWizardModalProps) {
   const { markCompleted } = useSetup();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
+  const { reloadParoisses } = useParoisse();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isDeveloperUser =
@@ -345,6 +348,51 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     setStep(s => Math.max(0, s - 1));
   };
 
+  /** Après signup/OTP : recharger paroisses (liste était vide au 1er montage), profil auth, puis fermer le wizard. */
+  const finalizeSetupAfterAuth = async (parishId: string, signedInUser: ReturnType<typeof useAuth> extends { user: infer U } ? U : never, targetPath: string) => {
+    console.info('[SetupWizard] finalizeSetupAfterAuth: début', { parishId, targetPath });
+    try {
+      await reloadParoisses();
+      console.info('[SetupWizard] finalizeSetupAfterAuth: reloadParoisses terminé');
+    } catch (e) {
+      console.warn('[SetupWizard] reloadParoisses', e);
+    }
+    try {
+      await refreshProfile();
+      console.info('[SetupWizard] finalizeSetupAfterAuth: refreshProfile terminé');
+    } catch (e) {
+      console.warn('[SetupWizard] refreshProfile', e);
+    }
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['header-config'] });
+      await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
+    } catch {
+      /* ignore */
+    }
+
+    markCompleted();
+    console.info('[SetupWizard] finalizeSetupAfterAuth: markCompleted()');
+    markAppInitialized();
+
+    if (parishId) {
+      onSetupCompleted?.({ paroisseId: parishId });
+      console.info('[SetupWizard] finalizeSetupAfterAuth: onSetupCompleted');
+    }
+
+    setShowOtp(false);
+    setPendingParishId(null);
+    setPendingUser(null);
+    setStep(0);
+
+    onClose();
+    console.info('[SetupWizard] finalizeSetupAfterAuth: onClose() appelé');
+
+    window.requestAnimationFrame(() => {
+      console.info('[SetupWizard] finalizeSetupAfterAuth: navigate →', targetPath);
+      navigate(targetPath, { replace: true });
+    });
+  };
+
   const enforceSetupUserSuperAdmin = async (userId: string, parishId: string) => {
     const { error: profileRoleError } = await supabase
       .from('profiles')
@@ -523,20 +571,25 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
         }
         await ensureProfileExists(signedInUser.id);
         await uploadPendingAvatar(signedInUser.id);
+        if (parishIdForMembership) {
+          try {
+            localStorage.setItem(STORAGE_SELECTED_PAROISSE, parishIdForMembership);
+          } catch {
+            /* ignore */
+          }
+        }
       }
 
       const storedParoisseId = pendingParishId || localStorage.getItem('selectedParoisse') || '';
-      if (storedParoisseId) {
-        onSetupCompleted?.({ paroisseId: storedParoisseId });
+      if (!storedParoisseId) {
+        console.warn('[SetupWizard] verifyOtp: aucun paroisseId stocké, redirection quand même');
       }
-      markAppInitialized();
-      markCompleted();
-      onClose();
       const signedInIsDeveloper =
         signedInUser?.user_metadata?.role === 'developer' ||
         signedInUser?.app_metadata?.role === 'developer' ||
         isDeveloperUser;
-      navigate(signedInIsDeveloper ? '/developer/admin' : '/dashboard', { replace: true });
+      const target = signedInIsDeveloper ? '/developer/admin' : '/dashboard';
+      await finalizeSetupAfterAuth(storedParoisseId || pendingParishId || '', target);
     } catch (e: any) {
       setOtpError(e?.message || 'Impossible de vérifier le code.');
     } finally {

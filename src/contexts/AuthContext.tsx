@@ -3,6 +3,8 @@ import type { Session, User } from '@supabase/supabase-js';
 import { getAuthCallbackUrl, supabase } from '@/integrations/supabase/client';
 
 import type { Profile } from '@/types/database';
+import { mergeEffectiveRole } from '@/utils/rolePermissions';
+import { syncDeveloperAccess } from '@/lib/initializeDeveloper';
 import { AuthContext } from './auth-context-def';
 
 /** Raw profile row from DB (select *), may include role and nullable fields */
@@ -47,6 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const row = data as RawProfileRow | null;
+      const effectiveRole = mergeEffectiveRole(row?.role ?? null, session.user);
+
       const mergedProfile: Profile | null = row
         ? {
             id: session.user.id,
@@ -62,11 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             notification_preferences: row.notification_preferences ?? { email: true, push: false, sms: false },
             created_at: row.created_at ?? new Date().toISOString(),
             updated_at: row.updated_at ?? new Date().toISOString(),
+            role: effectiveRole,
           }
         : null;
 
       setProfile(mergedProfile);
-      setRole(row?.role ?? session.user.user_metadata?.role ?? null);
+      setRole(effectiveRole);
 
       try {
         localStorage.setItem('ff_profile_cache', JSON.stringify({ data, cachedAt: Date.now() }));
@@ -121,6 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.error) throw res.error;
       setSession(res.data.session ?? null);
       setUser(res.data.user ?? null);
+      await syncDeveloperAccess();
+      await loadSession({ silent: true });
     } finally {
       setLoading(false);
     }

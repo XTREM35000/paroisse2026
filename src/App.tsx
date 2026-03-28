@@ -78,6 +78,7 @@ import AdminParoisses from './pages/AdminParoisses';
 import DeveloperAdminPage from './pages/DeveloperAdminPage';
 import WelcomeModal from './components/WelcomeModal';
 import { ParoisseProvider, useParoisse } from '@/contexts/ParoisseContext';
+import { useAuthContext } from '@/contexts/useAuthContext';
 import { SetupProvider } from '@/contexts/SetupContext';
 import { ParoisseSelector } from '@/components/ParoisseSelector';
 import SetupWizardModal from '@/components/SetupWizardModal';
@@ -94,9 +95,15 @@ const FORCE_PAROISSE_MODAL_ON_LAUNCH = false;
 const queryClient = new QueryClient();
 
 const AppInner = () => {
-  const { paroisse, isLoading, isSelectorOpen, setSelectorOpen } = useParoisse();
+  const { paroisse, paroissesList, setParoisse, isLoading, isSelectorOpen, setSelectorOpen } = useParoisse();
+  const { user, role, loading: authLoading } = useAuthContext();
   const [showSetupWizardAuto, setShowSetupWizardAuto] = useState(false);
   const [firstLaunchCheckDone, setFirstLaunchCheckDone] = useState(false);
+
+  const isPlatformDeveloper =
+    !!user &&
+    (String(role || '').toLowerCase() === 'developer' ||
+      String((user.user_metadata as { role?: string } | undefined)?.role || '').toLowerCase() === 'developer');
 
   /** Après choix / restauration paroisse, ou prompt déjà terminé — alors seulement le splash welcome peut s'afficher. */
   const [paroisseGateDone, setParoisseGateDone] = useState(false);
@@ -109,6 +116,13 @@ const AppInner = () => {
     setSelectorOpen(false);
     setParoisseGateDone(true);
   }, [setSelectorOpen]);
+
+  /** Developer : contexte tenant requis pour la plupart des pages — sélectionner une paroisse par défaut si rien en stockage. */
+  useEffect(() => {
+    if (isLoading || authLoading || !user || !isPlatformDeveloper || paroisse) return;
+    const firstReal = paroissesList.find((p) => p.slug !== 'system');
+    if (firstReal) setParoisse(firstReal);
+  }, [isLoading, authLoading, user, isPlatformDeveloper, paroisse, paroissesList, setParoisse]);
 
   /** Mode forcé : ouverture au montage + dès que le chargement liste termine (au cas où le 1er tick échoue). */
   useEffect(() => {
@@ -124,7 +138,7 @@ const AppInner = () => {
   useEffect(() => {
     if (FORCE_PAROISSE_MODAL_ON_LAUNCH) return;
 
-    if (isLoading) return;
+    if (isLoading || authLoading) return;
 
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
     const shouldSkipParoisseSelector =
@@ -143,7 +157,7 @@ const AppInner = () => {
 
     setParoisseGateDone(false);
     setSelectorOpen(true);
-  }, [isLoading, paroisse, setSelectorOpen]);
+  }, [isLoading, authLoading, paroisse, setSelectorOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -182,6 +196,10 @@ const AppInner = () => {
             if (firstLaunchCheckDone) {
               markAppInitialized();
             }
+          }}
+          onSetupCompleted={() => {
+            console.info('[App] SetupWizard onSetupCompleted — fermeture forcée du modal');
+            setShowSetupWizardAuto(false);
           }}
         />
         <Routes>

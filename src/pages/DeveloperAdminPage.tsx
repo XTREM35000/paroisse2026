@@ -18,10 +18,10 @@ export default function DeveloperAdminPage() {
   const { parishes, loading, updateParishStatus, deleteParish, createParish } = useDeveloperAdmin();
   const [searchTerm, setSearchTerm] = useState('');
 
+  const metaRole = String((user?.user_metadata as { role?: string } | undefined)?.role || '').toLowerCase();
+  const appRole = String((user?.app_metadata as { role?: string } | undefined)?.role || '').toLowerCase();
   const isDeveloper =
-    role === 'developer' ||
-    user?.user_metadata?.role === 'developer' ||
-    user?.app_metadata?.role === 'developer';
+    String(role || '').toLowerCase() === 'developer' || metaRole === 'developer' || appRole === 'developer';
 
   if (authLoading) {
     return (

@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ChangePasswordForm from '@/components/ChangePasswordForm';
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
+import { formatRoleLabelForUi, isAdmin as rpIsAdmin, isSuperAdminLevel } from '@/utils/rolePermissions';
 
 interface UserData {
   full_name: string;
@@ -30,7 +31,7 @@ interface UserData {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation(); 
-  const { user, signOut, refreshProfile } = useAuth();
+  const { user, signOut, refreshProfile, role: authRole } = useAuth();
   const { profile, isLoading: profileLoading } = useUser();
   const { data: hero, save: saveHero } = usePageHero(location.pathname); // ✅ Utilisable ici
   const { toast } = useToast();
@@ -66,10 +67,12 @@ const ProfilePage = () => {
           if(lower === 'membre' || lower === 'member') return 'membre';
           if(lower === 'moderateur' || lower === 'moderator') return 'moderateur';
           if(lower === 'admin' || lower === 'administrateur') return 'admin';
+          if(lower === 'super_admin' || lower === 'superadmin' || lower === 'super-admin') return 'super_admin';
+          if(lower === 'developer' || lower === 'developper') return 'developer';
           if(lower === 'pretre' || lower === 'priest') return 'pretre';
           if(lower === 'diacre') return 'diacre';
           return lower;
-        })(profile.role),
+        })(profile.role ?? authRole),
       });
     } else if (user) {
       setUserData((prev) => ({ 
@@ -472,14 +475,17 @@ const ProfilePage = () => {
                         <label className="text-sm font-medium mb-2 block">Type de compte</label>
                         {/* Sélecteur visible seulement pour les admins */}
                         {(() => {
-                          const isAdmin = !!(profile && profile.role && ['admin','super_admin','administrateur'].includes(String(profile.role).toLowerCase()));
-                          if (isAdmin && isEditing) {
+                          const effective = authRole ?? profile?.role ?? user?.user_metadata?.role ?? null;
+                          const isPrivileged = rpIsAdmin(String(effective ?? '')) || isSuperAdminLevel(String(effective ?? ''));
+                          const isSuperOrDev =
+                            isSuperAdminLevel(String(effective ?? '')) ||
+                            String(effective ?? '').toLowerCase() === 'developer';
+                          if (isPrivileged && isEditing && !isSuperOrDev) {
                             return (
                               <select
                                 value={userData.role || 'member'}
                                 onChange={(e) => setUserData({ ...userData, role: e.target.value })}
                                 className="w-full p-2 border rounded"
-                                disabled={String(profile?.role).toLowerCase() === 'super_admin'}
                               >
                                 <option value="member">Membre</option>
                                 <option value="moderator">Modérateur</option>
@@ -488,11 +494,20 @@ const ProfilePage = () => {
                             );
                           }
 
-                          // Lecture seule pour les non-admins
                           return (
                             <div className="p-3 bg-muted rounded">
-                              <p className="text-sm">Rôle : <strong>{profile?.role || 'member'}</strong></p>
-                              <p className="text-xs text-muted-foreground">Seul un administrateur peut modifier votre rôle.</p>
+                              <p className="text-sm">
+                                Rôle :{' '}
+                                <strong>{formatRoleLabelForUi(String(effective ?? ''))}</strong>
+                                {effective && (
+                                  <span className="text-muted-foreground font-normal"> ({String(effective)})</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {isSuperOrDev
+                                  ? 'Compte avec tous les privilèges sur la paroisse et la plateforme (selon le rôle).'
+                                  : 'Seul un administrateur peut modifier votre rôle.'}
+                              </p>
                             </div>
                           );
                         })()}

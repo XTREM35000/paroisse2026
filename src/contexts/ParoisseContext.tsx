@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { STORAGE_SELECTED_PAROISSE } from '@/lib/paroisseStorage';
 
@@ -17,6 +17,8 @@ interface ParoisseContextType {
   paroissesList: Paroisse[];
   isSelectorOpen: boolean;
   setSelectorOpen: (open: boolean) => void;
+  /** Recharge les paroisses actives + restaure la sélection depuis localStorage (ex. après setup wizard). */
+  reloadParoisses: () => Promise<void>;
 }
 
 const ParoisseContext = createContext<ParoisseContextType | undefined>(undefined);
@@ -72,7 +74,7 @@ export const ParoisseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     void loadParoisses();
-  }, []);
+  }, [loadParoisses]);
 
   return (
     <ParoisseContext.Provider
@@ -83,6 +85,7 @@ export const ParoisseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         paroissesList,
         isSelectorOpen,
         setSelectorOpen: setIsSelectorOpen,
+        reloadParoisses: loadParoisses,
       }}
     >
       {children}

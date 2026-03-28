@@ -1,26 +1,31 @@
 import { useAuthContext } from '@/contexts/useAuthContext';
+import { isAdmin as rpIsAdmin, isSuperAdminLevel } from '@/utils/rolePermissions';
 
 export function useUserRoles() {
   const { role, loading } = useAuthContext();
+  const r = role ?? undefined;
   const roles = role ? [String(role).toLowerCase()] : [];
-  const hasRole = (r: string) => roles.includes(String(r).toLowerCase());
-  const isAdmin = hasRole('admin') || hasRole('super_admin') || hasRole('administrateur');
+  const hasRole = (name: string) => {
+    const w = String(name).toLowerCase();
+    if (w === 'super_admin' || w === 'superadmin' || w === 'super-admin') {
+      return isSuperAdminLevel(r);
+    }
+    if (w === 'admin' || w === 'administrateur') {
+      return rpIsAdmin(r);
+    }
+    return roles.includes(w);
+  };
+  const isAdmin = rpIsAdmin(r);
   const isModerator = hasRole('moderator') || hasRole('moderateur') || isAdmin;
   const isMember = roles.length > 0;
 
   const canEditRole = (targetUserRole?: string) => {
-    // Si l'utilisateur courant est super_admin → peut tout modifier
-    if (hasRole('super_admin')) return true;
-    
-    // Si admin → peut modifier tout sauf super_admin
-    if (hasRole('admin')) {
-      return targetUserRole !== 'super_admin';
-    }
-    
+    if (isSuperAdminLevel(r)) return true;
+    if (rpIsAdmin(r) && !isSuperAdminLevel(targetUserRole)) return true;
     return false;
   };
 
-  const isSuperAdmin = hasRole('super_admin');
+  const isSuperAdmin = isSuperAdminLevel(r);
 
   return {
     roles,

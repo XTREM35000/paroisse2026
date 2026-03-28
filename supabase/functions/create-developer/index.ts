@@ -24,6 +24,7 @@ Deno.serve(async (req) => {
     const devUsername = 'thierry_gogo'
     const devFullName = 'Thierry Gogo'
     // Alignement avec le SetupWizard (SYSTEM modal) qui tente de se connecter avec ce mot de passe.
+    // Single source of truth for dev login; override with DEV_PASSWORD in Edge Function secrets.
     const devPassword = Deno.env.get('DEV_PASSWORD') || 'P2024Mano"'
 
     const systemParishId = '00000000-0000-0000-0000-000000000001'
@@ -139,6 +140,45 @@ Deno.serve(async (req) => {
 
       devProfileRole = 'developer'
       console.log('[create-developer] ✅ Developer créé/upsert:', developerId)
+    }
+
+    /* Profil parfois resté « membre » (trigger / conflit) alors que JWT porte role developer. */
+    if (developerId) {
+      const { error: fixProfileErr } = await supabaseAdmin
+        .from('profiles')
+        .upsert(
+          {
+            id: developerId,
+            email: (developerEmail ?? devEmail).trim(),
+            username: devUsername,
+            full_name: devFullName,
+            role: 'developer',
+            paroisse_id: systemParishId,
+            is_active: true,
+          },
+          { onConflict: 'id' },
+        )
+      if (fixProfileErr) {
+        console.warn('[create-developer] Upsert developer profiles:', fixProfileErr)
+      }
+    }
+
+    // Aligner auth uniquement à la première installation : évite de réinitialiser le mot de passe
+    // du developer à chaque visite d’un utilisateur connecté (create-developer est invoqué souvent).
+    if (developerId && isFirstInstall) {
+      const { error: authAlignErr } = await supabaseAdmin.auth.admin.updateUserById(developerId, {
+        email: developerEmail ?? devEmail,
+        password: devPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: devFullName,
+          username: devUsername,
+          role: 'developer',
+        },
+      })
+      if (authAlignErr) {
+        console.warn('[create-developer] Alignement auth (première installation) ignoré:', authAlignErr)
+      }
     }
 
     // Best-effort: marquer le developer comme certifié si les colonnes existent.

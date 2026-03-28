@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/useAuthContext';
+import { isAdmin as rpIsAdmin, isSuperAdminLevel } from '@/utils/rolePermissions';
 
 type ProtectedRole = 'admin' | 'super_admin' | 'both';
 
@@ -22,14 +23,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }
 
   if (requiredRole) {
-    const effectiveRole = (role || '').toString().toLowerCase();
-
-    const isAdminFamily = effectiveRole === 'admin' || effectiveRole === 'super_admin' || effectiveRole === 'administrateur';
-    const isSuperAdmin = effectiveRole === 'super_admin';
+    const isAdminFamily = rpIsAdmin(role ?? undefined);
+    const isSuper = isSuperAdminLevel(role ?? undefined);
 
     const hasAccess =
       (requiredRole === 'admin' && isAdminFamily) ||
-      (requiredRole === 'super_admin' && isSuperAdmin) ||
+      (requiredRole === 'super_admin' && isSuper) ||
       (requiredRole === 'both' && isAdminFamily);
 
     if (!hasAccess) {

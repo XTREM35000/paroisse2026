@@ -17,6 +17,8 @@ export interface Profile {
   location: string | null;
   date_of_birth: string | null;
   is_active: boolean;
+  /** Rôle métier (profiles.role) — super_admin, developer, admin, etc. */
+  role?: string | null;
   notification_preferences: {
     email: boolean;
     push: boolean;
