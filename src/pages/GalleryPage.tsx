@@ -1,37 +1,39 @@
-import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";import { useQueryClient } from '@tanstack/react-query';import HeroBanner from "@/components/HeroBanner";
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Search, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
+import HeroBanner from '@/components/HeroBanner';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
-import { useGalleryImages } from "@/hooks/useGalleryImages";
+import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
-import GalleryCard from "@/components/GalleryCard";
-import GalleryGrid from "@/components/GalleryGrid";
+import GalleryGrid from '@/components/GalleryGrid';
 import FileUploadZone from '@/components/FileUploadZone';
 import ArchiveCard from '@/components/ArchiveCard';
 import useArchives from '@/hooks/useArchives';
 import type { GalleryImage } from '@/types/database';
+import GalleryImageModal from '@/components/GalleryImageModal';
 
 const GalleryPage = () => {
-  const { images, loading } = useGalleryImages(100);
+  const { images, loading, refresh } = useGalleryImages(100);
   const { user } = useAuth();
   const { isAdmin } = useUser();
-  
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const categories = useMemo(
     () =>
       Array.from(
-          new Set(
-            (images as GalleryImage[])
-              ?.map((img) => img.category?.name ?? null)
-              .filter(Boolean) ?? []
-          )
-        ).sort(),
-    [images]
+        new Set(
+          (images as GalleryImage[])?.map((img) => img.category?.name ?? null).filter(Boolean) ?? [],
+        ),
+      ).sort(),
+    [images],
   );
 
   const filteredImages = useMemo(() => {
@@ -45,28 +47,27 @@ const GalleryPage = () => {
         desc.toLowerCase().includes(searchTerm.toLowerCase());
       const imgCategory = img.category?.name ?? 'all';
       const matchesCategory = selectedCategory === 'all' || imgCategory === selectedCategory;
-      // Chacun voit ses propres images (même pending) + les images approuvées + admin voit tout
       const isVisible = isAdmin || img.status === 'approved' || img.user_id === user?.id;
       return matchesSearch && matchesCategory && isVisible;
     });
   }, [images, searchTerm, selectedCategory, isAdmin, user?.id]);
 
-function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
-  const { useList } = useArchives();
-  const { data: archives, isLoading } = useList(mediaType);
+  function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
+    const { useList } = useArchives();
+    const { data: archives, isLoading } = useList(mediaType);
 
-  if (isLoading) return <div>Chargement des archives...</div>;
+    if (isLoading) return <div>Chargement des archives...</div>;
 
-  return (
-    <div className="space-y-3">
-      {archives?.length ? (
-        (archives as any[]).map((a) => <ArchiveCard key={a.id} archive={a} />)
-      ) : (
-        <div className="text-sm text-muted-foreground">Aucune archive partagée pour le moment.</div>
-      )}
-    </div>
-  );
-}
+    return (
+      <div className="space-y-3">
+        {archives?.length ? (
+          (archives as any[]).map((a) => <ArchiveCard key={a.id} archive={a} />)
+        ) : (
+          <div className="text-sm text-muted-foreground">Aucune archive partagée pour le moment.</div>
+        )}
+      </div>
+    );
+  }
 
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
@@ -74,8 +75,6 @@ function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header provided by Layout */}
-      
       <HeroBanner
         title="Galerie"
         subtitle="Découvrez nos plus beaux moments et événements"
@@ -84,8 +83,31 @@ function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
         onBgSave={saveHero}
       />
 
+      {isAdmin ? (
+        <div className="container mx-auto max-w-6xl px-4 pt-6">
+          <Button
+            type="button"
+            onClick={() => setShowUploadModal(true)}
+            className="gap-2 shadow-sm"
+            size="lg"
+          >
+            <Plus className="h-5 w-5" />
+            Ajouter une image
+          </Button>
+        </div>
+      ) : null}
+
+      <GalleryImageModal
+        open={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onImageAdded={() => {
+          setShowUploadModal(false);
+          void refresh();
+          void queryClient.invalidateQueries({ queryKey: ['gallery'] });
+        }}
+      />
+
       <div className="container mx-auto px-4 py-12">
-        {/* Search and Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,17 +125,16 @@ function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
             />
           </div>
 
-          {/* Category Filters */}
           {categories.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedCategory("all")}
+                onClick={() => setSelectedCategory('all')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === "all"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  selectedCategory === 'all'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
                 Tous
@@ -126,8 +147,8 @@ function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     selectedCategory === cat
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
                   {cat}
@@ -137,14 +158,18 @@ function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
           )}
         </motion.div>
 
-        {/* Upload zone & archives (admins) */}
         <div className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
-              {(isAdmin) ? (
-                <FileUploadZone mediaType="images" onUploaded={() => queryClient.invalidateQueries({ queryKey: ['archives', 'images'] })} />
+              {isAdmin ? (
+                <FileUploadZone
+                  mediaType="images"
+                  onUploaded={() => queryClient.invalidateQueries({ queryKey: ['archives', 'images'] })}
+                />
               ) : (
-                <div className="p-4 text-sm text-muted-foreground">Seuls les administrateurs peuvent téléverser des archives ZIP.</div>
+                <div className="p-4 text-sm text-muted-foreground">
+                  Seuls les administrateurs peuvent téléverser des archives ZIP.
+                </div>
               )}
             </div>
             <div>
@@ -154,18 +179,16 @@ function GalleryArchivesList({ mediaType }: { mediaType?: string }) {
           </div>
         </div>
 
-        {/* Gallery Grid */}
         <GalleryGrid
           images={filteredImages as GalleryImage[]}
           loading={loading}
+          refetch={refresh}
+          canAddImages={false}
           onOpen={(img) => {
-            /* TODO: open modal/lightbox */
             console.log('Open image', img.id);
           }}
         />
       </div>
-
-      {/* Footer provided by Layout */}
     </div>
   );
 };

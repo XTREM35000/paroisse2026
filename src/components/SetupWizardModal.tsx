@@ -4,13 +4,17 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DraggableModal from './DraggableModal';
-import { initFirstParoisseAndUser, uploadImageToStorage } from '@/lib/setupWizard';
+import {
+  initFirstParoisseAndUser,
+  uploadImageToStorage,
+  type SetupData,
+  type HomepageSectionRow,
+} from '@/lib/setupWizard';
 import { useSetup } from '@/contexts/SetupContext';
-import type { HomepageSectionRow } from '@/lib/setupWizard';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Upload, Loader2, Camera, UserCircle2, Church, BookOpen, Sparkles, Mail, UserCog, Trash2, Phone, MapPin } from 'lucide-react';
+import { Upload, Loader2, Camera, UserCircle2, Church, BookOpen, Sparkles, Mail, UserCog, Trash2, Phone, MapPin, Images } from 'lucide-react';
 import PasswordField from '@/components/ui/password-field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { isValidEmail } from '@/utils/emailSanitizer';
@@ -58,11 +62,26 @@ type FormState = {
   headerLogo?: string;
   headerMainTitle: string;
   headerSubtitle: string;
+
+  /** URLs d’images hero par route (pages publiques). */
+  heroBanners: Record<string, string>;
 };
 
 type ImageField = 'heroImageUrl' | 'brandingLogo' | 'headerLogo';
 
-const WIZARD_STEPS = 5;
+const PUBLIC_HERO_BANNER_PAGES: { path: string; label: string }[] = [
+  { path: '/', label: 'Accueil' },
+  { path: '/a-propos', label: 'À propos' },
+  { path: '/galerie', label: 'Galerie' },
+  { path: '/videos', label: 'Vidéos' },
+  { path: '/evenements', label: 'Événements' },
+];
+
+function emptyHeroBanners(): Record<string, string> {
+  return Object.fromEntries(PUBLIC_HERO_BANNER_PAGES.map(({ path }) => [path, ''])) as Record<string, string>;
+}
+
+const WIZARD_STEPS = 6;
 
 type SetupWizardModalProps = {
   open: boolean;
@@ -73,6 +92,11 @@ type SetupWizardModalProps = {
   // isDeveloperUser doit être défini après l'appel à useAuth()
 
 export default function SetupWizardModal({ open, onClose, onSetupCompleted }: SetupWizardModalProps) {
+    const finalizeRanRef = useRef(false);
+    const otpInFlightRef = useRef(false);
+    const heroBannerFileInputRef = useRef<HTMLInputElement>(null);
+    const [heroBannerUploadPath, setHeroBannerUploadPath] = useState<string | null>(null);
+
     // Navigation étapes wizard
     const handlePrev = () => {
       setError(null);
@@ -87,58 +111,70 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
     // Finalisation après OTP (navigation, reset, etc.)
     const finalizeSetupAfterAuth = async (parishId: string, signedInUser: any, targetPath: string) => {
+      if (finalizeRanRef.current) {
+        console.warn('[SetupWizard] finalizeSetupAfterAuth: déjà finalisé, ignoré');
+        return;
+      }
       if (isCompleting) {
         console.warn('[SetupWizard] finalizeSetupAfterAuth: déjà en cours, appel ignoré');
         return;
       }
+      finalizeRanRef.current = true;
       setIsCompleting(true);
       console.info('[SetupWizard] finalizeSetupAfterAuth - début', { parishId, targetPath });
       try {
-        await reloadParoisses();
-        console.info('[SetupWizard] reloadParoisses terminé');
-      } catch (e) {
-        console.warn('[SetupWizard] reloadParoisses', e);
-      }
-      try {
-        await refreshProfile();
-        console.info('[SetupWizard] refreshProfile terminé');
-      } catch (e) {
-        console.warn('[SetupWizard] refreshProfile', e);
-      }
-      try {
-        await queryClient.invalidateQueries({ queryKey: ['header-config'] });
-        await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
-        await queryClient.invalidateQueries({ queryKey: ['profile'] });
-      } catch {
-        /* ignore */
-      }
-
-      markCompleted();
-      console.info('[SetupWizard] markCompleted()');
-      markAppInitialized();
-
-      if (parishId) {
-        if (onSetupCompleted) {
-          console.info('[SetupWizard] onSetupCompleted - notification parent');
-          onSetupCompleted({ paroisseId: parishId });
+        try {
+          await reloadParoisses();
+          console.info('[SetupWizard] reloadParoisses terminé');
+        } catch (e) {
+          console.warn('[SetupWizard] reloadParoisses', e);
         }
+        try {
+          await refreshProfile();
+          console.info('[SetupWizard] refreshProfile terminé');
+        } catch (e) {
+          console.warn('[SetupWizard] refreshProfile', e);
+        }
+        try {
+          await queryClient.invalidateQueries({ queryKey: ['header-config'] });
+          await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
+          await queryClient.invalidateQueries({ queryKey: ['profile'] });
+        } catch {
+          /* ignore */
+        }
+
+        markCompleted();
+        console.info('[SetupWizard] markCompleted()');
+        markAppInitialized();
+
+        const effectiveParishId =
+          parishId ||
+          pendingParishId ||
+          (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_SELECTED_PAROISSE) : '') ||
+          '';
+
+        if (onSetupCompleted) {
+          console.info('[SetupWizard] onSetupCompleted - notification parent', { effectiveParishId });
+          onSetupCompleted({ paroisseId: effectiveParishId });
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        setShowOtp(false);
+        setPendingParishId(null);
+        setPendingUser(null);
+        setStep(0);
+
+        onClose();
+        console.info('[SetupWizard] onClose() appelé');
+
+        window.requestAnimationFrame(() => {
+          console.info('[SetupWizard] navigation déclenchée →', targetPath);
+          navigate(targetPath, { replace: true });
+        });
+      } finally {
+        setIsCompleting(false);
       }
-
-      // Petit délai pour laisser le parent réagir
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      setShowOtp(false);
-      setPendingParishId(null);
-      setPendingUser(null);
-      setStep(0);
-
-      onClose();
-      console.info('[SetupWizard] onClose() appelé');
-
-      window.requestAnimationFrame(() => {
-        console.info('[SetupWizard] navigation déclenchée →', targetPath);
-        navigate(targetPath, { replace: true });
-      });
     };
   const { markCompleted } = useSetup();
   const { user, refreshProfile } = useAuth();
@@ -216,6 +252,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     headerLogo: undefined,
     headerMainTitle: user?.email?.split('@')[0] ?? 'Ma Paroisse',
     headerSubtitle: 'Une communauté de foi et de service',
+    heroBanners: emptyHeroBanners(),
   });
 
   // Illustration images per step (public free icons)
@@ -225,9 +262,10 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     'https://cdn-icons-png.flaticon.com/512/2971/2971976.png',
     'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
     'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+    'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
   ];
 
-  const stepIcons = [Church, BookOpen, Sparkles, Mail, UserCog];
+  const stepIcons = [Church, BookOpen, Sparkles, Images, Mail, UserCog];
 
   const progress = useMemo(() => Math.round(((step + 1) / WIZARD_STEPS) * 100), [step]);
 
@@ -251,7 +289,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   }, []);
 
   useEffect(() => {
-    if (step !== 3) return;
+    if (step !== 4) return;
     setForm(prev => ({
       ...prev,
       footerEmail: prev.footerEmail.trim() ? prev.footerEmail : prev.brandingEmail,
@@ -259,10 +297,17 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   }, [step]);
 
   useEffect(() => {
-    if (step !== 4) return;
+    if (step !== 5) return;
     setAdminEmail(prev => (prev.trim() ? prev : form.brandingEmail));
     setAdminPhone(prev => (prev.trim() ? prev : form.footerSuperAdminPhone.trim() || form.footerModeratorPhone.trim()));
   }, [step, form.brandingEmail]);
+
+  useEffect(() => {
+    if (!open) return;
+    finalizeRanRef.current = false;
+    otpInFlightRef.current = false;
+    setIsCompleting(false);
+  }, [open]);
 
   // Security/UX: reset the unlock state when the modal closes.
   useEffect(() => {
@@ -310,6 +355,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       headerLogo: undefined,
       headerMainTitle: '',
       headerSubtitle: '',
+      heroBanners: emptyHeroBanners(),
     });
     setAdminFullName('');
     setAdminEmail('');
@@ -363,7 +409,14 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
           mission:
             "Annoncer l'Évangile, célébrer la foi, accompagner les fidèles dans leur vie spirituelle et servir la communauté à travers des actions de solidarité et de partage.",
           values: ['Foi', 'Espérance', 'Charité', 'Fraternité', 'Accueil'],
-          team: [{ name: 'Père Basile Diané', role: 'Curé', photo: '/images/pere-basile.jpg' }],
+          team: [
+            {
+              name: 'Père Basile Diané',
+              role: 'Curé',
+              photo:
+                'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/1774734028124_nf5pez.jpg',
+            },
+          ],
         },
         null,
         2,
@@ -386,6 +439,13 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       footerWhatsappUrl: 'https://wa.me/2250505263030',
       footerCopyrightText:
         '© 2026 Paroisse Internationale Notre-Dame de la Compassion – Tous droits réservés',
+
+      heroBanners: {
+        ...emptyHeroBanners(),
+        '/': 'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero/1774523372478-accueil.png',
+        '/galerie':
+          'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/1774734028124_nf5pez.jpg',
+      },
     }));
 
     // Step 5 – Compte admin
@@ -426,6 +486,36 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     }
   };
 
+  const handleHeroBannerFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const path = heroBannerUploadPath;
+    setHeroBannerUploadPath(null);
+    if (!file || !path) return;
+    const uploadKey = `hero-banner-${path}`;
+    setUploading(uploadKey);
+    setError(null);
+    try {
+      const url = await uploadImageToStorage(file, 'hero-banners');
+      if (!url) throw new Error('Échec du téléchargement');
+      setForm((prev) => ({
+        ...prev,
+        heroBanners: { ...prev.heroBanners, [path]: url },
+      }));
+    } catch (err: any) {
+      setError(`Erreur bannière ${path}: ${err.message}`);
+    } finally {
+      setUploading(null);
+      if (heroBannerFileInputRef.current) heroBannerFileInputRef.current.value = '';
+    }
+  };
+
+  const setHeroBannerUrl = (path: string, url: string) => {
+    setForm((prev) => ({
+      ...prev,
+      heroBanners: { ...prev.heroBanners, [path]: url },
+    }));
+  };
+
   const validateStep = () => {
     if (step === 0) {
       return !!form.heroTitle && !!form.featuresTitle;
@@ -437,9 +527,12 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       return !!form.brandingName && !!form.brandingEmail;
     }
     if (step === 3) {
-      return !!form.footerEmail.trim() && isValidEmail(form.footerEmail.trim());
+      return true;
     }
     if (step === 4) {
+      return !!form.footerEmail.trim() && isValidEmail(form.footerEmail.trim());
+    }
+    if (step === 5) {
       return (
         adminFullName.trim().length >= 2 &&
         isValidEmail(adminEmail.trim()) &&
@@ -533,7 +626,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
       const help = { faq: [] };
 
-      const setupPayload = {
+      const setupPayload: SetupData = {
         sections,
         about,
         branding,
@@ -542,7 +635,13 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
         headerLogo: form.headerLogo,
         headerMainTitle: form.headerMainTitle,
         headerSubtitle: form.headerSubtitle,
+        heroBanners: form.heroBanners,
       };
+
+      const pastedAvatarUrl =
+        !useGravatar && !adminAvatarFile && adminAvatarPreview?.trim().match(/^https?:\/\//i)
+          ? adminAvatarPreview.trim()
+          : null;
 
       const { authData, paroisseId } = await initFirstParoisseAndUser(
         setupPayload,
@@ -552,6 +651,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
           password: adminPassword,
           phone: adminPhone.trim(),
           useGravatar: useGravatar && !adminAvatarFile,
+          avatarUrl: pastedAvatarUrl,
         },
         adminAvatarFile,
       );
@@ -596,6 +696,8 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   };
 
   const verifyOtp = async () => {
+    if (otpInFlightRef.current) return;
+    otpInFlightRef.current = true;
     setOtpLoading(true);
     setOtpError('');
     try {
@@ -654,6 +756,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       setOtpError(e?.message || 'Impossible de vérifier le code.');
     } finally {
       setOtpLoading(false);
+      otpInFlightRef.current = false;
     }
   };
 
@@ -740,7 +843,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
           <div className="min-w-0 flex-1 px-2 text-center">
             <h3 className="text-2xl font-bold text-white drop-shadow-sm">Assistant de configuration</h3>
-            <p className="mt-1 text-sm text-white/90">Configurez votre paroisse en 5 étapes</p>
+            <p className="mt-1 text-sm text-white/90">Configurez votre paroisse en 6 étapes</p>
           </div>
 
           <div className="flex min-w-[140px] shrink-0 flex-col items-end gap-2">
@@ -886,7 +989,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
             <div className="text-right">
               <div className="text-3xl font-bold text-white">{step + 1}</div>
-              <div className="text-xs text-white/90">sur 5</div>
+              <div className="text-xs text-white/90">sur 6</div>
             </div>
           </div>
         </div>
@@ -1132,7 +1235,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
                 </div>
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    📖 <strong>Étape 2/5 : Page "À propos"</strong><br />
+                    📖 <strong>Étape 2/6 : Page "À propos"</strong><br />
                     Présentez l'histoire, la mission et les valeurs de votre paroisse.
                   </p>
                 </div>
@@ -1181,7 +1284,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
                 </div>
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    🏷️ <strong>Étape 3/5 : Identité de la paroisse</strong><br />
+                    🏷️ <strong>Étape 3/6 : Identité de la paroisse</strong><br />
                     Le nom, le logo et l'email principal qui apparaîtront sur tout le site.
                   </p>
                 </div>
@@ -1245,10 +1348,93 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
               </motion.div>
             )}
 
-            {/* Step 3: Footer (site) */}
+            {/* Step 3: Bannières hero (pages publiques) */}
             {step === 3 && (
               <motion.div
-                key="step-3"
+                key="step-3-hero-banners"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.28 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-background/60 border border-border">
+                  <img src={stepImages[3]} alt="" className="h-10 w-10 object-contain" />
+                  <div className="leading-tight">
+                    <div className="text-sm font-semibold">🖼️ Bannières hero</div>
+                    <div className="text-xs text-muted-foreground">Images d’en-tête pour les pages publiques (accueil, à propos, galerie, etc.).</div>
+                  </div>
+                </div>
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    🖼️ <strong>Étape 4/6 : Bannières des pages</strong><br />
+                    Optionnel : une image par page. Vous pourrez les modifier plus tard depuis chaque page.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  {PUBLIC_HERO_BANNER_PAGES.map(({ path, label }) => (
+                    <div
+                      key={path}
+                      className="rounded-lg border border-border bg-background/40 p-4 space-y-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold">{label}</div>
+                          <div className="text-xs text-muted-foreground font-mono">{path}</div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                        <input
+                          type="text"
+                          className="flex-1 min-w-0 px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                          value={form.heroBanners[path] ?? ''}
+                          onChange={(e) => setHeroBannerUrl(path, e.target.value)}
+                          placeholder="https://…"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeroBannerUploadPath(path);
+                            heroBannerFileInputRef.current?.click();
+                          }}
+                          disabled={uploading === `hero-banner-${path}`}
+                          className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
+                        >
+                          {uploading === `hero-banner-${path}` ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
+                          Téléverser
+                        </button>
+                      </div>
+                      {form.heroBanners[path] ? (
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={form.heroBanners[path]}
+                            alt=""
+                            className="h-20 w-36 rounded-md object-cover border border-border bg-muted"
+                          />
+                          <span className="text-xs text-muted-foreground">Aperçu</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+                <input
+                  ref={heroBannerFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleHeroBannerFile}
+                />
+              </motion.div>
+            )}
+
+            {/* Step 4: Footer (site) */}
+            {step === 4 && (
+              <motion.div
+                key="step-4-footer"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -1264,7 +1450,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
                 </div>
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    📞 <strong>Étape 4/5 : Pied de page</strong><br />
+                    📞 <strong>Étape 5/6 : Pied de page</strong><br />
                     Coordonnées, réseaux sociaux et copyright.
                   </p>
                 </div>
@@ -1391,10 +1577,10 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
               </motion.div>
             )}
 
-            {/* Step 4: Premier compte administrateur */}
-            {step === 4 && (
+            {/* Step 5: Premier compte administrateur */}
+            {step === 5 && (
               <motion.div
-                key="step-4"
+                key="step-5-admin"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -1410,7 +1596,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
                 </div>
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    👤 <strong>Étape 5/5 : Compte administrateur</strong><br />
+                    👤 <strong>Étape 6/6 : Compte administrateur</strong><br />
                     Créez le premier compte (super administrateur). Vous pourrez inviter d'autres membres ensuite.
                   </p>
                 </div>
@@ -1651,6 +1837,29 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
             {step === 3 && (
               <div className="space-y-3 text-sm">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Bannières hero</p>
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {PUBLIC_HERO_BANNER_PAGES.map(({ path, label }) => (
+                    <div key={path} className="p-2 rounded border border-border bg-background/80">
+                      <div className="text-[11px] font-medium">{label}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono truncate">{path}</div>
+                      {form.heroBanners[path] ? (
+                        <img
+                          src={form.heroBanners[path]}
+                          alt=""
+                          className="mt-2 h-14 w-full rounded object-cover"
+                        />
+                      ) : (
+                        <div className="mt-2 text-[11px] text-muted-foreground">(aucune image)</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-3 text-sm">
                 <div className="p-4 bg-background rounded-lg border border-border space-y-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Pied de page</p>
                   <p className="text-muted-foreground whitespace-pre-line">{form.footerAddress || '(adresse vide)'}</p>
@@ -1672,7 +1881,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
               </div>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <div className="space-y-4">
                 <div className="p-4 bg-background rounded-lg border border-border space-y-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Administrateur</p>

@@ -168,7 +168,15 @@ const AppInner = () => {
       if (!mounted) return;
 
       if (status.shouldForceSetupWizard) {
-        setShowSetupWizardAuto(true);
+        try {
+          if (localStorage.getItem('setupCompleted') === 'true') {
+            setShowSetupWizardAuto(false);
+          } else {
+            setShowSetupWizardAuto(true);
+          }
+        } catch {
+          setShowSetupWizardAuto(true);
+        }
       }
       setFirstLaunchCheckDone(true);
     };

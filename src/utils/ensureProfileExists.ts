@@ -20,11 +20,21 @@ export async function ensureProfileExists(userId: string) {
       return null;
     }
 
-    // Profil déjà créé (ex. trigger SQL) : compléter l’avatar si fichier en attente
+    // Profil déjà créé (ex. trigger SQL) : compléter l’avatar si fichier en attente ou URL dans les métadonnées
     if (existingProfile) {
       if (!existingProfile.avatar_url) {
         console.log('⏳ Profil sans avatar — tentative pending_avatar_upload…');
         await uploadPendingAvatar(userId);
+        const { data: authUserData } = await supabase.auth.getUser();
+        const metaUrl = oauthAvatarFromMetadata(
+          (authUserData?.user?.user_metadata || {}) as Record<string, unknown>,
+        );
+        if (metaUrl) {
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: metaUrl, updated_at: new Date().toISOString() })
+            .eq('id', userId);
+        }
       } else {
         console.log('✅ Profil existe déjà avec avatar');
       }

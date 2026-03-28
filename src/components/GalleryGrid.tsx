@@ -12,11 +12,43 @@ interface GalleryGridProps {
   onOpen?: (image: GalleryImage) => void;
   pageSize?: number;
   canAddImages?: boolean;
+  /** Si fourni, la grille n’utilise plus le hook interne (filtrage / pagination gérés par le parent). */
+  images?: GalleryImage[];
+  loading?: boolean;
+  refetch?: () => Promise<void> | void;
 }
 
-const GalleryGrid: React.FC<GalleryGridProps> = ({ columns = 4, gap = '6', onOpen, pageSize = 12, canAddImages = true }) => {
-  const { images, loading, error, loadMore, hasMore, isEmpty, refetch, removeImageById } = useGalleryImages(pageSize);
+const GalleryGrid: React.FC<GalleryGridProps> = ({
+  columns = 4,
+  gap = '6',
+  onOpen,
+  pageSize = 12,
+  canAddImages = true,
+  images: imagesProp,
+  loading: loadingProp,
+  refetch: refetchProp,
+}) => {
+  const hook = useGalleryImages(pageSize);
+  const controlled = imagesProp !== undefined;
+  const images = controlled ? imagesProp! : hook.images;
+  const loading = controlled ? !!loadingProp : hook.loading;
+  const error = controlled ? null : hook.error;
+  const loadMore = controlled ? () => {} : hook.loadMore;
+  const hasMore = controlled ? false : hook.hasMore;
+  const isEmpty = !images?.length;
+  const refetch = controlled ? refetchProp : hook.refetch;
+  const removeImageById = hook.removeImageById;
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleDeleted = (id?: string) => {
+    if (controlled) {
+      void refetch?.();
+    } else if (id) {
+      removeImageById(id);
+    } else {
+      void refetch?.();
+    }
+  };
 
   const style: React.CSSProperties = {
     gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, 280px), 1fr))`,
@@ -87,13 +119,7 @@ const GalleryGrid: React.FC<GalleryGridProps> = ({ columns = 4, gap = '6', onOpe
                 <GalleryCard 
                   image={img} 
                   onOpen={() => onOpen?.(img)}
-                  onDeleted={(id?: string) => {
-                    if (id) {
-                      removeImageById(id);
-                    } else {
-                      refetch?.();
-                    }
-                  }}
+                  onDeleted={handleDeleted}
                 />
             </Fragment>
           ))

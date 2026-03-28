@@ -146,7 +146,27 @@ export type SetupData = {
   headerLogo?: string | null;
   headerMainTitle?: string;
   headerSubtitle?: string;
+  /** Images hero par chemin de route (pages publiques), upsert dans `page_hero_banners`. */
+  heroBanners?: Record<string, string>;
 };
+
+/** Enregistre les bannières hero (pages accessibles sans rôle admin). */
+export async function upsertPageHeroBanners(entries: Record<string, string> | undefined | null) {
+  if (!entries || typeof entries !== 'object') return;
+  const rows = Object.entries(entries).filter(([, url]) => typeof url === 'string' && url.trim().length > 0);
+  for (const [path, image_url] of rows) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('page_hero_banners').upsert(
+      {
+        path,
+        image_url: image_url.trim(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'path' },
+    );
+    if (error) console.error('upsertPageHeroBanners', path, error);
+  }
+}
 
 export async function saveInitialSetup(data: SetupData) {
   try {
@@ -275,6 +295,8 @@ export type FirstAdminUserData = {
   phone: string;
   /** Si vrai et pas de fichier : URL Gravatar dans les métadonnées à l’inscription. */
   useGravatar: boolean;
+  /** URL d’avatar (champ collé) lorsqu’aucun fichier n’est téléversé. */
+  avatarUrl?: string | null;
 };
 
 /**
@@ -287,6 +309,9 @@ export async function initFirstParoisseAndUser(
   avatarFile?: File | null,
 ) {
   const setupRes = await saveInitialSetup(setupData);
+  if (setupRes.success && setupData.heroBanners && Object.keys(setupData.heroBanners).length > 0) {
+    await upsertPageHeroBanners(setupData.heroBanners);
+  }
   if (!setupRes.success) {
     const err = setupRes.error as { message?: string; code?: string } | null;
     const msg =
@@ -316,6 +341,9 @@ export async function initFirstParoisseAndUser(
   let avatarUrlForMeta: string | undefined;
   if (!avatarFile && userData.useGravatar) {
     avatarUrlForMeta = gravatarUrlFromEmail(email);
+  } else if (!avatarFile && userData.avatarUrl?.trim()) {
+    const u = userData.avatarUrl.trim();
+    if (/^https?:\/\//i.test(u)) avatarUrlForMeta = u;
   }
 
   const redirect = getAuthCallbackUrl();
