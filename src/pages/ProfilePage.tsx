@@ -19,12 +19,14 @@ import ChangePasswordForm from '@/components/ChangePasswordForm';
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { formatRoleLabelForUi, isAdmin as rpIsAdmin, isSuperAdminLevel } from '@/utils/rolePermissions';
+import { validateUsername } from '@/utils/username';
 
 interface UserData {
   full_name: string;
   phone: string;
   avatar_url: string;
   email: string;
+  username: string;
   role?: string | null;
 }
 
@@ -46,6 +48,7 @@ const ProfilePage = () => {
     phone: '',
     avatar_url: '',
     email: '',
+    username: '',
     role: null,
   });
 
@@ -61,6 +64,7 @@ const ProfilePage = () => {
         phone: user.user_metadata?.phone || '',
         avatar_url: profile.avatar_url || user.user_metadata?.avatar_url || '',
         email: user.email || '',
+        username: (profile.username ?? '').trim(),
         role: (function normalize(r?: string | null){
           if(!r) return null;
           const lower = r.toLowerCase();
@@ -81,6 +85,7 @@ const ProfilePage = () => {
         full_name: user.user_metadata?.full_name || '',
         phone: user.user_metadata?.phone || '',
         avatar_url: user.user_metadata?.avatar_url || '',
+        username: prev.username || '',
         role: (function normalize(r?: string | null){
           if(!r) return prev.role || null;
           const lower = r.toLowerCase();
@@ -128,6 +133,28 @@ const ProfilePage = () => {
 
     setIsSaving(true);
     try {
+      const usernameNormalized = userData.username.trim().toLowerCase();
+      if (usernameNormalized) {
+        const uErr = validateUsername(usernameNormalized);
+        if (uErr) {
+          toast({ title: 'Pseudo invalide', description: uErr, variant: 'destructive' });
+          return;
+        }
+        const { data: free, error: rpcErr } = await supabase.rpc('is_username_available', {
+          p_username: usernameNormalized,
+          p_except_user_id: user.id,
+        });
+        if (rpcErr) throw rpcErr;
+        if (free === false) {
+          toast({
+            title: 'Pseudo déjà utilisé',
+            description: 'Ce pseudo est déjà utilisé',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       let updatedAvatarUrl = userData.avatar_url;
 
       // Upload avatar if selected
@@ -165,6 +192,7 @@ const ProfilePage = () => {
         full_name: userData.full_name,
         avatar_url: updatedAvatarUrl,
         role: normalize(userData.role ?? null),
+        username: usernameNormalized || null,
       };
       
       const { error: updateError } = await supabase
@@ -468,6 +496,30 @@ const ProfilePage = () => {
                         <p className="text-sm text-muted-foreground mt-2">
                           Votre email ne peut pas être modifié depuis ce formulaire.
                         </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Pseudo (connexion)</label>
+                        {isEditing ? (
+                          <>
+                            <Input
+                              value={userData.username}
+                              onChange={(e) =>
+                                setUserData({
+                                  ...userData,
+                                  username: e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ''),
+                                })
+                              }
+                              placeholder="ex. monpseudo"
+                              autoComplete="username"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              3–30 caractères (a-z, 0-9, _, .). Laissez vide pour retirer le pseudo.
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-lg">{userData.username || 'Non défini'}</p>
+                        )}
                       </div>
 
                       {/* Account Type */}

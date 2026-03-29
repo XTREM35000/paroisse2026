@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { EmailFieldPro } from '@/components/ui/email-field-pro';
+import { Input } from '@/components/ui/input';
 import PasswordField from '@/components/ui/password-field';
 import { ensureProfileExists } from '@/utils/ensureProfileExists';
 import { Facebook } from 'lucide-react';
@@ -20,7 +20,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [facebookLoading, setFacebookLoading] = useState(false);
@@ -32,6 +32,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
 
   const closeOTPModal = () => {
     setShowOTPModal(false);
+  };
+
+  /** Résout un email pour la connexion (identifiant = email ou pseudo). */
+  const resolveLoginEmail = async (raw: string): Promise<{ email: string | null; error: 'not_found' | 'rpc' | null }> => {
+    const t = raw.trim();
+    if (!t) return { email: null, error: null };
+    if (t.includes('@')) {
+      return { email: t, error: null };
+    }
+    const { data, error } = await supabase.rpc('resolve_email_for_login', { p_identifier: t });
+    if (error) {
+      console.warn('[LoginForm] resolve_email_for_login', error);
+      return { email: null, error: 'rpc' };
+    }
+    if (data == null || data === '') {
+      return { email: null, error: 'not_found' };
+    }
+    return { email: String(data), error: null };
   };
 
   const handleOTPSuccess = () => {
@@ -92,10 +110,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
+    if (!identifier.trim()) {
       toast({
-        title: '❌ Email requis',
-        description: 'Veuillez entrer votre email',
+        title: 'Identifiant requis',
+        description: 'Entrez votre email ou votre pseudo',
         variant: 'destructive',
       });
       return;
@@ -110,10 +128,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
       return;
     }
 
-    const emailToUse = email.trim();
     setLoading(true);
     setEmailNotConfirmed(false);
     try {
+      const resolved = await resolveLoginEmail(identifier);
+      if (resolved.error === 'rpc') {
+        toast({
+          title: 'Connexion impossible',
+          description: 'Réessayez dans un instant.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (resolved.error === 'not_found' || !resolved.email) {
+        toast({
+          title: 'Pseudo introuvable',
+          description: 'Aucun compte avec ce pseudo',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const emailToUse = resolved.email;
       console.log(
         '[LoginForm] Attempting login with email:',
         emailToUse,
@@ -159,9 +195,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
         return;
       }
 
+      const wrongCreds =
+        code === 'invalid_credentials' ||
+        errorMsg.toLowerCase().includes('invalid login') ||
+        errorMsg.toLowerCase().includes('invalid_credentials');
+
       toast({
         title: '❌ Erreur de connexion',
-        description: errorMsg,
+        description: wrongCreds
+          ? 'Email ou mot de passe incorrect'
+          : errorMsg,
         variant: 'destructive',
       });
     } finally {
@@ -170,9 +213,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
   };
 
   const handleResendConfirmation = async () => {
-    const em = email.trim();
+    const resolved = await resolveLoginEmail(identifier);
+    const em = resolved.email?.trim() ?? '';
     if (!em) {
-      toast({ title: 'Email requis', description: 'Saisissez votre adresse email.', variant: 'destructive' });
+      toast({
+        title: 'Email requis',
+        description: resolved.error === 'not_found' ? 'Aucun compte avec ce pseudo' : 'Saisissez votre email ou un pseudo valide.',
+        variant: 'destructive',
+      });
       return;
     }
     setResendLoading(true);
@@ -296,13 +344,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
       )}
 
       <form onSubmit={onSubmit} className="space-y-2 w-full max-w-md text-sm">
-        <EmailFieldPro
-          value={email}
-          onChange={setEmail}
-          label="Email"
-          required
-          onValidationChange={() => {}}
-        />
+        <div>
+          <label className="block text-xs font-medium mb-0.5">Email ou pseudo</label>
+          <Input
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="ex. moi@mail.com ou developpeur2026"
+            autoComplete="username"
+            required
+            className="h-8 text-xs"
+          />
+        </div>
 
         <div>
           <label className="block text-xs font-medium mb-0.5">Mot de passe</label>

@@ -7,6 +7,8 @@ export interface AuthRegisterMetadata {
   full_name?: string;
   phone?: string;
   role?: string;
+  /** Pseudo unique (minuscules), stocké en profiles.username via trigger */
+  username?: string;
 }
 
 export interface AuthState {

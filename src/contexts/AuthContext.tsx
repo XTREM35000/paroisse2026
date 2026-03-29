@@ -9,6 +9,7 @@ import { AuthContext } from './auth-context-def';
 
 /** Raw profile row from DB (select *), may include role and nullable fields */
 interface RawProfileRow {
+  username?: string | null;
   display_name?: string | null;
   full_name?: string | null;
   avatar_url?: string | null;
@@ -55,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? {
             id: session.user.id,
             email: session.user.email ?? null,
+            username: row.username ?? null,
             full_name: row.full_name ?? null,
             display_name: row.display_name ?? row.full_name ?? '',
             avatar_url: row.avatar_url ?? null,
@@ -148,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (metadata?.full_name?.trim()) userMeta.full_name = metadata.full_name.trim();
       if (metadata?.phone?.trim()) userMeta.phone = metadata.phone.trim();
       if (metadata?.role?.trim()) userMeta.role = metadata.role.trim();
+      if (metadata?.username?.trim()) userMeta.username = metadata.username.trim().toLowerCase();
 
       if (import.meta.env.DEV) {
         console.debug('[AuthContext] signUp request', {

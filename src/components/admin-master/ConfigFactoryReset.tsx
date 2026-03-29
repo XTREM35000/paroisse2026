@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Skull, RefreshCw, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { runFullSystemClean } from "@/lib/fullSystemClean";
+import { performFullCleanup } from '@/lib/cleanup';
 import { useQueryClient } from "@tanstack/react-query";
 import { RestoreFromFileModal } from "./RestoreFromFileModal";
 import { fetchBackups as fetchBackupsQuery, deleteBackup as deleteBackupQuery, BackupRow } from '@/lib/supabase/backupQueries';
@@ -43,7 +42,6 @@ export interface ConfigFactoryResetProps {
 
 export function ConfigFactoryReset({ onFactoryResetComplete }: ConfigFactoryResetProps) {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("idle");
   const [confirm1Open, setConfirm1Open] = useState(false);
@@ -66,6 +64,7 @@ export function ConfigFactoryReset({ onFactoryResetComplete }: ConfigFactoryRese
   const [deleteTarget, setDeleteTarget] = useState<BackupRow | null>(null);
   const [rpcCleanAck, setRpcCleanAck] = useState(false);
   const [rpcCleanBusy, setRpcCleanBusy] = useState(false);
+  const [rpcCleanConfirmOpen, setRpcCleanConfirmOpen] = useState(false);
 
   useEffect(() => {
     void loadSystemBackups();
@@ -223,31 +222,27 @@ export function ConfigFactoryReset({ onFactoryResetComplete }: ConfigFactoryRese
       });
       return;
     }
-    if (
-      !confirm(
-        "Dernière confirmation : lancer le nettoyage RPC (clean_all_data / reset_all_data) ?",
-      )
-    ) {
-      return;
-    }
+    setRpcCleanConfirmOpen(true);
+  };
+
+  const executeRpcFullClean = async () => {
+    setRpcCleanConfirmOpen(false);
     setRpcCleanBusy(true);
     try {
-      const res = await runFullSystemClean(supabase);
-      if (!res.ok) {
-        toast({
-          title: "Échec du nettoyage RPC",
-          description: res.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      queryClient.clear();
       toast({
-        title: "Nettoyage RPC terminé",
-        description: `Fonction utilisée : ${res.usedRpc}. Redirection vers l’accueil.`,
+        title: "Nettoyage en cours",
+        description: "Réinitialisation de la base et recréation du compte développeur, puis redirection.",
       });
       onFactoryResetComplete?.({ launchSetupWizard: true });
-      navigate("/", { replace: true });
+      void queryClient.clear();
+      await performFullCleanup();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({
+        title: "Échec du nettoyage RPC",
+        description: msg,
+        variant: "destructive",
+      });
     } finally {
       setRpcCleanBusy(false);
     }
@@ -584,6 +579,25 @@ export function ConfigFactoryReset({ onFactoryResetComplete }: ConfigFactoryRese
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={performDelete}>Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={rpcCleanConfirmOpen} onOpenChange={setRpcCleanConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer le nettoyage RPC</AlertDialogTitle>
+            <AlertDialogDescription>
+              Lancer le nettoyage complet (<code className="text-xs">clean_all_data</code> ou{' '}
+              <code className="text-xs">reset_all_data</code>), recréer le compte développeur, vider le stockage local
+              puis revenir à l’accueil ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rpcCleanBusy}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void executeRpcFullClean()} disabled={rpcCleanBusy}>
+              Confirmer
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

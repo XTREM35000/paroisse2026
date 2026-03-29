@@ -11,6 +11,7 @@ import PhoneInputWithCountry from "@/components/PhoneInputWithCountry";
 import { EmailFieldPro } from "@/components/ui/email-field-pro";
 import { ensureProfileExists } from "@/utils/ensureProfileExists";
 import { isValidEmail } from "@/utils/emailSanitizer";
+import { validateUsername } from "@/utils/username";
 import EmailOtpVerification from './EmailOtpVerification';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadPendingAvatar } from '@/utils/uploadPendingAvatar';
@@ -25,6 +26,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
   const { signUpWithEmail, login, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -80,6 +82,34 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
       reader.readAsDataURL(file);
     });
 
+  const isUsernameAvailable = async (usernameToCheck: string, exceptUserId: string | null = null): Promise<boolean> => {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('is_username_available', {
+      p_username: usernameToCheck,
+      p_except_user_id: exceptUserId,
+    });
+
+    if (!rpcError) {
+      return rpcData !== false;
+    }
+
+    // Fallback when the RPC is not deployed yet (PGRST202 / function missing).
+    if (
+      rpcError.code === 'PGRST202' ||
+      /Could not find the function/i.test(rpcError.message ?? '')
+    ) {
+      let query = supabase.from('profiles').select('id').eq('username', usernameToCheck).limit(1);
+      if (exceptUserId) query = query.neq('id', exceptUserId);
+
+      const { data: existing, error: existingErr } = await query;
+      if (existingErr) {
+        throw existingErr;
+      }
+      return !existing || (Array.isArray(existing) && existing.length === 0);
+    }
+
+    throw rpcError;
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -99,6 +129,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
       toast({
         title: '❌ Email invalide',
         description: 'Vérifiez l’identifiant et le domaine (ex. prenom.nom@gmail.com).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const usernameNormalized = username.trim().toLowerCase();
+    const usernameErr = validateUsername(usernameNormalized);
+    if (usernameErr) {
+      toast({
+        title: '❌ Pseudo invalide',
+        description: usernameErr,
         variant: 'destructive',
       });
       return;
@@ -124,6 +165,28 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
 
     setLoading(true);
     try {
+      let usernameFree = false;
+      try {
+        usernameFree = await isUsernameAvailable(usernameNormalized, null);
+      } catch (usernameCheckErr: any) {
+        console.warn('is_username_available', usernameCheckErr);
+        toast({
+          title: 'Vérification du pseudo impossible',
+          description: usernameCheckErr.message || 'Réessayez dans un instant.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!usernameFree) {
+        toast({
+          title: 'Pseudo déjà utilisé',
+          description: 'Ce pseudo est déjà utilisé',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Rôle : laissé au trigger SQL (handle_auth_user_created) — évite un SELECT profiles avant signup
       // (anon / RLS) et aligne le flux sur un signUp minimal type curl.
       type AuthSignUpRes = {
@@ -132,6 +195,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
       const registerRes = (await signUpWithEmail(emailToSubmit, password, {
         full_name: fullName,
         phone: fullPhone || undefined,
+        username: usernameNormalized,
       })) as unknown as AuthSignUpRes;
 
       const createdUser = registerRes?.data?.user ?? null;
@@ -180,6 +244,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
     } catch (err: unknown) {
       console.error('❌ Erreur lors de l\'enregistrement:', err);
       const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+      const code = (err as { code?: string })?.code;
       const already =
         msg.includes('already registered') ||
         msg.includes('already been registered') ||
@@ -191,6 +256,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
           variant: 'destructive',
         });
         onSwitchToLogin?.();
+        return;
+      }
+      if (code === '23505' || msg.includes('unique') || msg.includes('duplicate')) {
+        toast({
+          title: 'Pseudo déjà utilisé',
+          description: 'Ce pseudo est déjà utilisé',
+          variant: 'destructive',
+        });
         return;
       }
       toast({
@@ -291,7 +364,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
 
         {/* Champs principaux */}
         <div className="flex-1 space-y-2">
-          {/* Prénom + Nom sur une ligne */}
+          <div>
+            <label className="block text-xs font-medium mb-0.5">Pseudo *</label>
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ''))}
+              type="text"
+              autoComplete="username"
+              placeholder="ex. developpeur2026"
+              required
+              className="h-8 text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">3–30 caractères : lettres, chiffres, _ .</p>
+          </div>
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="block text-xs font-medium mb-0.5">Prénom *</label>

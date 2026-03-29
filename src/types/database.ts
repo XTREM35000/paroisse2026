@@ -9,6 +9,8 @@ export type DonationStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 export interface Profile {
   id: string;
   email: string | null;
+  /** Pseudo de connexion (unique, minuscules) */
+  username?: string | null;
   full_name: string | null;
   display_name: string | null;
   avatar_url: string | null;

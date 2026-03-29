@@ -27,28 +27,12 @@ import { uploadPendingAvatar } from '@/utils/uploadPendingAvatar';
 import { markAppInitialized } from '@/lib/appInitializer';
 import { STORAGE_SELECTED_PAROISSE } from '@/lib/paroisseStorage';
 import { useParoisse } from '@/contexts/ParoisseContext';
-import { runFullSystemClean } from '@/lib/fullSystemClean';
+import { performFullCleanup } from '@/lib/cleanup';
 import { invalidateAllPageHeroBanners } from '@/hooks/useHeroBanners';
 
 const PENDING_HERO_BANNERS_KEY = 'ff_pending_hero_banners';
 
 const EPHEMERAL_SETUP_LS_KEYS = ['setupWizardPending', 'setupWizardStep', 'otpValidated'] as const;
-
-/** Expire les cookies visibles côté JS qui ne sont pas des jetons Supabase (sb-*). */
-function clearNonSupabaseCookies() {
-  try {
-    for (const raw of document.cookie.split(';')) {
-      const trimmed = raw.trim();
-      if (!trimmed) continue;
-      const eq = trimmed.indexOf('=');
-      const name = (eq >= 0 ? trimmed.slice(0, eq) : trimmed).trim();
-      if (!name || name.startsWith('sb-')) continue;
-      document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
-    }
-  } catch {
-    /* ignore */
-  }
-}
 
 type FormState = {
   heroTitle: string;
@@ -106,6 +90,10 @@ const PUBLIC_HERO_BANNER_PAGES: { path: string; label: string }[] = [
   { path: '/homilies', label: 'Homélies' },
   { path: '/campaigns', label: 'Campagnes' },
   { path: '/receipts', label: 'Reçus & historique des dons' },
+  { path: '/dashboard', label: 'Tableau de bord' },
+  { path: '/prospect', label: 'Média Paroissial' },
+  { path: '/radio', label: 'Radio Paroisse FM' },
+  { path: '/live', label: 'TV Paroisse Direct' },
 ];
 
 function emptyHeroBanners(): Record<string, string> {
@@ -141,15 +129,11 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       setStep(s => Math.min(WIZARD_STEPS - 1, s + 1));
     };
 
-    // Finalisation après OTP : état stable, invalidation cache, hard navigation pour éviter boucle SPA
+    // Finalisation après OTP : hard redirect pour casser toute boucle SPA / état corrompu
     const finalizeSetupAfterAuth = async (parishId: string, _signedInUser: unknown, targetPath: string) => {
       if (!isMountedRef.current) return;
-      if (setupFinalizedRef.current) {
-        console.warn('[SetupWizard] finalizeSetupAfterAuth: déjà finalisé, ignoré');
-        return;
-      }
-      if (isCompleting) {
-        console.warn('[SetupWizard] finalizeSetupAfterAuth: déjà en cours, ignoré');
+      if (isCompleting || setupFinalizedRef.current) {
+        console.warn('[SetupWizard] finalizeSetupAfterAuth: ignoré (déjà en cours ou finalisé)');
         return;
       }
       setupFinalizedRef.current = true;
@@ -164,7 +148,15 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
           /* ignore */
         }
 
-        await queryClient.clear();
+        try {
+          document.cookie.split(';').forEach((c) => {
+            const name = c.replace(/^ +/, '').replace(/=.*/, '').trim();
+            if (!name) return;
+            document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
+          });
+        } catch {
+          /* ignore */
+        }
 
         for (const k of EPHEMERAL_SETUP_LS_KEYS) {
           try {
@@ -173,22 +165,13 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
             /* ignore */
           }
         }
-
-        clearNonSupabaseCookies();
-
         try {
           sessionStorage.clear();
         } catch {
           /* ignore */
         }
 
-        markCompleted();
-        markAppInitialized();
-        try {
-          localStorage.setItem('otpValidated', 'true');
-        } catch {
-          /* ignore */
-        }
+        await queryClient.clear();
 
         const effectiveParishId =
           parishId ||
@@ -211,6 +194,9 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
           console.warn('[SetupWizard] pending hero banners', e);
         }
 
+        markCompleted();
+        markAppInitialized();
+
         await queryClient.invalidateQueries({ queryKey: ['header-config'] });
         await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
         await queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -225,20 +211,14 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
         setPendingParishId(null);
         setPendingUser(null);
         setStep(0);
-
         onClose();
-        console.info('[SetupWizard] onClose()');
-
-        await new Promise((r) => setTimeout(r, 150));
 
         const url =
           targetPath.startsWith('http://') || targetPath.startsWith('https://')
             ? targetPath
             : `${window.location.origin}${targetPath.startsWith('/') ? targetPath : `/${targetPath}`}`;
 
-        if (isMountedRef.current) {
-          window.location.replace(url);
-        }
+        window.location.replace(url);
       } catch (err) {
         console.error('[SetupWizard] finalizeSetupAfterAuth error:', err);
         setupFinalizedRef.current = false;
@@ -288,6 +268,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   const [otpError, setOtpError] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
+  const otpInputRef = useRef<HTMLInputElement>(null);
   const [pendingUser, setPendingUser] = useState<{ id?: string; email?: string } | null>(null);
   const [pendingParishId, setPendingParishId] = useState<string | null>(null);
 
@@ -389,6 +370,13 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     setIsCompleting(false);
   }, [open]);
 
+  useEffect(() => {
+    if (!showOtp) return;
+    window.requestAnimationFrame(() => {
+      otpInputRef.current?.focus();
+    });
+  }, [showOtp]);
+
   // Security/UX: reset the unlock state when the modal closes.
   useEffect(() => {
     if (!open) {
@@ -449,30 +437,8 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     setFullCleanLoading(true);
     setError(null);
     try {
-      const res = await runFullSystemClean(supabase);
-      if (res.ok === false) {
-        setError(`Échec du nettoyage : ${res.message}`);
-        return;
-      }
-      markIncomplete();
-      resetFormFieldsOnly();
-      setStep(0);
-      setShowOtp(false);
-      setPendingParishId(null);
-      setPendingUser(null);
       setShowCleanConfirm(false);
-      queryClient.clear();
-      try {
-        localStorage.clear();
-      } catch {
-        /* ignore */
-      }
-      try {
-        sessionStorage.clear();
-      } catch {
-        /* ignore */
-      }
-      window.location.href = '/';
+      await performFullCleanup();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Erreur nettoyage : ${msg}`);
@@ -584,6 +550,14 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
           'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760436019-homelies01.png',
         '/receipts':
           'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760505593-messe01.png',
+        '/dashboard':
+          'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760153581-accueil.png',
+        '/prospect':
+          'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760153581-accueil.png',
+        '/radio':
+          'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760153581-accueil.png',
+        '/live':
+          'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760153581-accueil.png',
       },
     }));
 
@@ -1864,6 +1838,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
                     </div>
                     <div className="flex gap-2 items-center">
                       <Input
+                        ref={otpInputRef}
                         placeholder="Code à 4 chiffres"
                         inputMode="numeric"
                         autoComplete="one-time-code"

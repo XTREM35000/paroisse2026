@@ -19,6 +19,10 @@ const PATH_TO_PAGE: Record<string, string> = {
   '/a-propos': 'about',
   '/donate': 'donate',
   '/receipts': 'receipts',
+  '/dashboard': 'dashboard',
+  '/prospect': 'prospect',
+  '/radio': 'radio',
+  '/live': 'live',
 };
 
 function getPageFromPath(pathname: string): string {
