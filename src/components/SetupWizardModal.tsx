@@ -4,13 +4,30 @@ const Upload = (props: any) => <div {...props}>{props.children}</div>;
 const PasswordField = (props: any) => <input type="password" {...props} />;
 const Checkbox = (props: any) => <input type="checkbox" {...props} />;
 const Camera = (props: any) => <span {...props} />;
-// Mock supabase permissif
-const supabase: any = new Proxy({}, {
-  get: () => (...args: any[]) => new Proxy(() => ({}), {
-    get: () => (...args: any[]) => Promise.resolve({}),
-    apply: () => Promise.resolve({}),
-  })
-});
+// Mock supabase chainable (compatible with update().eq(), select(), upsert(), etc.)
+const createQueryBuilder = () => {
+  const chain = {
+    update: (_payload?: unknown) => chain,
+    insert: async (_payload?: unknown) => ({ data: null, error: null }),
+    upsert: async (_payload?: unknown, _options?: unknown) => ({ data: null, error: null }),
+    delete: (_payload?: unknown) => chain,
+    eq: async (_field?: string, _value?: unknown) => ({ data: null, error: null }),
+    select: async (_columns?: string, _options?: unknown) => ({ data: null, error: null, count: 0 }),
+  };
+  return chain;
+};
+
+const supabase: any = {
+  from: (_table: string) => createQueryBuilder(),
+  auth: {
+    signInWithPassword: async (_args?: unknown) => ({ data: {}, error: null }),
+    getUser: async () => ({ data: { user: null }, error: null }),
+  },
+  functions: {
+    invoke: async (_name: string, _args?: unknown) => ({ data: {}, error: null }),
+  },
+  rpc: async (_name: string, _args?: unknown) => ({ data: null, error: null }),
+};
 // Mock RestoreFromFileModal
 const RestoreFromFileModal = (props: any) => <div {...props}>{props.children}</div>;
 
@@ -171,6 +188,45 @@ const getRandomHeroBanners = () => {
 
 function emptyHeroBanners(): { [key: string]: string } {
   return Object.fromEntries(PUBLIC_HERO_BANNER_PAGES.map(({ path }) => [path, '']));
+}
+
+function useHeroBannerPreviews() {
+  const [heroBannerPreviews, setHeroBannerPreviews] = useState<Record<string, string>>({});
+
+  const setPreviewForPath = (path: string, file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    setHeroBannerPreviews((prev) => {
+      const current = prev[path];
+      if (current) URL.revokeObjectURL(current);
+      return { ...prev, [path]: previewUrl };
+    });
+    return previewUrl;
+  };
+
+  const clearPreviewForPath = (path: string) => {
+    setHeroBannerPreviews((prev) => {
+      const current = prev[path];
+      if (!current) return prev;
+      URL.revokeObjectURL(current);
+      const { [path]: _removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const getPreviewSrc = (path: string, persistedUrl?: string) => heroBannerPreviews[path] || persistedUrl || '';
+
+  useEffect(() => {
+    return () => {
+      Object.values(heroBannerPreviews).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [heroBannerPreviews]);
+
+  return {
+    heroBannerPreviews,
+    setPreviewForPath,
+    clearPreviewForPath,
+    getPreviewSrc,
+  };
 }
 
 const WIZARD_STEPS = 6;
@@ -335,6 +391,11 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   const [adminAvatarFile, setAdminAvatarFile] = useState<File | null>(null);
   const [adminAvatarPreview, setAdminAvatarPreview] = useState<string | null>(null);
   const adminAvatarInputRef = useRef<HTMLInputElement>(null);
+  const {
+    setPreviewForPath,
+    clearPreviewForPath,
+    getPreviewSrc,
+  } = useHeroBannerPreviews();
 
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState('');
@@ -647,6 +708,8 @@ const getPageName = (key: string): string => {
     const path = heroBannerUploadPath;
     setHeroBannerUploadPath(null);
     if (!file || !path) return;
+    setPreviewForPath(path, file);
+
     const uploadKey = `hero-banner-${path}`;
     setUploading(uploadKey);
     setError(null);
@@ -666,6 +729,7 @@ const getPageName = (key: string): string => {
   };
 
   const setHeroBannerUrl = (path: string, url: string) => {
+    clearPreviewForPath(path);
     setForm((prev) => ({
       ...prev,
       heroBanners: { ...prev.heroBanners, [path]: url },
@@ -703,10 +767,11 @@ const getPageName = (key: string): string => {
 
 
   const enforceSetupUserSuperAdmin = async (userId: string, parishId: string) => {
-    const { error: profileRoleError } = await supabase
-      .from('profiles')
-      .update({ role: 'super_admin' })
-      .eq('id', userId);
+    const updateQuery = supabase.from('profiles').update({ role: 'super_admin' });
+    if (typeof updateQuery?.eq !== 'function') {
+      throw new Error('Supabase query builder malformed (eq not available)');
+    }
+    const { error: profileRoleError } = await updateQuery.eq('id', userId);
     if (profileRoleError) {
       throw new Error(
         `Impossible de définir le rôle super_admin sur le profil : ${profileRoleError.message}`,
@@ -1541,16 +1606,21 @@ const getPageName = (key: string): string => {
                           Téléverser
                         </button>
                       </div>
-                      {form.heroBanners[path] ? (
+                      {getPreviewSrc(path, form.heroBanners[path]) ? (
                         <div className="flex items-center gap-3">
                           <img
-                            src={form.heroBanners[path]}
+                            src={getPreviewSrc(path, form.heroBanners[path])}
                             alt=""
                             className="h-20 w-36 rounded-md object-cover border border-border bg-muted"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
                           />
                           <span className="text-xs text-muted-foreground">Aperçu</span>
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="text-xs text-muted-foreground">(aucune image)</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1981,11 +2051,14 @@ const getPageName = (key: string): string => {
                     <div key={path} className="p-2 rounded border border-border bg-background/80">
                       <div className="text-[11px] font-medium">{label}</div>
                       <div className="text-[10px] text-muted-foreground font-mono truncate">{path}</div>
-                      {form.heroBanners[path] ? (
+                      {getPreviewSrc(path, form.heroBanners[path]) ? (
                         <img
-                          src={form.heroBanners[path]}
+                          src={getPreviewSrc(path, form.heroBanners[path])}
                           alt=""
                           className="mt-2 h-14 w-full rounded object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                       ) : (
                         <div className="mt-2 text-[11px] text-muted-foreground">(aucune image)</div>

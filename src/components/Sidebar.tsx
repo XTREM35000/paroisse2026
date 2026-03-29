@@ -285,19 +285,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                 <button
                   type="button"
                   onClick={() => toggleSection(group.title)}
-                  className="w-full group relative flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-primary/90 via-primary to-primary/90 shadow-[0_4px_0_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] active:shadow-[0_1px_0_0_rgba(0,0,0,0.2)] active:translate-y-[3px] transition-all duration-300 ease-in-out"
+                  className={`w-full group relative flex items-center justify-between px-3 py-2 h-10 rounded-xl border backdrop-blur-sm transition-all duration-200 ease-out ${
+                    isOpen
+                      ? 'bg-primary/10 border-primary/30 shadow-sm'
+                      : 'bg-card/70 border-border/60 hover:bg-accent/60 hover:border-border'
+                  }`}
                   aria-expanded={isOpen}
                 >
-                  <div className="flex items-center gap-3">
-                    <SectionIcon className="h-4 w-4 text-white/90 group-hover:text-white transition-colors" />
-                    <span className="text-sm text-white/90 group-hover:text-white uppercase font-bold tracking-wider">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <SectionIcon
+                      className={`h-4 w-4 transition-colors ${
+                        isOpen
+                          ? 'text-primary'
+                          : 'text-muted-foreground group-hover:text-foreground'
+                      }`}
+                    />
+                    <span
+                      title={group.title}
+                      className={`font-bold text-sm uppercase tracking-wide truncate whitespace-nowrap overflow-hidden transition-colors ${
+                        isOpen
+                          ? 'text-foreground'
+                          : 'text-muted-foreground group-hover:text-foreground'
+                      }`}
+                    >
                       {group.title}
                     </span>
                   </div>
                   <motion.div
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="text-white/80 group-hover:text-white"
+                    className={`${isOpen ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`}
                   >
                     <ChevronDown className="h-4 w-4" />
                   </motion.div>
@@ -356,10 +373,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                             <NavLink
                               to={item.href}
                               className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 border-l-2 justify-between ${
+                                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 border justify-between ${
                                   isActive
-                                    ? 'bg-accent/60 text-accent-foreground border-primary'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 border-transparent hover:border-primary'
+                                    ? 'bg-accent/50 text-accent-foreground border-border shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/40 border-transparent hover:border-border/70'
                                 }`
                               }
                             >
