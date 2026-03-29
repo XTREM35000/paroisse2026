@@ -38,6 +38,7 @@ const RestoreFromFileModal = (props: any) => <div {...props}>{props.children}</d
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DraggableModal from './DraggableModal';
+import ThemeToggle from './ThemeToggle';
 // Icônes fictives pour éviter les erreurs de compilation
 const Church = (props: any) => <span {...props} />;
 const BookOpen = (props: any) => <span {...props} />;
@@ -227,6 +228,57 @@ function useHeroBannerPreviews() {
     clearPreviewForPath,
     getPreviewSrc,
   };
+}
+
+type HeroBannerImagePreviewProps = {
+  src: string;
+  /** Plus petit dans les récapitulatifs */
+  compact?: boolean;
+};
+
+function HeroBannerImagePreview({ src, compact }: HeroBannerImagePreviewProps) {
+  const [phase, setPhase] = useState<'loading' | 'loaded' | 'error'>('loading');
+
+  useEffect(() => {
+    setPhase('loading');
+  }, [src]);
+
+  if (!src) return null;
+
+  const minH = compact ? 'min-h-[3.5rem]' : 'min-h-[5rem]';
+  const imgCls = compact ? 'h-14 w-full object-cover' : 'h-28 sm:h-32 w-full object-cover';
+  const errorMinH = compact ? 'min-h-[3.5rem]' : 'min-h-[5rem]';
+
+  return (
+    <div
+      className={`relative ${minH} w-full overflow-hidden rounded-md border border-border bg-muted`}
+    >
+      {phase === 'loading' && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-muted/95 px-2 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+          <span className="text-center">Chargement de l’aperçu…</span>
+        </div>
+      )}
+      {phase === 'error' && (
+        <div
+          className={`flex ${errorMinH} items-center justify-center px-3 py-3 text-center text-xs leading-snug text-muted-foreground`}
+        >
+          Aperçu indisponible (URL invalide, fichier inaccessible ou connexion lente).
+        </div>
+      )}
+      {phase !== 'error' && (
+        <img
+          src={src}
+          alt=""
+          decoding="async"
+          fetchPriority={compact ? 'low' : 'auto'}
+          className={`${imgCls} ${phase === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setPhase('loaded')}
+          onError={() => setPhase('error')}
+        />
+      )}
+    </div>
+  );
 }
 
 const WIZARD_STEPS = 6;
@@ -1077,6 +1129,7 @@ const getPageName = (key: string): string => {
 
           <div className="flex min-w-[140px] shrink-0 flex-col items-end gap-2">
             <div className="flex max-w-[100vw] flex-wrap items-center justify-end gap-2">
+              <ThemeToggle className="h-9 w-9 bg-white/10 text-white/90 hover:bg-white/15 hover:text-white border border-white/15" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -1215,22 +1268,23 @@ const getPageName = (key: string): string => {
                   transition={{ duration: 0.28 }}
                 >
                   <div className="space-y-6">
-                    <div className="mb-6 p-4 bg-muted rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Vous avez déjà configuré une paroisse ? Vous pouvez restaurer une sauvegarde.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          type="button"
-                          disabled={!hasBackups}
-                          onClick={() => setShowRestoreModal(true)}
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          {hasBackups ? 'Restaurer une sauvegarde' : 'Aucune sauvegarde disponible'}
-                        </Button>
+                    {hasBackups && (
+                      <div className="mb-6 p-4 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Vous avez déjà configuré une paroisse ? Vous pouvez restaurer une sauvegarde.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => setShowRestoreModal(true)}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Restaurer une sauvegarde
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-background/60 border border-border">
                       <img src={stepImages[0]} alt="" className="h-10 w-10 object-contain" />
@@ -1569,26 +1623,19 @@ const getPageName = (key: string): string => {
                     Optionnel : une image par page. Vous pourrez les modifier plus tard depuis chaque page.
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {PUBLIC_HERO_BANNER_PAGES.map(({ path, label }) => (
                     <div
                       key={path}
                       className="rounded-lg border border-border bg-background/40 p-4 space-y-3"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-sm font-semibold">{label}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{path}</div>
+                          <div className="text-xs text-muted-foreground font-mono truncate">{path}</div>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                        <input
-                          type="text"
-                          className="flex-1 min-w-0 px-3 py-2 border border-border rounded-lg bg-background text-sm"
-                          value={form.heroBanners[path] ?? ''}
-                          onChange={(e) => setHeroBannerUrl(path, e.target.value)}
-                          placeholder="https://…"
-                        />
+                      <div className="flex flex-col gap-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -1596,7 +1643,7 @@ const getPageName = (key: string): string => {
                             heroBannerFileInputRef.current?.click();
                           }}
                           disabled={uploading === `hero-banner-${path}`}
-                          className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
+                          className="inline-flex w-full sm:w-auto sm:self-start items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
                         >
                           {uploading === `hero-banner-${path}` ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1605,22 +1652,31 @@ const getPageName = (key: string): string => {
                           )}
                           Téléverser
                         </button>
-                      </div>
-                      {getPreviewSrc(path, form.heroBanners[path]) ? (
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={getPreviewSrc(path, form.heroBanners[path])}
-                            alt=""
-                            className="h-20 w-36 rounded-md object-cover border border-border bg-muted"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                          <span className="text-xs text-muted-foreground">Aperçu</span>
+                        <label className="sr-only" htmlFor={`hero-banner-url-${path.replace(/\W/g, '_')}`}>
+                          URL image — {label}
+                        </label>
+                        <input
+                          id={`hero-banner-url-${path.replace(/\W/g, '_')}`}
+                          type="url"
+                          inputMode="url"
+                          autoComplete="off"
+                          spellCheck={false}
+                          className="w-full min-w-0 px-3 py-2.5 border border-border rounded-lg bg-background font-mono text-xs sm:text-sm leading-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={form.heroBanners[path] ?? ''}
+                          onChange={(e) => setHeroBannerUrl(path, e.target.value)}
+                          placeholder="https://…"
+                        />
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground">Aperçu</p>
+                          {getPreviewSrc(path, form.heroBanners[path]) ? (
+                            <HeroBannerImagePreview src={getPreviewSrc(path, form.heroBanners[path])} />
+                          ) : (
+                            <div className="rounded-md border border-dashed border-border bg-muted/40 px-3 py-6 text-center text-xs text-muted-foreground">
+                              (aucune image — collez une URL ou téléversez un fichier)
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground">(aucune image)</div>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2051,18 +2107,16 @@ const getPageName = (key: string): string => {
                     <div key={path} className="p-2 rounded border border-border bg-background/80">
                       <div className="text-[11px] font-medium">{label}</div>
                       <div className="text-[10px] text-muted-foreground font-mono truncate">{path}</div>
-                      {getPreviewSrc(path, form.heroBanners[path]) ? (
-                        <img
-                          src={getPreviewSrc(path, form.heroBanners[path])}
-                          alt=""
-                          className="mt-2 h-14 w-full rounded object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="mt-2 text-[11px] text-muted-foreground">(aucune image)</div>
-                      )}
+                      <div className="mt-2">
+                        {getPreviewSrc(path, form.heroBanners[path]) ? (
+                          <HeroBannerImagePreview
+                            src={getPreviewSrc(path, form.heroBanners[path])}
+                            compact
+                          />
+                        ) : (
+                          <div className="text-[11px] text-muted-foreground">(aucune image)</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
