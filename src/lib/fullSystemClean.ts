@@ -9,6 +9,8 @@ const LOCAL_KEYS_TO_RESET = [
   'ff_profile_cache',
   'ff_paroisse_welcome_seen',
   'ff_pending_hero_banners',
+  /** Wizard SetupWizardModal.tsx */
+  'pending_hero_banners',
   'otpValidated',
 ] as const;
 

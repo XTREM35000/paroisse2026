@@ -1,90 +1,50 @@
-// Mocks supplémentaires pour les composants UI et supabase
-const Input = (props: any) => <input {...props} />;
-const Upload = (props: any) => <div {...props}>{props.children}</div>;
-const PasswordField = (props: any) => <input type="password" {...props} />;
-const Checkbox = (props: any) => <input type="checkbox" {...props} />;
-const Camera = (props: any) => <span {...props} />;
-// Mock supabase chainable (compatible with update().eq(), select(), upsert(), etc.)
-const createQueryBuilder = () => {
-  const chain = {
-    update: (_payload?: unknown) => chain,
-    insert: async (_payload?: unknown) => ({ data: null, error: null }),
-    upsert: async (_payload?: unknown, _options?: unknown) => ({ data: null, error: null }),
-    delete: (_payload?: unknown) => chain,
-    eq: async (_field?: string, _value?: unknown) => ({ data: null, error: null }),
-    select: async (_columns?: string, _options?: unknown) => ({ data: null, error: null, count: 0 }),
-  };
-  return chain;
-};
-
-const supabase: any = {
-  from: (_table: string) => createQueryBuilder(),
-  auth: {
-    signInWithPassword: async (_args?: unknown) => ({ data: {}, error: null }),
-    getUser: async () => ({ data: { user: null }, error: null }),
-  },
-  functions: {
-    invoke: async (_name: string, _args?: unknown) => ({ data: {}, error: null }),
-  },
-  rpc: async (_name: string, _args?: unknown) => ({ data: null, error: null }),
-};
-// Mock RestoreFromFileModal
-const RestoreFromFileModal = (props: any) => <div {...props}>{props.children}</div>;
-
-// src\components\SetupWizardModal.tsx
-// 
-
-
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  BookOpen,
+  Camera,
+  Church,
+  Images,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Sparkles,
+  Trash2,
+  Upload,
+  UserCircle2,
+  UserCog,
+} from 'lucide-react';
 import DraggableModal from './DraggableModal';
 import ThemeToggle from './ThemeToggle';
-// Icônes fictives pour éviter les erreurs de compilation
-const Church = (props: any) => <span {...props} />;
-const BookOpen = (props: any) => <span {...props} />;
-const Sparkles = (props: any) => <span {...props} />;
-const Images = (props: any) => <span {...props} />;
-const Mail = (props: any) => <span {...props} />;
-const UserCog = (props: any) => <span {...props} />;
-// Types et fonctions fictives pour éviter les erreurs
-type SetupData = any;
-const uploadImageToStorage = (file?: File, folder?: string) => {
-  // Retourne une URL fictive pour simuler un upload
-  return Promise.resolve('https://dummy.url/' + (folder || 'default') + '/' + (file?.name || 'image.jpg'));
-};
-const initFirstParoisseAndUser = (
-  setupPayload?: any,
-  adminData?: any,
-  adminAvatarFile?: any
-) => {
-  return Promise.resolve({
-    authData: { session: true, user: { id: 'demo', email: 'demo@paroisse.com' } },
-    paroisseId: 'demo-parish',
-  });
-};
-const upsertPageHeroBanners = async (_: any) => {};
-// Mocks UI components to avoid missing import errors
-const Button = (props: any) => <button {...props}>{props.children}</button>;
-const Loader2 = (props: any) => <span {...props} />;
-const Trash2 = (props: any) => <span {...props} />;
-const UserCircle2 = (props: any) => <span {...props} />;
-const MapPin = (props: any) => <span {...props} />;
-const Phone = (props: any) => <span {...props} />;
-const useSetup = () => ({ markCompleted: () => {}, markIncomplete: () => {} });
-const useAuth = () => ({ user: undefined, refreshProfile: async () => {} });
-const useParoisse = () => ({ reloadParoisses: async () => {} });
-const useQueryClient = () => ({ clear: async () => {}, invalidateQueries: async (_: any) => {} });
-const markAppInitialized = () => {};
-const invalidateAllPageHeroBanners = async (_: any) => {};
-const performFullCleanup = async () => {};
-const isValidEmail = (_: string) => true;
-const ensureProfileExists = async (_: any) => {};
-const uploadPendingAvatar = async (_: any) => {};
-// Constantes manquantes
+import { RestoreFromFileModal } from '@/components/admin-master/RestoreFromFileModal';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import PasswordField from '@/components/ui/password-field';
+import { toast } from '@/components/ui/sonner';
+import { useAuthContext } from '@/contexts/useAuthContext';
+import { useParoisse } from '@/contexts/ParoisseContext';
+import { useSetup } from '@/contexts/SetupContext';
+import { invalidateAllPageHeroBanners } from '@/hooks/useHeroBanners';
+import { supabase } from '@/integrations/supabase/client';
+import { markAppInitialized } from '@/lib/appInitializer';
+import { performFullCleanup } from '@/lib/cleanup';
+import { STORAGE_SELECTED_PAROISSE } from '@/lib/paroisseStorage';
+import {
+  initFirstParoisseAndUser,
+  uploadImageToStorage,
+  upsertPageHeroBanners,
+  type HomepageSectionRow,
+  type SetupData,
+} from '@/lib/setupWizard';
+import { isValidEmail } from '@/utils/emailSanitizer';
+import { ensureProfileExists } from '@/utils/ensureProfileExists';
+import { uploadPendingAvatar } from '@/utils/uploadPendingAvatar';
+
 const PENDING_HERO_BANNERS_KEY = 'pending_hero_banners';
 const EPHEMERAL_SETUP_LS_KEYS: string[] = [];
-const STORAGE_SELECTED_PAROISSE = 'selected_paroisse';
-type HomepageSectionRow = any;
 
 // Définition du type FormState
 type FormState = {
@@ -289,7 +249,7 @@ type SetupWizardModalProps = {
   onSetupCompleted?: (payload: { paroisseId: string }) => void;
 };
 
-  // isDeveloperUser doit être défini après l'appel à useAuth()
+  // isDeveloperUser doit être défini après l'appel à useAuthContext()
 
 export default function SetupWizardModal({ open, onClose, onSetupCompleted }: SetupWizardModalProps) {
     const setupFinalizedRef = useRef(false);
@@ -410,7 +370,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       }
     };
   const { markCompleted, markIncomplete } = useSetup();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuthContext();
   const { reloadParoisses } = useParoisse();
   const queryClient = useQueryClient();
   const isDeveloperUser =
@@ -426,6 +386,8 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   const [hasBackups, setHasBackups] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fullCleanLoading, setFullCleanLoading] = useState(false);
+  /** Case à cocher obligatoire dans le modal CLEAN avant d'exécuter le RPC */
+  const [cleanDestructiveAck, setCleanDestructiveAck] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const ADMIN_UNLOCK_CODE = '2022';
@@ -558,9 +520,15 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
 
   useEffect(() => {
     if (!showOtp) return;
-    window.requestAnimationFrame(() => {
-      otpInputRef.current?.focus();
-    });
+    const t = window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        const el = otpInputRef.current;
+        if (!el) return;
+        el.focus();
+        if (typeof el.select === 'function') el.select();
+      });
+    }, 80);
+    return () => window.clearTimeout(t);
   }, [showOtp]);
 
   // Security/UX: reset the unlock state when the modal closes.
@@ -618,16 +586,40 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     setAdminAvatarPreview(null);
   }
 
+  /** Ouvre le flux CLEAN : confirmation navigateur puis modal détaillé. */
+  const openDestructiveCleanConfirm = () => {
+    const sure = window.confirm(
+      [
+        'NETTOYAGE COMPLET (CLEAN / RESET)',
+        '',
+        'Le serveur va effacer les données métier (RPC), le stockage local de ce navigateur sera vidé, puis la page sera rechargée.',
+        '',
+        'Souhaitez-vous ouvrir l’écran de confirmation détaillé ?',
+      ].join('\n'),
+    );
+    if (!sure) return;
+    setCleanDestructiveAck(false);
+    setShowCleanConfirm(true);
+  };
+
   /** Nettoyage base (RPC) puis rechargement — sans exiger de session (selon politiques Supabase sur les RPC). */
   const executeFullSystemClean = async () => {
+    if (!cleanDestructiveAck) {
+      toast.error('Cochez la case pour confirmer le nettoyage complet.');
+      return;
+    }
     setFullCleanLoading(true);
     setError(null);
     try {
-      setShowCleanConfirm(false);
+      toast.message('Nettoyage en cours…', {
+        description: 'Appel serveur en cours ; la page va se recharger à la fin.',
+      });
       await performFullCleanup();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Erreur nettoyage : ${msg}`);
+      toast.error(`Nettoyage impossible : ${msg}`, { duration: 10_000 });
+      setShowCleanConfirm(false);
     } finally {
       setFullCleanLoading(false);
     }
@@ -1148,7 +1140,7 @@ const getPageName = (key: string): string => {
                 type="button"
                 className="whitespace-nowrap bg-white/10 text-white/90 hover:bg-white/15 hover:text-white"
                 disabled={loading || fullCleanLoading}
-                onClick={() => setShowCleanConfirm(true)}
+                onClick={openDestructiveCleanConfirm}
                 title="Nettoyage complet de la base (RPC) puis réinitialisation du formulaire"
               >
                 {fullCleanLoading ? (
@@ -1223,7 +1215,7 @@ const getPageName = (key: string): string => {
                     size="sm"
                     type="button"
                     className="whitespace-nowrap bg-white text-black hover:bg-white/90"
-                    onClick={() => setShowCleanConfirm(true)}
+                    onClick={openDestructiveCleanConfirm}
                   >
                     <Trash2 className="mr-1 h-4 w-4" />
                     RESET
@@ -2224,24 +2216,31 @@ const getPageName = (key: string): string => {
       <DraggableModal
         open={showCleanConfirm}
         onClose={() => {
-          if (!fullCleanLoading) setShowCleanConfirm(false);
+          if (!fullCleanLoading) {
+            setShowCleanConfirm(false);
+            setCleanDestructiveAck(false);
+          }
         }}
         draggableOnMobile={true}
         dragHandleOnly={false}
         verticalOnly={true}
         center={true}
         maxWidthClass="max-w-lg"
-        title="Confirmation de nettoyage"
+        title="Confirmation — nettoyage complet"
       >
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
             <Trash2 className="h-8 w-8 shrink-0" />
-            <h3 className="text-lg font-bold">Action destructive</h3>
+            <h3 className="text-lg font-bold">Action irréversible</h3>
           </div>
+
+          <p className="text-sm text-muted-foreground">
+            Vous avez déjà validé une première confirmation. Ci-dessous le détail avant l’appel serveur.
+          </p>
 
           <p className="text-muted-foreground">
             Cette action supprime les données métier dans la base (RPC{' '}
-            <code className="text-xs">clean_all_data</code> / <code className="text-xs">reset_all_data</code>) :
+            <code className="text-xs">clean_all_data</code> ou, si absent, <code className="text-xs">reset_all_data</code>) :
           </p>
 
           <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
@@ -2254,28 +2253,49 @@ const getPageName = (key: string): string => {
             Le compte développeur et la paroisse SYSTEM sont en principe conservés par le script SQL.
           </p>
 
+          <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-foreground">
+            Ensuite : appel à la fonction <strong>create-developer</strong>, vidage du stockage local de ce navigateur,{' '}
+            <strong>rechargement complet</strong> de l’application (retour à l’accueil).
+          </p>
+
+          <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <Checkbox
+              id="clean-destructive-ack"
+              checked={cleanDestructiveAck}
+              disabled={fullCleanLoading}
+              onCheckedChange={(c) => setCleanDestructiveAck(c === true)}
+            />
+            <label htmlFor="clean-destructive-ack" className="cursor-pointer text-sm leading-snug">
+              Je confirme vouloir lancer le <strong>nettoyage complet</strong>. Je comprends que les données listées
+              ci-dessus seront effacées côté serveur et que cette page va se recharger.
+            </label>
+          </div>
+
           <div className="flex flex-wrap gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
               disabled={fullCleanLoading}
-              onClick={() => setShowCleanConfirm(false)}
+              onClick={() => {
+                setShowCleanConfirm(false);
+                setCleanDestructiveAck(false);
+              }}
             >
               Annuler
             </Button>
             <Button
               type="button"
               variant="destructive"
-              disabled={fullCleanLoading}
+              disabled={fullCleanLoading || !cleanDestructiveAck}
               onClick={() => void executeFullSystemClean()}
             >
               {fullCleanLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Nettoyage…
+                  Nettoyage en cours…
                 </>
               ) : (
-                'Confirmer le nettoyage'
+                'Confirmer et lancer le nettoyage'
               )}
             </Button>
           </div>
