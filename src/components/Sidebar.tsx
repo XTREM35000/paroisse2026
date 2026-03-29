@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Home,
   Video,
@@ -140,19 +141,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const { setSelectorOpen } = useParoisse();
   const navRef = useRef<HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-    const defaults: Record<string, boolean> = {};
-    for (const g of MENU_GROUPS) {
-      defaults[g.title] = g.title === '🙏 VIE SPIRITUELLE';
-    }
-    return defaults;
-  });
+  const [openSection, setOpenSection] = useState<string | null>('🙏 VIE SPIRITUELLE');
 
   const toggleSection = (title: string) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
+    setOpenSection((prev) => (prev === title ? null : title));
   };
 
   // Filter menu items across all groups based on search query
@@ -285,50 +277,109 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
       <nav className="px-2 py-4">
         {getFilteredGroups().map((group) => {
           if (group.adminOnly && !isAdmin) return null;
-          const isOpen = searchQuery.trim() ? true : !!openSections[group.title];
+          const isOpen = searchQuery.trim() ? true : openSection === group.title;
+          const SectionIcon = (group.items?.[0]?.icon || Home) as LucideIcon;
           return (
-            <div key={group.title} className="mb-6">
+            <div key={group.title} className="mb-4">
               {!isCollapsed && (
                 <button
                   type="button"
                   onClick={() => toggleSection(group.title)}
-                  className="w-full px-2 text-sm text-muted-foreground uppercase mb-3 font-bold tracking-wider flex items-center justify-between hover:text-foreground transition-colors"
+                  className="w-full group relative flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-primary/90 via-primary to-primary/90 shadow-[0_4px_0_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] active:shadow-[0_1px_0_0_rgba(0,0,0,0.2)] active:translate-y-[3px] transition-all duration-300 ease-in-out"
                   aria-expanded={isOpen}
                 >
-                  <span>{group.title}</span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`}
-                  />
+                  <div className="flex items-center gap-3">
+                    <SectionIcon className="h-4 w-4 text-white/90 group-hover:text-white transition-colors" />
+                    <span className="text-sm text-white/90 group-hover:text-white uppercase font-bold tracking-wider">
+                      {group.title}
+                    </span>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="text-white/80 group-hover:text-white"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </motion.div>
                 </button>
               )}
-              <div className={`${isCollapsed || isOpen ? 'flex' : 'hidden'} flex-col gap-1`}>
-                {group.items.map((item: any) => {
-                  if (item.superOnly && !isSuperAdmin) return null;
-                  const Icon = item.icon as unknown as LucideIcon;
-                  return (
-                    <NavLink
-                      key={item.href}
-                      to={item.href}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2 rounded transition-colors justify-between ${
-                          isActive ? 'bg-accent/60 text-accent-foreground' : 'hover:bg-accent/50'
-                        }`
-                      }
-                      title={isCollapsed ? item.label : ''}
+              {isCollapsed ? (
+                <div className="flex flex-col gap-1">
+                  {group.items.map((item: any) => {
+                    if (item.superOnly && !isSuperAdmin) return null;
+                    const Icon = item.icon as unknown as LucideIcon;
+                    return (
+                      <NavLink
+                        key={item.href}
+                        to={item.href}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded transition-colors justify-between ${
+                            isActive ? 'bg-accent/60 text-accent-foreground' : 'hover:bg-accent/50'
+                          }`
+                        }
+                        title={item.label}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-4 w-4 flex-shrink-0" />
+                        </div>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              ) : (
+                <AnimatePresence initial={false} mode="wait">
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{
+                        height: 'auto',
+                        opacity: 1,
+                        transition: { duration: 0.3, ease: 'easeInOut' },
+                      }}
+                      exit={{
+                        height: 0,
+                        opacity: 0,
+                        transition: { duration: 0.25, ease: 'easeInOut' },
+                      }}
+                      className="overflow-hidden mt-2 ml-4 space-y-1"
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {!isCollapsed && <span className="text-sm">{item.label}</span>}
-                      </div>
-                      {!isCollapsed && (item as any)?.badge && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gradient-to-b from-green-400 to-green-600 text-white shadow-md shadow-green-500/50">
-                          {(item as any).badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  );
-                })}
-              </div>
+                      {group.items.map((item: any, idx: number) => {
+                        if (item.superOnly && !isSuperAdmin) return null;
+                        const Icon = item.icon as unknown as LucideIcon;
+                        return (
+                          <motion.div
+                            key={item.href}
+                            initial={{ x: -10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: idx * 0.05, duration: 0.2 }}
+                          >
+                            <NavLink
+                              to={item.href}
+                              className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 border-l-2 justify-between ${
+                                  isActive
+                                    ? 'bg-accent/60 text-accent-foreground border-primary'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 border-transparent hover:border-primary'
+                                }`
+                              }
+                            >
+                              <div className="flex items-center gap-3">
+                                <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground/80" />
+                                <span>{item.label}</span>
+                              </div>
+                              {(item as any)?.badge && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gradient-to-b from-green-400 to-green-600 text-white shadow-md shadow-green-500/50">
+                                  {(item as any).badge}
+                                </span>
+                              )}
+                            </NavLink>
+                          </motion.div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
             </div>
           );
         })}
