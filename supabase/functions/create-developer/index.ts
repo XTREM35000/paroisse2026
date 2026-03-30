@@ -1,11 +1,6 @@
 // supabase/functions/create-developer/index.ts
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
   // Gestion des requêtes OPTIONS (CORS)
@@ -14,6 +9,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    /** Réaligner mot de passe auth uniquement si le client demande explicitement (ex. première install). */
+    let isFirstInstall = false
+    try {
+      if (req.method === 'POST') {
+        const clone = req.clone()
+        const body = await clone.json().catch(() => null) as { first_install?: boolean } | null
+        if (body?.first_install === true) isFirstInstall = true
+      }
+    } catch {
+      /* ignore */
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,

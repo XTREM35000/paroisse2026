@@ -39,11 +39,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(session?.user || null);
     if (session?.user) {
       // Toujours récupérer le profil le plus à jour depuis Supabase
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
+      const fetchProfile = async () =>
+        supabase.from('profiles').select('*').eq('id', session.user!.id).maybeSingle();
+
+      let { data, error } = await fetchProfile();
+
+      const errText = `${error?.message ?? ''} ${(error as { details?: string } | null)?.details ?? ''}`;
+      const isAuthLockAbort =
+        errText.includes('AbortError') || errText.includes('steal') || errText.includes('Lock broken');
+      if (error && isAuthLockAbort) {
+        await new Promise((r) => setTimeout(r, 450));
+        ({ data, error } = await fetchProfile());
+      }
 
       if (error) {
         console.error('AuthContext: error fetching profile', error);

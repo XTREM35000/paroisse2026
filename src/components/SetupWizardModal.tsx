@@ -32,6 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { markAppInitialized } from '@/lib/appInitializer';
 import { performFullCleanup } from '@/lib/cleanup';
 import { STORAGE_SELECTED_PAROISSE } from '@/lib/paroisseStorage';
+import { SETUP_WIZARD_FINALIZED_SESSION_KEY } from '@/lib/setupSessionFlags';
 import {
   initFirstParoisseAndUser,
   uploadImageToStorage,
@@ -270,105 +271,6 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       setStep(s => Math.min(WIZARD_STEPS - 1, s + 1));
     };
 
-    // Finalisation après OTP : hard redirect pour casser toute boucle SPA / état corrompu
-    const finalizeSetupAfterAuth = async (parishId: string, _signedInUser: unknown, targetPath: string) => {
-      if (!isMountedRef.current) return;
-      if (isCompleting || setupFinalizedRef.current) {
-        console.warn('[SetupWizard] finalizeSetupAfterAuth: ignoré (déjà en cours ou finalisé)');
-        return;
-      }
-      setupFinalizedRef.current = true;
-      setIsCompleting(true);
-      console.info('[SetupWizard] finalizeSetupAfterAuth - début', { parishId, targetPath });
-      try {
-        let pendingHeroSnapshot: Record<string, string> | null = null;
-        try {
-          const raw = localStorage.getItem(PENDING_HERO_BANNERS_KEY);
-          if (raw) pendingHeroSnapshot = JSON.parse(raw) as Record<string, string>;
-        } catch {
-          /* ignore */
-        }
-
-        try {
-          document.cookie.split(';').forEach((c) => {
-            const name = c.replace(/^ +/, '').replace(/=.*/, '').trim();
-            if (!name) return;
-            document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
-          });
-        } catch {
-          /* ignore */
-        }
-
-        for (const k of EPHEMERAL_SETUP_LS_KEYS) {
-          try {
-            localStorage.removeItem(k);
-          } catch {
-            /* ignore */
-          }
-        }
-        try {
-          sessionStorage.clear();
-        } catch {
-          /* ignore */
-        }
-
-        await queryClient.clear();
-
-        const effectiveParishId =
-          parishId ||
-          pendingParishId ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_SELECTED_PAROISSE) : '') ||
-          '';
-
-        await Promise.all([
-          reloadParoisses().catch((e) => console.warn('[SetupWizard] reloadParoisses', e)),
-          refreshProfile().catch((e) => console.warn('[SetupWizard] refreshProfile', e)),
-        ]);
-
-        try {
-          if (pendingHeroSnapshot && Object.keys(pendingHeroSnapshot).length > 0) {
-            await upsertPageHeroBanners(pendingHeroSnapshot);
-            localStorage.removeItem(PENDING_HERO_BANNERS_KEY);
-            console.info('[SetupWizard] Hero banners rejoués après session OTP');
-          }
-        } catch (e) {
-          console.warn('[SetupWizard] pending hero banners', e);
-        }
-
-        markCompleted();
-        markAppInitialized();
-
-        await queryClient.invalidateQueries({ queryKey: ['header-config'] });
-        await queryClient.invalidateQueries({ queryKey: ['footer-config'] });
-        await queryClient.invalidateQueries({ queryKey: ['profile'] });
-        await invalidateAllPageHeroBanners(queryClient);
-
-        if (onSetupCompleted) {
-          console.info('[SetupWizard] onSetupCompleted', { effectiveParishId });
-          onSetupCompleted({ paroisseId: effectiveParishId });
-        }
-
-        setShowOtp(false);
-        setPendingParishId(null);
-        setPendingUser(null);
-        setStep(0);
-        onClose();
-
-        const url =
-          targetPath.startsWith('http://') || targetPath.startsWith('https://')
-            ? targetPath
-            : `${window.location.origin}${targetPath.startsWith('/') ? targetPath : `/${targetPath}`}`;
-
-        window.location.replace(url);
-      } catch (err) {
-        console.error('[SetupWizard] finalizeSetupAfterAuth error:', err);
-        setupFinalizedRef.current = false;
-      } finally {
-        if (isMountedRef.current) {
-          setIsCompleting(false);
-        }
-      }
-    };
   const { markCompleted, markIncomplete } = useSetup();
   const { user, refreshProfile } = useAuthContext();
   const { reloadParoisses } = useParoisse();
@@ -419,6 +321,71 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   const otpInputRef = useRef<HTMLInputElement>(null);
   const [pendingUser, setPendingUser] = useState<{ id?: string; email?: string } | null>(null);
   const [pendingParishId, setPendingParishId] = useState<string | null>(null);
+
+  // Finalisation après OTP : redirection dure sans refreshProfile / clear React Query (courses verrou GoTrue + Strict Mode).
+  const finalizeSetupAfterAuth = async (parishId: string, _signedInUser: unknown, targetPath: string) => {
+    if (!isMountedRef.current) return;
+    if (isCompleting || setupFinalizedRef.current) {
+      console.warn('[SetupWizard] finalizeSetupAfterAuth: ignoré (déjà en cours ou finalisé)');
+      return;
+    }
+    setupFinalizedRef.current = true;
+    setIsCompleting(true);
+    console.info('[SetupWizard] finalizeSetupAfterAuth - début', { parishId, targetPath });
+    try {
+      let pendingHeroSnapshot: Record<string, string> | null = null;
+      try {
+        const raw = localStorage.getItem(PENDING_HERO_BANNERS_KEY);
+        if (raw) pendingHeroSnapshot = JSON.parse(raw) as Record<string, string>;
+      } catch {
+        /* ignore */
+      }
+
+      const effectiveParishId =
+        parishId ||
+        pendingParishId ||
+        (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_SELECTED_PAROISSE) : '') ||
+        '';
+
+      try {
+        if (pendingHeroSnapshot && Object.keys(pendingHeroSnapshot).length > 0) {
+          await upsertPageHeroBanners(pendingHeroSnapshot);
+          localStorage.removeItem(PENDING_HERO_BANNERS_KEY);
+          console.info('[SetupWizard] Hero banners rejoués après session OTP');
+        }
+      } catch (e) {
+        console.warn('[SetupWizard] pending hero banners', e);
+      }
+
+      markCompleted();
+      markAppInitialized();
+
+      try {
+        sessionStorage.setItem(SETUP_WIZARD_FINALIZED_SESSION_KEY, '1');
+      } catch {
+        /* ignore */
+      }
+
+      if (onSetupCompleted) {
+        console.info('[SetupWizard] onSetupCompleted', { effectiveParishId });
+        onSetupCompleted({ paroisseId: effectiveParishId });
+      }
+
+      const url =
+        targetPath.startsWith('http://') || targetPath.startsWith('https://')
+          ? targetPath
+          : `${window.location.origin}${targetPath.startsWith('/') ? targetPath : `/${targetPath}`}`;
+
+      window.location.replace(url);
+    } catch (err) {
+      console.error('[SetupWizard] finalizeSetupAfterAuth error:', err);
+      setupFinalizedRef.current = false;
+    } finally {
+      if (isMountedRef.current) {
+        setIsCompleting(false);
+      }
+    }
+  };
 
   // Intentionally empty by default to avoid accidental auth calls (400) with stale credentials.
   // Prefill developer credentials so SYSTEM works from a clean UI.
@@ -989,29 +956,29 @@ const getPageName = (key: string): string => {
         throw new Error(data?.error || 'Code incorrect.');
       }
 
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email,
         password: adminPassword,
       });
       if (signInErr) throw signInErr;
 
-      const {
-        data: { user: signedInUser },
-      } = await supabase.auth.getUser();
-      if (signedInUser?.id) {
-        const parishIdForMembership =
-          pendingParishId || localStorage.getItem('selectedParoisse') || '';
-        if (parishIdForMembership) {
-          await enforceSetupUserSuperAdmin(signedInUser.id, parishIdForMembership);
-        }
-        await ensureProfileExists(signedInUser.id);
-        await uploadPendingAvatar(signedInUser.id);
-        if (parishIdForMembership) {
-          try {
-            localStorage.setItem(STORAGE_SELECTED_PAROISSE, parishIdForMembership);
-          } catch {
-            /* ignore */
-          }
+      const signedInUser = signInData.user;
+      if (!signedInUser?.id) {
+        throw new Error('Session introuvable après connexion. Réessayez dans quelques secondes.');
+      }
+
+      const parishIdForMembership =
+        pendingParishId || localStorage.getItem('selectedParoisse') || '';
+      if (parishIdForMembership) {
+        await enforceSetupUserSuperAdmin(signedInUser.id, parishIdForMembership);
+      }
+      await ensureProfileExists(signedInUser.id);
+      await uploadPendingAvatar(signedInUser.id);
+      if (parishIdForMembership) {
+        try {
+          localStorage.setItem(STORAGE_SELECTED_PAROISSE, parishIdForMembership);
+        } catch {
+          /* ignore */
         }
       }
 
