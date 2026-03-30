@@ -21,6 +21,8 @@ export interface Profile {
   is_active: boolean;
   /** Rôle métier (profiles.role) — super_admin, developer, admin, etc. */
   role?: string | null;
+  has_seen_role_manager?: boolean;
+  has_seen_officiant_manager?: boolean;
   notification_preferences: {
     email: boolean;
     push: boolean;

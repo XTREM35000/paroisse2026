@@ -20,6 +20,8 @@ interface RawProfileRow {
   is_active?: boolean;
   notification_preferences?: Profile['notification_preferences'];
   role?: string | null;
+  has_seen_role_manager?: boolean | null;
+  has_seen_officiant_manager?: boolean | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -73,6 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             date_of_birth: row.date_of_birth ?? '',
             is_active: typeof row.is_active === 'boolean' ? row.is_active : true,
             notification_preferences: row.notification_preferences ?? { email: true, push: false, sms: false },
+            has_seen_role_manager: row.has_seen_role_manager ?? false,
+            has_seen_officiant_manager: row.has_seen_officiant_manager ?? false,
             created_at: row.created_at ?? new Date().toISOString(),
             updated_at: row.updated_at ?? new Date().toISOString(),
             role: effectiveRole,

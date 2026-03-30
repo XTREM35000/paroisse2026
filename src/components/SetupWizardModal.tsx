@@ -80,76 +80,41 @@ type FormState = {
 
 type ImageField = 'heroImageUrl' | 'brandingLogo' | 'headerLogo';
 
-const PUBLIC_HERO_BANNER_PAGES: { path: string; label: string }[] = [
-  { path: '/', label: 'Accueil' },
-  { path: '/a-propos', label: 'À propos' },
-  { path: '/galerie', label: 'Galerie' },
-  { path: '/videos', label: 'Vidéos' },
-  { path: '/evenements', label: 'Événements' },
-  { path: '/verse', label: 'Verset du jour' },
-  { path: '/affiche', label: 'Affiches / Flyers' },
-  { path: '/prayers', label: 'Intentions de prière' },
-  { path: '/announcements', label: 'Annonces paroissiales' },
-  { path: '/chat', label: 'Chat' },
-  { path: '/donate', label: 'Faire un don' },
-  { path: '/homilies', label: 'Homélies' },
-  { path: '/campaigns', label: 'Campagnes' },
-  { path: '/receipts', label: 'Reçus & historique des dons' },
-  { path: '/dashboard', label: 'Tableau de bord' },
-  { path: '/prospect', label: 'Média Paroissial' },
-  { path: '/radio', label: 'Radio Paroisse FM' },
-  { path: '/live', label: 'TV Paroisse Direct' },
-  { path: '/profil', label: 'Mon Profil' },
-  { path: '/mariage', label: 'Préparatif Mariage' },
-  { path: '/bapteme', label: 'Préparatif Baptême' },
-  { path: '/confession', label: 'Demande de Confession' },
-  { path: '/faq', label: 'FAQ sans censure' },
-  { path: '/admin/faq', label: 'Admin - FAQ' },
-  { path: '/admin/officiants', label: 'Admin - Officiants' },
-  { path: '/admin/requests', label: 'Admin - Demandes' },
+const PUBLIC_HERO_BANNER_PAGES: { path: string; label: string; defaultImage: string }[] = [
+  { path: '/', label: 'Accueil', defaultImage: 'https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg' },
+  { path: '/a-propos', label: 'À propos', defaultImage: 'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg' },
+  { path: '/galerie', label: 'Galerie', defaultImage: 'https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg' },
+  { path: '/videos', label: 'Vidéos', defaultImage: 'https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg' },
+  { path: '/evenements', label: 'Événements', defaultImage: 'https://images.pexels.com/photos/265856/pexels-photo-265856.jpeg' },
+  { path: '/verse', label: 'Verset du jour', defaultImage: 'https://images.pexels.com/photos/247068/pexels-photo-247068.jpeg' },
+  { path: '/affiche', label: 'Affiches / Flyers', defaultImage: 'https://images.pexels.com/photos/158747/light-bulb-lamp-planning-analysis-158747.jpeg' },
+  { path: '/prayers', label: 'Intentions de prière', defaultImage: 'https://images.pexels.com/photos/5724765/pexels-photo-5724765.jpeg' },
+  { path: '/announcements', label: 'Annonces', defaultImage: 'https://images.pexels.com/photos/5658751/pexels-photo-5658751.jpeg' },
+  { path: '/chat', label: 'Chat', defaultImage: 'https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg' },
+  { path: '/donate', label: 'Faire un don', defaultImage: 'https://images.pexels.com/photos/8433695/pexels-photo-8433695.jpeg' },
+  { path: '/homilies', label: 'Homélies', defaultImage: 'https://images.pexels.com/photos/3202529/pexels-photo-3202529.jpeg' },
+  { path: '/campaigns', label: 'Campagnes', defaultImage: 'https://images.pexels.com/photos/6999538/pexels-photo-6999538.jpeg' },
+  { path: '/receipts', label: 'Reçus', defaultImage: 'https://images.pexels.com/photos/5366480/pexels-photo-5366480.jpeg' },
+  { path: '/dashboard', label: 'Dashboard', defaultImage: 'https://images.pexels.com/photos/669615/pexels-photo-669615.jpeg' },
+  { path: '/prospect', label: 'Média', defaultImage: 'https://images.pexels.com/photos/326514/pexels-photo-326514.jpeg' },
+  { path: '/radio', label: 'Radio FM', defaultImage: 'https://images.pexels.com/photos/1059650/pexels-photo-1059650.jpeg' },
+  { path: '/live', label: 'TV Direct', defaultImage: 'https://images.pexels.com/photos/355946/pexels-photo-355946.jpeg' },
+  { path: '/profil', label: 'Mon Profil', defaultImage: 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg' },
+  { path: '/mariage', label: 'Mariage', defaultImage: 'https://images.pexels.com/photos/1024967/pexels-photo-1024967.jpeg' },
+  { path: '/bapteme', label: 'Baptême', defaultImage: 'https://images.pexels.com/photos/4769532/pexels-photo-4769532.jpeg' },
+  { path: '/confession', label: 'Confession', defaultImage: 'https://images.pexels.com/photos/1264825/pexels-photo-1264825.jpeg' },
+  { path: '/faq', label: 'FAQ', defaultImage: 'https://images.pexels.com/photos/590016/pexels-photo-590016.jpeg' },
+  { path: '/admin/faq', label: 'Admin FAQ', defaultImage: 'https://images.pexels.com/photos/590016/pexels-photo-590016.jpeg' },
+  { path: '/admin/officiants', label: 'Admin Officiants', defaultImage: 'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg' },
+  { path: '/admin/requests', label: 'Admin Demandes', defaultImage: 'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg' },
 ];
-// Tableau d'images demo pour les hero banners
-const DEMO_HERO_IMAGES = [
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/uploads/1767454960147_messe01.jpeg',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760153581-accueil.png',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760305338-event07.jpeg',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760326847-event01.jpeg',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760353565-ecran01.png',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760369224-messe01.jpeg',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760377470-mess02.jpeg',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760411490-gallerie01.jpeg',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760436019-homelies01.png',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760505593-messe01.png',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760526445-ecran04.png',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760535550-ecran06.png',
-  'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero-banners/1774760548089-accueil.png',
-];
-
-// Fonction utilitaire pour générer des images aléatoires pour chaque clé
-const getRandomHeroBanners = () => {
-  // Images fixes pour certaines pages
-  const fixedImages: Record<string, string> = {
-    '/profil': 'https://cghwsbkxcjsutqwzdbwe.supabase.co/storage/v1/object/public/gallery/hero/1774174729748-event04.jpeg',
-    // Ajouter d'autres pages fixes ici si besoin
-  };
-
-  // Toutes les clés sauf celles fixées
-  const heroKeys = PUBLIC_HERO_BANNER_PAGES.map(({ path }) => path).filter((key) => !(key in fixedImages));
-  const shuffled = [...DEMO_HERO_IMAGES];
-  // Mélange Fisher-Yates
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  const result: Record<string, string> = { ...fixedImages };
-  heroKeys.forEach((key, index) => {
-    result[key] = shuffled[index % shuffled.length];
-  });
-  return result;
-};
 
 function emptyHeroBanners(): { [key: string]: string } {
-  return Object.fromEntries(PUBLIC_HERO_BANNER_PAGES.map(({ path }) => [path, '']));
+  const banners: { [key: string]: string } = {};
+  PUBLIC_HERO_BANNER_PAGES.forEach(({ path, defaultImage }) => {
+    banners[path] = defaultImage;
+  });
+  return banners;
 }
 
 function useHeroBannerPreviews() {
@@ -631,8 +596,6 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   // Pré-remplissage démo
   const fillWithDemoData = () => {
     setError(null);
-    // Générer des images aléatoires pour les hero banners
-    const randomHeroBanners = getRandomHeroBanners();
     setForm((prev) => ({
       // ...toutes les données existantes (header, hero, features, etc.)
       ...prev,
@@ -696,8 +659,8 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
       footerWhatsappUrl: 'https://wa.me/2250505263030',
       footerCopyrightText:
         '© 2026 Paroisse Internationale Notre-Dame de la Compassion – Tous droits réservés',
-      // Hero Banners aléatoires
-      heroBanners: randomHeroBanners,
+      // Hero Banners avec images par defaut deja pre-remplies
+      heroBanners: prev.heroBanners,
     }));
 
     // Step 5 – Compte admin

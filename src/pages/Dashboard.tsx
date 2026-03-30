@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import HeroBanner from '@/components/HeroBanner';
 import { useLocation } from 'react-router-dom';
 import usePageHero from '@/hooks/usePageHero';
@@ -15,10 +15,16 @@ import { useDirectory } from '@/hooks/useDirectory';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { RoleManagerModal } from '@/components/admin/RoleManagerModal';
+import { OfficiantManagerModal } from '@/components/admin/OfficiantManagerModal';
 
 const Dashboard: React.FC = () => {
+  const { profile, loading: authLoading, refreshProfile } = useAuth();
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showOfficiantModal, setShowOfficiantModal] = useState(false);
   
   // Fetch real data
   const { videos: recentVideos = [], loading: videosLoading } = useVideos(6);
@@ -126,11 +132,42 @@ const Dashboard: React.FC = () => {
     topVideos: analyticsData?.topVideos || [],
   }), [analyticsData, analyticsLoading, weeklyViews]);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <HeroBanner title="Tableau de bord" subtitle="Vue d'ensemble complète et analytics" backgroundImage={hero?.image_url} showBackButton={true} onBgSave={saveHero} />
+  useEffect(() => {
+    if (authLoading) return;
+    if (profile?.role !== 'super_admin') return;
+    const p = profile as (typeof profile & {
+      has_seen_role_manager?: boolean;
+      has_seen_officiant_manager?: boolean;
+    }) | null;
+    if (!p?.has_seen_role_manager) {
+      setShowRoleModal(true);
+      return;
+    }
+    if (!p?.has_seen_officiant_manager) {
+      setShowOfficiantModal(true);
+    }
+  }, [authLoading, profile]);
 
-      <main className="py-12 lg:py-16 container mx-auto px-4">
+  const handleRoleComplete = async () => {
+    setShowRoleModal(false);
+    await refreshProfile();
+    const p = profile as (typeof profile & { has_seen_officiant_manager?: boolean }) | null;
+    if (!p?.has_seen_officiant_manager) {
+      setShowOfficiantModal(true);
+    }
+  };
+
+  const handleOfficiantComplete = async () => {
+    setShowOfficiantModal(false);
+    await refreshProfile();
+  };
+
+  return (
+    <>
+      <div className="min-h-screen bg-background">
+        <HeroBanner title="Tableau de bord" subtitle="Vue d'ensemble complète et analytics" backgroundImage={hero?.image_url} showBackButton={true} onBgSave={saveHero} />
+
+        <main className="py-12 lg:py-16 container mx-auto px-4">
         {/* Section 1: Vue d'ensemble - Statistiques principales */}
         <section className="mb-12">
           <div className="mb-6">
@@ -408,8 +445,11 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </section>
-      </main>
-    </div>
+        </main>
+      </div>
+      <RoleManagerModal open={showRoleModal} onClose={() => setShowRoleModal(false)} onComplete={handleRoleComplete} />
+      <OfficiantManagerModal open={showOfficiantModal} onClose={() => setShowOfficiantModal(false)} onComplete={handleOfficiantComplete} />
+    </>
   );
 };
 
