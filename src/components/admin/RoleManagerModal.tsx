@@ -54,19 +54,19 @@ export function RoleManagerModal({ open, onClose, onComplete }: RoleManagerModal
     <DraggableModal
       open={open}
       onClose={() => void handleSkip()}
-      title="Bienvenue Super Admin"
-      maxWidthClass="max-w-6xl"
-      className="h-[90vh] max-h-[90vh]"
+      title="🎯 Bienvenue Super Admin !"
+      maxWidthClass="max-w-5xl"
+      className="h-[85vh] max-h-[85vh]"
       bodyClassName="p-0 overflow-hidden"
     >
-      <div className="p-6 space-y-6 h-full flex flex-col">
+      <div className="p-4 space-y-4 h-full flex flex-col">
         <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
-          <h2 className="text-xl font-bold text-primary">Configurez vos roles et permissions</h2>
-          <p className="text-muted-foreground mt-2">
-            Definissez quels roles ont acces a quelles pages de l&apos;application.
+          <h2 className="text-lg font-bold text-primary">Configurez vos roles et permissions</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Creez des roles personnalises et attribuez-leur l&apos;acces aux pages de l&apos;application.
           </p>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 max-h-[55vh] overflow-y-auto">
           <RoleManager compact />
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t">

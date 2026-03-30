@@ -67,29 +67,37 @@ export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantMa
   }, [open]);
 
   const handleSave = async () => {
-    if (!formData.full_name.trim()) {
-      toast.error('Le nom est obligatoire');
+    if (!formData.full_name?.trim()) {
+      toast.error('Le nom complet est requis');
       return;
     }
+
     setIsLoading(true);
     try {
       const payload = {
         ...formData,
         name: formData.full_name,
+        paroisse_id: profile?.paroisse_id ?? null,
       };
       if (isEditing && selectedOfficiant?.id) {
-        await supabase.from('officiants').update(payload as never).eq('id', selectedOfficiant.id);
+        const { error } = await supabase
+          .from('officiants')
+          .update(payload as never)
+          .eq('id', selectedOfficiant.id);
+        if (error) throw error;
         toast.success('Officiant mis a jour');
       } else {
-        await supabase.from('officiants').insert(payload as never);
+        const { error } = await supabase.from('officiants').insert(payload as never);
+        if (error) throw error;
         toast.success('Officiant ajoute');
       }
       await loadOfficiants();
       setIsEditing(false);
       setSelectedOfficiant(null);
       setFormData(emptyForm);
-    } catch {
-      toast.error("Erreur lors de l'enregistrement");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || "Erreur lors de l'enregistrement");
     } finally {
       setIsLoading(false);
     }

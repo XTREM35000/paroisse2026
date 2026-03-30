@@ -65,6 +65,8 @@ import Unauthorized from './pages/Unauthorized';
 import AdminCulteRequests from './pages/AdminCulteRequests';
 import AdminCulteOfficiants from './pages/AdminCulteOfficiants';
 import AdminCulteFaq from './pages/AdminCulteFaq';
+import AdminRoles from './pages/AdminRoles';
+import AdminOfficiants from './pages/AdminOfficiants';
 import NotificationProvider from '@/components/ui/notification-system';
 import MembersPage from './pages/MembersPage';
 import AdminTutorielsPage from './pages/AdminTutorielsPage';
@@ -389,6 +391,14 @@ const AppInner = () => {
           <Route path="/donate" element={<Layout><Donate /></Layout>} />
           <Route path="/donation-success" element={<Layout><DonationSuccess /></Layout>} />
           <Route
+            path="/admin/roles"
+            element={
+              <ProtectedRoute requiredRole="super_admin">
+                <Layout><AdminRoles /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/requests"
             element={
               <ProtectedRoute requiredRole="admin">
@@ -407,8 +417,8 @@ const AppInner = () => {
           <Route
             path="/admin/officiants"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <Layout><AdminCulteOfficiants /></Layout>
+              <ProtectedRoute requiredRole="super_admin">
+                <Layout><AdminOfficiants /></Layout>
               </ProtectedRoute>
             }
           />

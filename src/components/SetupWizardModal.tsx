@@ -244,8 +244,9 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   const isDeveloperUser =
     user?.user_metadata?.role === 'developer' || user?.app_metadata?.role === 'developer';
 
-  // Ajout du flag pour empêcher les appels multiples
+  // Flags pour empêcher les appels multiples de finalisation/redirection
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const [step, setStep] = useState(0);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
@@ -307,7 +308,7 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   // Finalisation après OTP : redirection dure sans refreshProfile / clear React Query (courses verrou GoTrue + Strict Mode).
   const finalizeSetupAfterAuth = async (parishId: string, _signedInUser: unknown, targetPath: string) => {
     if (!isMountedRef.current) return;
-    if (finalizeExecutedRef.current || isCompleting || setupFinalizedRef.current) {
+    if (finalizeExecutedRef.current || isCompleting || setupFinalizedRef.current || isRedirecting) {
       console.warn('[SetupWizard] finalizeSetupAfterAuth: ignoré (déjà en cours ou finalisé)');
       return;
     }
@@ -377,7 +378,9 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
           ? targetPath
           : `${window.location.origin}${targetPath.startsWith('/') ? targetPath : `/${targetPath}`}`;
 
-      window.location.href = url;
+      setIsRedirecting(true);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      window.location.replace(url);
     } catch (err) {
       console.error('[SetupWizard] finalizeSetupAfterAuth error:', err);
     } finally {
@@ -892,6 +895,7 @@ const getPageName = (key: string): string => {
       await invalidateAllPageHeroBanners(queryClient);
 
       if (authData.session) {
+        if (isRedirecting) return;
         if (authData.user?.id) {
           await enforceSetupUserSuperAdmin(authData.user.id, paroisseId);
         }
@@ -901,7 +905,9 @@ const getPageName = (key: string): string => {
         onSetupCompleted?.({ paroisseId });
         handleClose();
         const p = isDeveloperUser ? '/developer/admin' : '/dashboard';
-        window.location.assign(`${window.location.origin}${p.startsWith('/') ? p : `/${p}`}`);
+        setIsRedirecting(true);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        window.location.replace(`${window.location.origin}${p.startsWith('/') ? p : `/${p}`}`);
         return;
       }
 
@@ -935,7 +941,7 @@ const getPageName = (key: string): string => {
   };
 
   const verifyOtp = async () => {
-    if (otpInFlightRef.current || finalizeExecutedRef.current || setupFinalizedRef.current || isCompleting) return;
+    if (otpInFlightRef.current || finalizeExecutedRef.current || setupFinalizedRef.current || isCompleting || isRedirecting) return;
     otpInFlightRef.current = true;
     setOtpLoading(true);
     setOtpError('');

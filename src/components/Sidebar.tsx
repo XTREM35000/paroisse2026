@@ -111,6 +111,8 @@ export const MENU_GROUPS = [
     items: [
       { label: 'Accueil', href: '/admin/homepage', icon: Settings },
       { label: 'Paramètres', href: '/admin/settings', icon: Settings },
+      { label: 'Gestion des rôles', href: '/admin/roles', icon: Settings, superOnly: true },
+      { label: 'Gestion des officiants', href: '/admin/officiants', icon: Users, superOnly: true },
       { label: 'Paroisses', href: '/admin/paroisses', icon: Building2, superOnly: true },
       { label: 'Documents', href: '/documents', icon: FileText },
       { label: 'Événements', href: '/admin/events', icon: Calendar },

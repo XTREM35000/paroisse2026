@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, UserCircle, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, FileText, MoreVertical } from "lucide-react";
+import { User, UserCircle, LogOut, HelpCircle, Menu, X, Home, Info, Users, MessageCircle, Bell, FileText, MoreVertical, Shield } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
 const AuthModal = lazy(() => import("./AuthModal"));
 const ForgotPasswordModal = lazy(() => import("./ForgotPasswordModal"));
@@ -71,7 +71,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const navigate = useNavigate();
   const { user, signOut } = useAuthContext();
   const { profile } = useUser();
-  const { isAdmin } = useRoleCheck();
+  const { isAdmin, isSuperAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
   const { unreadCount: unreadNotificationsCount, markAllAsRead: markAllAsReadNotifications } = useUnreadNotifications();
   const { unreadCount: unreadMessagesCount, markAllAsRead } = useUnreadMessages();
@@ -455,6 +455,32 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                         <Users className="h-4 w-4 mr-2" />
                         Membre
                       </Button>
+                    )}
+                    {isSuperAdmin && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-xs mt-1"
+                          onClick={() => {
+                            navigate('/admin/roles');
+                            setIsUserMenuOpen(false);
+                          }}
+                        >
+                          <Shield className="h-4 w-4 mr-2" />
+                          Gestion des rôles
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-xs mt-1"
+                          onClick={() => {
+                            navigate('/admin/officiants');
+                            setIsUserMenuOpen(false);
+                          }}
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          Gestion des officiants
+                        </Button>
+                      </>
                     )}
 
                     <Button
