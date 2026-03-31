@@ -71,6 +71,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const navigate = useNavigate();
   const { user, signOut } = useAuthContext();
   const { profile } = useUser();
+  const isGuest = profile?.role === 'guest';
   const { isAdmin, isSuperAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
   const { unreadCount: unreadNotificationsCount, markAllAsRead: markAllAsReadNotifications } = useUnreadNotifications();
@@ -275,7 +276,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   <HelpCircle className="h-5 w-5" />
                 </Button>
 
-                {user && (
+                {user && !isGuest && (
                   <>
                     <div className="relative">
                       <Button
@@ -337,7 +338,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                   >
                     <HelpCircle className="mr-2 h-4 w-4" /> Aide
                   </DropdownMenuItem>
-                  {user && (
+                  {user && !isGuest && (
                     <>
                       <DropdownMenuItem
                         onClick={async () => {
@@ -439,75 +440,106 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                         {profile?.full_name || user.email}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Connecté
+                        {isGuest ? 'Invité' : 'Connecté'}
                       </p>
                     </div>
 
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-xs mt-1"
-                        onClick={() => {
-                          navigate('/membres');
-                          setIsUserMenuOpen(false);
-                        }}
-                      >
-                        <Users className="h-4 w-4 mr-2" />
-                        Membre
-                      </Button>
-                    )}
-                    {isSuperAdmin && (
+                    {isGuest ? (
                       <>
                         <Button
                           variant="ghost"
                           className="w-full justify-start text-xs mt-1"
                           onClick={() => {
-                            navigate('/admin/roles');
+                            navigate('/profile');
                             setIsUserMenuOpen(false);
                           }}
                         >
-                          <Shield className="h-4 w-4 mr-2" />
-                          Gestion des rôles
+                          <User className="h-4 w-4 mr-2" />
+                          Modifier profil
                         </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={async () => {
+                            await signOut();
+                            setIsUserMenuOpen(false);
+                            setIsMobileMenuOpen(false);
+                            navigate('/');
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Déconnexion
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start text-xs mt-1"
+                            onClick={() => {
+                              navigate('/membres');
+                              setIsUserMenuOpen(false);
+                            }}
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Membre
+                          </Button>
+                        )}
+                        {isSuperAdmin && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-xs mt-1"
+                              onClick={() => {
+                                navigate('/admin/roles');
+                                setIsUserMenuOpen(false);
+                              }}
+                            >
+                              <Shield className="h-4 w-4 mr-2" />
+                              Gestion des rôles
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-xs mt-1"
+                              onClick={() => {
+                                navigate('/admin/officiants');
+                                setIsUserMenuOpen(false);
+                              }}
+                            >
+                              <Users className="h-4 w-4 mr-2" />
+                              Gestion des officiants
+                            </Button>
+                          </>
+                        )}
+
                         <Button
                           variant="ghost"
                           className="w-full justify-start text-xs mt-1"
                           onClick={() => {
-                            navigate('/admin/officiants');
+                            navigate('/profile');
                             setIsUserMenuOpen(false);
                           }}
                         >
-                          <Users className="h-4 w-4 mr-2" />
-                          Gestion des officiants
+                          <User className="h-4 w-4 mr-2" />
+                          Mon profil
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={async () => {
+                            await signOut();
+                            setIsUserMenuOpen(false);
+                            setIsMobileMenuOpen(false);
+                            navigate('/');
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Déconnexion
                         </Button>
                       </>
                     )}
-
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-xs mt-1"
-                      onClick={() => {
-                        navigate('/profile');
-                        setIsUserMenuOpen(false);
-                      }}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Mon profil
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={async () => {
-                        await signOut();
-                        setIsUserMenuOpen(false);
-                        setIsMobileMenuOpen(false);
-                        navigate('/');
-                      }}
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Déconnexion
-                    </Button>
                   </motion.div>
                 )}
               </AnimatePresence>

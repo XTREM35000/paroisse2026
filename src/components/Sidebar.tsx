@@ -140,6 +140,8 @@ export interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const { profile, isAdmin, hasRole, isModerator, isSuperAdmin } = useRoleCheck();
+
+  if (profile?.role === 'guest') return null;
   const { setSelectorOpen } = useParoisse();
   const navRef = useRef<HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState('');

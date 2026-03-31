@@ -24,6 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import PasswordField from '@/components/ui/password-field';
 import { toast } from '@/components/ui/sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { showToast } from '@/lib/toast';
 import { useAuthContext } from '@/contexts/useAuthContext';
 import { useParoisse } from '@/contexts/ParoisseContext';
 import { useSetup } from '@/contexts/SetupContext';
@@ -218,6 +220,7 @@ type SetupWizardModalProps = {
   // isDeveloperUser doit être défini après l'appel à useAuthContext()
 
 export default function SetupWizardModal({ open, onClose, onSetupCompleted }: SetupWizardModalProps) {
+    const { confirm, DialogComponent } = useConfirmDialog();
     const setupFinalizedRef = useRef(false);
     const isMountedRef = useRef(true);
     const otpInFlightRef = useRef(false);
@@ -557,17 +560,16 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
     setAdminAvatarPreview(null);
   }
 
-  /** Ouvre le flux CLEAN : confirmation navigateur puis modal détaillé. */
-  const openDestructiveCleanConfirm = () => {
-    const sure = window.confirm(
-      [
-        'NETTOYAGE COMPLET (CLEAN / RESET)',
-        '',
-        'Le serveur va effacer les données métier (RPC), le stockage local de ce navigateur sera vidé, puis la page sera rechargée.',
-        '',
-        'Souhaitez-vous ouvrir l’écran de confirmation détaillé ?',
-      ].join('\n'),
-    );
+  /** Ouvre le flux CLEAN : confirmation puis modal détaillé. */
+  const openDestructiveCleanConfirm = async () => {
+    const sure = await confirm({
+      title: 'Nettoyage complet (CLEAN / RESET)',
+      description:
+        'Le serveur va effacer les données métier (RPC), le stockage local de ce navigateur sera vidé, puis la page sera rechargée. Souhaitez-vous ouvrir l’écran de confirmation détaillé ?',
+      confirmText: 'Continuer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+    });
     if (!sure) return;
     setCleanDestructiveAck(false);
     setShowCleanConfirm(true);
@@ -576,20 +578,21 @@ export default function SetupWizardModal({ open, onClose, onSetupCompleted }: Se
   /** Nettoyage base (RPC) puis rechargement — sans exiger de session (selon politiques Supabase sur les RPC). */
   const executeFullSystemClean = async () => {
     if (!cleanDestructiveAck) {
-      toast.error('Cochez la case pour confirmer le nettoyage complet.');
+      showToast.error('Cochez la case pour confirmer le nettoyage complet.');
       return;
     }
     setFullCleanLoading(true);
     setError(null);
+    const toastId = showToast.loading('Nettoyage en cours…');
     try {
-      toast.message('Nettoyage en cours…', {
-        description: 'Appel serveur en cours ; la page va se recharger à la fin.',
-      });
       await performFullCleanup();
+      showToast.dismiss(toastId);
+      showToast.success('Nettoyage terminé');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Erreur nettoyage : ${msg}`);
-      toast.error(`Nettoyage impossible : ${msg}`, { duration: 10_000 });
+      showToast.dismiss(toastId);
+      showToast.error(`Nettoyage impossible : ${msg}`);
       setShowCleanConfirm(false);
     } finally {
       setFullCleanLoading(false);
@@ -1123,7 +1126,7 @@ const getPageName = (key: string): string => {
                 type="button"
                 className="whitespace-nowrap bg-white/10 text-white/90 hover:bg-white/15 hover:text-white"
                 disabled={loading || fullCleanLoading}
-                onClick={openDestructiveCleanConfirm}
+                onClick={() => void openDestructiveCleanConfirm()}
                 title="Nettoyage complet de la base (RPC) puis réinitialisation du formulaire"
               >
                 {fullCleanLoading ? (
@@ -1198,7 +1201,7 @@ const getPageName = (key: string): string => {
                     size="sm"
                     type="button"
                     className="whitespace-nowrap bg-white text-black hover:bg-white/90"
-                    onClick={openDestructiveCleanConfirm}
+                    onClick={() => void openDestructiveCleanConfirm()}
                   >
                     <Trash2 className="mr-1 h-4 w-4" />
                     RESET
@@ -2383,6 +2386,7 @@ const getPageName = (key: string): string => {
           </div>
         </div>
       </DraggableModal>
+      {DialogComponent}
     </>
   );
 }

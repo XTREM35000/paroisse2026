@@ -64,21 +64,6 @@ const UnifiedModerationPanel: React.FC<UnifiedModerationPanelProps> = ({
     }
   };
 
-  const handleDelete = async (id: string, type: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) return;
-
-    setActionInProgress(id);
-    try {
-      // Placeholder: notifications table delete
-      toast({ title: 'Succès', description: 'Élément supprimé' });
-    } catch (err) {
-      console.error('[UnifiedModerationPanel] Delete error:', err);
-      toast({ title: 'Erreur', description: 'Impossible de supprimer', variant: 'destructive' });
-    } finally {
-      setActionInProgress(null);
-    }
-  };
-
   return (
     <div className="bg-card rounded-lg border border-border p-6">
       <div className="flex items-center gap-2 mb-4">

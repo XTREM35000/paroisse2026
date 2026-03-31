@@ -8,6 +8,7 @@ import { useNotification } from './ui/notification-system';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import slugify from '@/lib/slugify';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface EditingEvent {
   id: string;
@@ -71,6 +72,7 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { notifySuccess, notifyError } = useNotification();
+  const { confirm, DialogComponent } = useConfirmDialog();
 
   // Pré-remplir si édition
   useEffect(() => {
@@ -219,9 +221,14 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
   const handleDelete = async () => {
     if (!editingEvent || !onDelete) return;
 
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Supprimer l’événement',
+      description: 'Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       setLoading(true);
@@ -239,6 +246,7 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
   };
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <DraggableModal
@@ -549,6 +557,8 @@ const EventModalForm: React.FC<EventModalFormProps> = ({
         </DraggableModal>
       )}
     </AnimatePresence>
+    {DialogComponent}
+    </>
   );
 };
 

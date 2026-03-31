@@ -1,4 +1,6 @@
 const ROLE_ALIASES: Record<string, string> = {
+  guest: 'guest',
+  invite: 'guest',
   administrateur: 'admin',
   admin: 'admin',
   membre: 'member',
@@ -83,6 +85,8 @@ export function formatRoleLabelForUi(role?: string | null): string {
       return 'Modérateur';
     case 'member':
       return 'Membre';
+    case 'guest':
+      return 'Invité';
     default:
       return role && String(role).trim() ? String(role) : 'Membre';
   }

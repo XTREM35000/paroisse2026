@@ -8,6 +8,8 @@ import { useState, useEffect } from "react";
 import useRoleCheck from '@/hooks/useRoleCheck';
 import usePageHero from '@/hooks/usePageHero';
 import PageContentManager from '@/components/PageContentManager';
+import { useAuth } from '@/hooks/useAuth';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const PATH_TO_PAGE: Record<string, string> = {
   '/videos': 'videos',
@@ -47,6 +49,8 @@ interface HeroBannerProps {
   eventDate?: string;
   backgroundImage?: string;
   showBackButton?: boolean;
+  /** Avatar utilisateur en haut à droite (cercle doré) */
+  showAvatar?: boolean;
   description?: string;
   bucket?: string; // Optionnel: bucket pour l'upload d'images
   onBgSave?: (url: string) => Promise<void> | void; // Optionnel: callback pour persister l'image
@@ -59,12 +63,14 @@ const HeroBanner = ({
   eventDate,
   backgroundImage,
   showBackButton = true,
+  showAvatar = true,
   description,
   bucket,
   onBgSave,
 }: HeroBannerProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, profile } = useAuth();
   // Start without a background to avoid showing a local fallback
   // while we are still resolving the DB-backed hero image.
   const [bg, setBg] = useState<string | undefined>(undefined);
@@ -136,6 +142,22 @@ const HeroBanner = ({
         <div className="absolute inset-0 cross-pattern opacity-10" />
       </div>
 
+      {/* Avatar (cercle doré) */}
+      {showAvatar && user && (
+        <div className="absolute top-4 right-4 z-30">
+          <div className="rounded-full p-0.5 bg-gradient-to-r from-amber-400 to-yellow-600 shadow-lg">
+            <Avatar className="h-10 w-10 border-2 border-white/20">
+              <AvatarImage src={profile?.avatar_url || undefined} alt="" />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                  user.email?.charAt(0)?.toUpperCase() ||
+                  'U'}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
+      )}
+
       {/* Bouton crayon : ouvrir le modal de gestion du contenu (admins seulement) */}
       {location.pathname !== '/' && isAdmin && (
         <>
@@ -143,7 +165,9 @@ const HeroBanner = ({
             size="icon"
             onClick={() => setContentManagerOpen(true)}
             title="Gérer le contenu de la page (hero, suppression, réinitialisation)"
-            className="absolute top-3 right-3 z-40 bg-primary hover:bg-primary/90 text-primary-foreground"
+            className={`absolute top-3 z-40 bg-primary hover:bg-primary/90 text-primary-foreground ${
+              showAvatar && user ? 'right-14' : 'right-3'
+            }`}
           >
             <Pencil className="w-4 h-4" />
           </Button>

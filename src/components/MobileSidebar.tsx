@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen } from 'lucide-react';
+import { X, BookOpen, Home } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import useRoleCheck from '@/hooks/useRoleCheck';
@@ -44,10 +44,20 @@ interface MobileSidebarProps {
 
 export default function MobileSidebar({ isOpen, onClose, navItems, navigation, navigationGroups, user: userProp, onSignOut }: MobileSidebarProps) {
   const auth = useAuth();
-  const { user: authUser, signOut: authSignOut } = auth || {};
+  const { user: authUser, signOut: authSignOut, profile } = auth || {};
   const user = userProp ?? authUser;
   const { isAdmin, isModerator } = useRoleCheck();
+  const isGuest = profile?.role === 'guest';
   const signOut = onSignOut ?? authSignOut;
+
+  const guestNavGroups: NavGroup[] = [
+    {
+      title: 'Navigation',
+      items: [{ label: 'Accueil', href: '/', icon: Home }],
+    },
+  ];
+
+  const groupsToRender = isGuest ? guestNavGroups : navigationGroups;
 
   const renderIcon = (icon?: React.ReactNode | React.ElementType) => {
     if (!icon) return null;
@@ -155,8 +165,8 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
 
             <nav className="p-4 flex flex-col gap-2 overflow-y-auto h-[calc(100%-64px)]">
               {/* If grouped navigation provided, render groups */}
-              {navigationGroups && navigationGroups.length > 0 ? (
-                navigationGroups.map((group) => {
+              {groupsToRender && groupsToRender.length > 0 ? (
+                groupsToRender.map((group) => {
                   if (group.adminOnly && !isAdmin) return null;
                   return (
                     <div key={group.title} className="mb-4">
@@ -213,6 +223,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
               )}
 
               {/* Documentation (mobile-only) */}
+              {!isGuest && (
               <div className="mb-4 md:hidden">
                 <div className="px-2 text-xs text-muted-foreground uppercase mb-2 font-semibold">
                   Documentation
@@ -230,6 +241,7 @@ export default function MobileSidebar({ isOpen, onClose, navItems, navigation, n
                   </NavLink>
                 </div>
               </div>
+              )}
 
               <div className="mt-4 border-t pt-4">
                 {user ? (

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import useContentSubmission from '@/hooks/useContentSubmission';
 import SubmissionStatusAlert from '@/components/SubmissionStatusAlert';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import type { ContentApproval } from '@/types/database';
 
 interface EditingVideo {
@@ -79,6 +80,7 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { notifySuccess, notifyError } = useNotification();
   const { submitContent, checkSubmissionStatus } = useContentSubmission();
+  const { confirm, DialogComponent } = useConfirmDialog();
 
   // Pré-remplir si édition
   useEffect(() => {
@@ -310,9 +312,14 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
   const handleDelete = async () => {
     if (!editingVideo || !onDelete) return;
 
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Supprimer la vidéo',
+      description: 'Êtes-vous sûr de vouloir supprimer cette vidéo ? Cette action est irréversible.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     try {
       setLoading(true);
@@ -330,6 +337,7 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
   };
 
   return (
+    <>
     <UnifiedFormModal
       open={open}
       onClose={onClose}
@@ -662,6 +670,8 @@ const VideoModalForm: React.FC<VideoModalFormProps> = ({
         </div>
       </div>
     </UnifiedFormModal>
+    {DialogComponent}
+    </>
   );
 };
 

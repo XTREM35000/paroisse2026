@@ -32,6 +32,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       (requiredRole === 'both' && isAdminFamily);
 
     if (!hasAccess) {
+      const r = String(role ?? '').toLowerCase();
+      if (r === 'guest') {
+        return <Navigate to="/" replace />;
+      }
       return <Navigate to="/unauthorized" replace />;
     }
   }

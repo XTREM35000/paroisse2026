@@ -8,7 +8,7 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   useEffect(() => {
-    const timer = setTimeout(onComplete, 2000);
+    const timer = setTimeout(onComplete, 800);
     return () => clearTimeout(timer);
   }, [onComplete]);
 

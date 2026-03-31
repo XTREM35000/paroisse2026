@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRoleCheck } from '@/hooks/useRoleCheck';
 import useFileManager from '@/hooks/useFileManager';
 import useArchives from '@/hooks/useArchives';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface Archive {
   id: string;
@@ -25,6 +26,7 @@ const ArchiveCard: React.FC<{ archive: Archive; onDownloaded?: () => void }> = (
   const { useRemove } = useArchives();
   const removeMutation = useRemove();
   const [isDeleting, setIsDeleting] = useState(false);
+  const { confirm, DialogComponent } = useConfirmDialog();
 
   const handleDownload = async () => {
     try {
@@ -39,7 +41,15 @@ const ArchiveCard: React.FC<{ archive: Archive; onDownloaded?: () => void }> = (
 
   const handleDelete = async () => {
     if (!isAdmin) return;
-    if (!confirm('Confirmer la suppression de l\'archive ? Cette action supprimera le fichier et la métadonnée.')) return;
+    const ok = await confirm({
+      title: 'Supprimer l’archive',
+      description:
+        'Confirmer la suppression de l’archive ? Cette action supprimera le fichier et la métadonnée.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       setIsDeleting(true);
       await removeMutation.mutateAsync(archive.id);
@@ -53,6 +63,7 @@ const ArchiveCard: React.FC<{ archive: Archive; onDownloaded?: () => void }> = (
   };
 
   return (
+    <>
     <div className="bg-card rounded-lg border border-border p-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="p-2 rounded-md bg-muted-foreground/10"><FileIcon className="w-6 h-6" /></div>
@@ -75,6 +86,8 @@ const ArchiveCard: React.FC<{ archive: Archive; onDownloaded?: () => void }> = (
         )}
       </div>
     </div>
+    {DialogComponent}
+    </>
   );
 };
 

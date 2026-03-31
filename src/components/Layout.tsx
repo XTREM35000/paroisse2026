@@ -19,7 +19,8 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
     localStorage.setItem('sidebar-collapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const showDesktopSidebar = !!user && profile?.role !== 'guest';
   // Appliquer le hook pour assurer que le profil existe après OAuth
   useEnsureOAuthProfile();
   
@@ -53,7 +54,7 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
           <SetupGate />
           <div className="flex flex-1">
             {/* Sidebar fixed à gauche - visible sur desktop uniquement (affiché seulement si connecté) */}
-            {user && (
+            {showDesktopSidebar && (
               <div className="hidden lg:block">
                 <Sidebar isCollapsed={sidebarCollapsed} onToggle={setSidebarCollapsed} />
               </div>
@@ -61,7 +62,7 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
 
             {/* Main content with margin pour la sidebar */}
             <main className={`flex-1 overflow-auto transition-all duration-300 ${
-              user ? (sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64') : ''
+              showDesktopSidebar ? (sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64') : ''
             }`}>
               <div className="p-6">
                 {children}
