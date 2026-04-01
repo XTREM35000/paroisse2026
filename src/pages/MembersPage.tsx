@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import useUserRoles from '@/hooks/useUserRoles';
+import { displayRole, getAvailableRoles } from '@/lib/roleUtils';
 
 interface Member {
   id: string;
@@ -26,7 +27,7 @@ const MembersPage: React.FC = () => {
   const [selected, setSelected] = useState<Member | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [form, setForm] = useState({ full_name: '', email: '', role: 'membre' });
+  const [form, setForm] = useState({ full_name: '', email: '', role: 'member' });
   const { toast } = useToast();
   const { canEditRole, isSuperAdmin } = useUserRoles();
   const [editingRole, setEditingRole] = useState<Record<string, string>>({});
@@ -53,18 +54,22 @@ const MembersPage: React.FC = () => {
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
 
-  // Normalize incoming role strings into the French canonical values stored in the DB
+  // Normalize incoming role strings vers les rôles système.
   const normalize = (r?: string | null) => {
-    if (!r) return 'membre';
-    const lower = r.toLowerCase();
-    if (['member', 'membre'].includes(lower)) return 'membre';
-    if (['moderator', 'moderateur'].includes(lower)) return 'moderateur';
+    if (!r) return 'member';
+    const lower = r.toLowerCase().trim();
+    if (['member', 'membre'].includes(lower)) return 'member';
+    if (['moderator', 'moderateur'].includes(lower)) return 'moderator';
     if (['admin', 'administrateur'].includes(lower)) return 'admin';
-    if (['pretre'].includes(lower)) return 'pretre';
+    if (['pretre', 'priest'].includes(lower)) return 'pretre';
     if (['diacre'].includes(lower)) return 'diacre';
     if (['super_admin', 'superadmin', 'super-admin'].includes(lower)) return 'super_admin';
+    if (['guest', 'invité', 'invite'].includes(lower)) return 'guest';
+    if (['developer', 'developper'].includes(lower)) return 'developer';
     return lower;
   };
+
+  const roleOptions = getAvailableRoles(true);
 
   const handleRoleChange = async (memberId: string, newRole: string) => {
     try {
@@ -223,36 +228,29 @@ const MembersPage: React.FC = () => {
                     <td className="px-4 py-3">
                       {canEditRole(m.role) ? (
                         <Select
-                          value={editingRole[m.id] || m.role || 'membre'}
+                          value={editingRole[m.id] || m.role || 'member'}
                           onValueChange={(value) => {
-                            setEditingRole(prev => ({ ...prev, [m.id]: value }));
-                            handleRoleChange(m.id, value);
+                            const normalized = normalize(value);
+                            setEditingRole(prev => ({ ...prev, [m.id]: normalized }));
+                            handleRoleChange(m.id, normalized);
                           }}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue placeholder="Rôle" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="membre">Membre</SelectItem>
-                            <SelectItem value="moderateur">Modérateur</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            {isSuperAdmin && (
-                              <SelectItem value="super_admin">Super Admin</SelectItem>
-                            )}
+                            {getAvailableRoles(true).map((role) => {
+                              if (role.value === 'super_admin' && !isSuperAdmin) return null;
+                              return (
+                                <SelectItem key={role.value} value={role.value}>
+                                  {role.label}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge variant="outline">{(function displayRole(r?: string | null){
-                          if(!r) return 'Membre';
-                          const lower = r.toLowerCase();
-                          if(['member','membre'].includes(lower)) return 'Membre';
-                          if(['moderator','moderateur'].includes(lower)) return 'Modérateur';
-                          if(['admin','administrateur'].includes(lower)) return 'Admin';
-                          if(lower === 'pretre') return 'Prêtre';
-                          if(lower === 'diacre') return 'Diacre';
-                          if(lower === 'super_admin') return 'Super Admin';
-                          return r;
-                        })(m.role)}</Badge>
+                        <Badge variant="outline">{displayRole(m.role)}</Badge>
                       )}
                     </td>
                     <td className="px-4 py-3">

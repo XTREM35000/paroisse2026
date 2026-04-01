@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getRoleLabel } from '@/lib/roleUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -306,7 +307,7 @@ export function RoleManager({ compact = false }: RoleManagerProps) {
                       <div className="flex items-center gap-2">
                         {role.name === 'super_admin' && <Shield className="h-4 w-4" />}
                         {role.name === 'admin' && <UserCog className="h-4 w-4" />}
-                        <span className="font-semibold capitalize">{role.name.replace(/_/g, ' ')}</span>
+                        <span className="font-semibold">{getRoleLabel(role.name)}</span>
                       </div>
                       <div className="text-xs opacity-75 mt-1">{role.description || '—'}</div>
                     </button>

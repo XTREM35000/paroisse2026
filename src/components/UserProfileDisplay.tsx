@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { displayRole } from '@/lib/roleUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { LogOut } from 'lucide-react';
 
@@ -90,7 +91,7 @@ const UserProfileDisplay: React.FC<UserProfileDisplayProps> = ({ onLogoutSuccess
         <div className="space-y-2 text-sm">
           {profile?.role && (
             <p>
-              <span className="font-medium">Rôle:</span> {profile.role}
+              <span className="font-medium">Rôle:</span> {displayRole(profile.role)}
             </p>
           )}
           {profile?.created_at && (

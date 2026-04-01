@@ -29,6 +29,7 @@ import useLiveStatus from "@/hooks/useLiveStatus";
 import LiveStatusBadge from "@/components/LiveStatusBadge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useParoisse } from '@/contexts/ParoisseContext';
+import { displayRole } from '@/lib/roleUtils';
 
 interface HeaderProps {
   darkMode?: boolean;
@@ -442,7 +443,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                         {profile?.full_name || user.email}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {isGuest ? 'Invité' : 'Connecté'}
+                        {displayRole(profile?.role)}
                       </p>
                     </div>
 

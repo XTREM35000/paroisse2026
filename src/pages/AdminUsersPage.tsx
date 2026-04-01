@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import useUserRoles from '@/hooks/useUserRoles';
 import { useAuth } from '@/hooks/useAuth';
+import { displayRole, getAvailableRoles, getRoleLabel } from '@/lib/roleUtils';
 
 interface User {
   id: string;
@@ -35,7 +36,7 @@ const AdminUsersPage: React.FC = () => {
     full_name: '',
     email: '',
     phone: '',
-    role: 'membre',
+    role: 'member',
     avatar_url: '',
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -102,30 +103,21 @@ const AdminUsersPage: React.FC = () => {
   }, []);
 
   const normalize = (r?: string | null) => {
-    // Normaliser vers les valeurs acceptées par le CHECK constraint
-    if (!r) return 'membre';
-    const lower = r.toLowerCase();
-    if (['member', 'membre'].includes(lower)) return 'membre';
-    if (['moderator', 'moderateur'].includes(lower)) return 'moderateur';
+    // Normaliser vers les valeurs acceptées par les enum système
+    if (!r) return 'member';
+    const lower = r.toLowerCase().trim();
+    if (['member', 'membre'].includes(lower)) return 'member';
+    if (['moderator', 'moderateur'].includes(lower)) return 'moderator';
     if (['admin', 'administrateur'].includes(lower)) return 'admin';
     if (['pretre', 'priest'].includes(lower)) return 'pretre';
     if (['diacre'].includes(lower)) return 'diacre';
     if (['super_admin', 'superadmin', 'super-admin'].includes(lower)) return 'super_admin';
-    return 'membre';
+    if (['guest', 'invité', 'invite'].includes(lower)) return 'guest';
+    if (['developer', 'developper'].includes(lower)) return 'developer';
+    return lower;
   };
 
-  const displayRole = (r?: string | null) => {
-    // Afficher un label lisible pour l'utilisateur
-    if (!r) return 'Membre';
-    const lower = r.toLowerCase();
-    if (['member', 'membre'].includes(lower)) return 'Membre';
-    if (['moderator', 'moderateur'].includes(lower)) return 'Modérateur';
-    if (['admin', 'administrateur'].includes(lower)) return 'Admin';
-    if (['pretre', 'priest'].includes(lower)) return 'Prêtre';
-    if (['diacre'].includes(lower)) return 'Diacre';
-    if (['super_admin', 'superadmin', 'super-admin'].includes(lower)) return 'Super Admin';
-    return 'Membre';
-  };
+  const roleOptions = getAvailableRoles(true);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -356,22 +348,25 @@ const AdminUsersPage: React.FC = () => {
                     <td className="px-4 py-3">
                       {canEditRole(user.role) ? (
                         <Select
-                          value={editingRole[user.id] || user.role || 'membre'}
+                          value={editingRole[user.id] || normalize(user.role)}
                           onValueChange={(value) => {
-                            setEditingRole(prev => ({ ...prev, [user.id]: value }));
-                            handleRoleChange(user.id, value);
+                            const normalized = normalize(value);
+                            setEditingRole(prev => ({ ...prev, [user.id]: normalized }));
+                            handleRoleChange(user.id, normalized);
                           }}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue placeholder="Rôle" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="membre">Membre</SelectItem>
-                            <SelectItem value="moderateur">Modérateur</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            {isSuperAdmin && (
-                              <SelectItem value="super_admin">Super Admin</SelectItem>
-                            )}
+                            {roleOptions.map((role) => {
+                              if (role.value === 'super_admin' && !isSuperAdmin) return null;
+                              return (
+                                <SelectItem key={role.value} value={role.value}>
+                                  {role.label}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       ) : (
