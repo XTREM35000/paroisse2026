@@ -52,9 +52,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
           .from('profiles')
           .select('email')
           .eq('username', t)
-          .single();
+          .maybeSingle();
 
         if (profilesError) {
+          // Pas de ligne trouvée ou résultat vide: pseudo inconnu, pas une erreur bloquante.
+          if (profilesError.code === 'PGRST116') {
+            return { email: null, error: 'not_found' };
+          }
           console.warn('[LoginForm] fallback resolve_email_for_login failed', profilesError);
           return { email: null, error: 'rpc' };
         }

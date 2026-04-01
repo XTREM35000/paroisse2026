@@ -46,6 +46,7 @@ const AdminUsersPage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { canEditRole, isSuperAdmin } = useUserRoles();
   const [editingRole, setEditingRole] = useState<Record<string, string>>({});
+  const [roleOptions, setRoleOptions] = useState<{ value: string; label: string }[]>([]);
 
   const location = useLocation();
   const { data: hero, save: saveHero } = usePageHero(location.pathname);
@@ -102,6 +103,14 @@ const AdminUsersPage: React.FC = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    const loadRoles = async () => {
+      const roles = await getAvailableRoles(true);
+      setRoleOptions(roles.map((r) => ({ value: r.value, label: r.label })));
+    };
+    void loadRoles();
+  }, []);
+
   const normalize = (r?: string | null) => {
     // Normaliser vers les valeurs acceptées par les enum système
     if (!r) return 'member';
@@ -116,8 +125,6 @@ const AdminUsersPage: React.FC = () => {
     if (['developer', 'developper'].includes(lower)) return 'developer';
     return lower;
   };
-
-  const roleOptions = getAvailableRoles(true);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {

@@ -92,9 +92,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin,
       return rpcData !== false;
     }
 
-    // Fallback when the RPC is not deployed yet (PGRST202 / function missing).
+    // Fallback when RPC is missing or overloaded ambiguously (PGRST202/PGRST203).
     if (
       rpcError.code === 'PGRST202' ||
+      rpcError.code === 'PGRST203' ||
+      /Could not choose the best candidate function/i.test(rpcError.message ?? '') ||
       /Could not find the function/i.test(rpcError.message ?? '')
     ) {
       let query = supabase.from('profiles').select('id').eq('username', usernameToCheck).limit(1);

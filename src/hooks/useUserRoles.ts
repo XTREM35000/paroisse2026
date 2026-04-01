@@ -1,5 +1,7 @@
 import { useAuthContext } from '@/contexts/useAuthContext';
 import { isAdmin as rpIsAdmin, isSuperAdminLevel, roleRank } from '@/utils/rolePermissions';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useUserRoles() {
   const { role, loading } = useAuthContext();
@@ -42,6 +44,32 @@ export function useUserRoles() {
     refetch: () => {},
   };
 }
+
+export const useUserRolesData = (userId?: string) => {
+  return useQuery({
+    queryKey: ['user-roles', userId],
+    queryFn: async () => {
+      if (!userId) return { systemRole: null, dynamicRoles: [] };
+
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+
+      const { data: dynamicRoles } = await supabase
+        .from('user_dynamic_roles')
+        .select('assigned_at, roles(name, description, is_system)')
+        .eq('user_id', userId);
+
+      return {
+        systemRole: profile?.role ?? null,
+        dynamicRoles:
+          dynamicRoles?.map((dr: any) => ({
+            ...(dr.roles || {}),
+            assigned_at: dr.assigned_at,
+          })) || [],
+      };
+    },
+    enabled: !!userId,
+  });
+};
 
 export default useUserRoles;
 
