@@ -30,6 +30,7 @@ interface RoleManagerProps {
 }
 
 const PROTECTED_ROLES = ['developer', 'super_admin'];
+const SYS_ROLE_NAMES = ['developer', 'super_admin', 'admin', 'member', 'guest'];
 
 const SIDEBAR_PAGES = [
   { path: '/', label: 'Accueil', category: 'General' },
@@ -166,6 +167,12 @@ export function RoleManager({ compact = false }: RoleManagerProps) {
     setIsLoading(true);
     try {
       const roleName = newRoleName.toLowerCase().replace(/\s+/g, '_');
+
+      if (!SYS_ROLE_NAMES.includes(roleName)) {
+        toast.error('Rôle invalide : utiliser developer, super_admin, admin, member ou guest.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('roles')
         .insert({ name: roleName, description: newRoleDesc } as never)
@@ -178,8 +185,9 @@ export function RoleManager({ compact = false }: RoleManagerProps) {
       setNewRoleName('');
       setNewRoleDesc('');
       toast.success('Role cree');
-    } catch {
-      toast.error('Erreur creation');
+    } catch (err: any) {
+      console.error('Role creation error', err);
+      toast.error(`Erreur creation: ${err?.message || '400'}`);
     } finally {
       setIsLoading(false);
     }
@@ -215,6 +223,12 @@ export function RoleManager({ compact = false }: RoleManagerProps) {
 
   const handleUpdateRole = async () => {
     if (!editingRole) return;
+
+    if (!SYS_ROLE_NAMES.includes(editingRole.name)) {
+      toast.error('Rôle invalide pour mise à jour : developer, super_admin, admin, member ou guest uniquement.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -226,8 +240,13 @@ export function RoleManager({ compact = false }: RoleManagerProps) {
       setIsEditingRole(false);
       setEditingRole(null);
       toast.success('Role mis a jour');
-    } catch {
-      toast.error('Erreur');
+    } catch (err: any) {
+      console.error('Role update error', err);
+      toast.error(`Erreur: ${err?.message ?? '400'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
     } finally {
       setIsLoading(false);
     }

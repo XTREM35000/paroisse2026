@@ -1,5 +1,5 @@
 import { useAuthContext } from '@/contexts/useAuthContext';
-import { isAdmin as rpIsAdmin, isSuperAdminLevel } from '@/utils/rolePermissions';
+import { isAdmin as rpIsAdmin, isSuperAdminLevel, roleRank } from '@/utils/rolePermissions';
 
 export function useUserRoles() {
   const { role, loading } = useAuthContext();
@@ -7,17 +7,20 @@ export function useUserRoles() {
   const roles = role ? [String(role).toLowerCase()] : [];
   const hasRole = (name: string) => {
     const w = String(name).toLowerCase();
-    if (w === 'super_admin' || w === 'superadmin' || w === 'super-admin') {
+    if (['super_admin', 'superadmin', 'super-admin'].includes(w)) {
       return isSuperAdminLevel(r);
     }
-    if (w === 'admin' || w === 'administrateur') {
+    if (['admin', 'administrateur'].includes(w)) {
       return rpIsAdmin(r);
+    }
+    if (['guest', 'invite', 'invité'].includes(w)) {
+      return roleRank(r) === roleRank('guest');
     }
     return roles.includes(w);
   };
   const isAdmin = rpIsAdmin(r);
   const isModerator = hasRole('moderator') || hasRole('moderateur') || isAdmin;
-  const isMember = roles.length > 0;
+  const isMember = roleRank(r) >= roleRank('member');
 
   const canEditRole = (targetUserRole?: string) => {
     if (isSuperAdminLevel(r)) return true;

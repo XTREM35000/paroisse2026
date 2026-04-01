@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import useUserRoles from '@/hooks/useUserRoles';
 import { useAuth } from '@/hooks/useAuth';
-import { displayRole, getAvailableRoles, getRoleLabel } from '@/lib/roleUtils';
+import { displayRole, getAvailableRoles } from '@/lib/roleUtils';
 
 interface User {
   id: string;
