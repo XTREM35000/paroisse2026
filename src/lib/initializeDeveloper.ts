@@ -34,9 +34,9 @@ const writeSyncCache = (cache: DeveloperSyncCache) => {
 
 export type SyncDeveloperAccessOptions = {
   /**
-   * Si vrai (ex. première installation : aucune paroisse / aucun super_admin), on appelle quand même
-   * l’edge function `create-developer` sans session : elle utilise la service role côté serveur et
-   * crée / répare le compte developer + paroisse SYSTEM en arrière-plan.
+   * Si vrai (ex. première installation : aucune paroisse / aucun super_admin), appelle quand même
+   * la RPC `ensure_developer_account()` (SECURITY DEFINER, grants anon) pour réaligner paroisse SYSTEM
+   * et profil developer après migration — sans edge function.
    */
   allowWithoutSession?: boolean;
 };
@@ -70,7 +70,7 @@ export const syncDeveloperAccess = async (
         };
       }
       console.info(
-        "[DeveloperSync] Bootstrap première installation (sans session) → create-developer…",
+        "[DeveloperSync] Bootstrap première installation (sans session) → ensure_developer_account…",
       );
     } else {
       const fingerprint = getSessionFingerprint(session.user.id, session.expires_at);
@@ -85,35 +85,22 @@ export const syncDeveloperAccess = async (
       }
     }
 
-    console.info("[DeveloperSync] Appel de l'Edge Function create-developer...");
-    const { data, error } = await supabase.functions.invoke<DeveloperSyncResponse>(
-      "create-developer",
-      { body: {} },
-    );
+    console.info("[DeveloperSync] Appel RPC ensure_developer_account…");
+    const { error: rpcError } = await supabase.rpc("ensure_developer_account");
 
-    if (error) {
-      console.error("[DeveloperSync] Erreur d'invocation:", error);
+    if (rpcError) {
+      console.error("[DeveloperSync] Erreur RPC ensure_developer_account:", rpcError);
       return {
         success: false,
-        message: "Échec de l'appel create-developer",
-        error: error.message,
+        message: "Échec ensure_developer_account",
+        error: rpcError.message,
       };
     }
 
     const result: DeveloperSyncResponse = {
-      success: Boolean(data?.success),
-      message: data?.message ?? "Réponse reçue sans message",
-      developer_id: data?.developer_id,
-      developer_email: data?.developer_email,
-      total_parishes: data?.total_parishes,
-      added_to: data?.added_to,
-      error: data?.error,
+      success: true,
+      message: "ensure_developer_account OK",
     };
-
-    if (!result.success) {
-      console.error("[DeveloperSync] Synchronisation échouée:", result);
-      return result;
-    }
 
     if (session?.user) {
       const fingerprint = getSessionFingerprint(session.user.id, session.expires_at);

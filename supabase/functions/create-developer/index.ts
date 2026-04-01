@@ -105,11 +105,68 @@ Deno.serve(async (req) => {
       developerId = devProfile.id
       developerEmail = devProfile.email
       devProfileRole = devProfile.role
-      console.log('[create-developer] ✅ Developer trouvé:', developerId)
+      console.log('[create-developer] ✅ Developer profile trouvé:', developerId)
+
+      // Vérifier que l'utilisateur existe aussi dans auth.users.
+      try {
+        const { data: authUser, error: authUserError } = await (supabaseAdmin.auth.admin as any).getUserById(developerId)
+        if (authUserError || !authUser?.user) {
+          console.warn('[create-developer] auth user introuvable pour ce profile developer, création / ré-initialisation...')
+          const { data: newUser, error: createError } = await (supabaseAdmin.auth.admin as any).createUser({
+            id: developerId,
+            email: developerEmail ?? devEmail,
+            password: devPassword,
+            email_confirm: true,
+            user_metadata: {
+              full_name: devFullName,
+              username: devUsername,
+              role: 'developer',
+            },
+          })
+          if (createError) {
+            console.warn('[create-developer] Échec création user auth ré-essai:', createError)
+          } else {
+            console.log('[create-developer] auth user developer re-créé:', newUser.user.id)
+          }
+        }
+      } catch (e) {
+        console.warn('[create-developer] Erreur vérification auth user developer:', e)
+      }
     }
 
-    // 1b) Si absent: créer auth.users + upsert profiles (aligné avec ton script SQL)
+    // 1b) Si absent: vérifier dans auth.users ou créer auth.users + profile (idempotent)
     if (!developerId) {
+      console.log('[create-developer] ⚠️ Aucun developer profile trouvé, vérification auth et création en cours...')
+
+      let existingUserId: string | null = null
+      try {
+        const response = await (supabaseAdmin.auth.admin as any).getUserByEmail(devEmail)
+        existingUserId = response?.data?.user?.id ?? null
+      } catch (e) {
+        console.warn('[create-developer] getUserByEmail failed, création user prévue:', e)
+      }
+
+      if (!existingUserId) {
+        // On aligne sur le script SQL : UUID fixe pour que les politiques RLS reconnaissent le developer.
+        const { data: newUser, error: createError } = await (supabaseAdmin.auth.admin as any).createUser({
+          id: fixedDevUserId,
+          email: devEmail,
+          password: devPassword,
+          email_confirm: true,
+          user_metadata: {
+            full_name: devFullName,
+            username: devUsername,
+            role: 'developer',
+          },
+        })
+
+        if (createError) throw createError
+        existingUserId = newUser.user.id
+      }
+
+      developerId = existingUserId
+      developerEmail = devEmail
+    }
       console.log('[create-developer] ⚠️ Aucun developer trouvé, création en cours...')
 
       let existingUserId: string | null = null
@@ -180,6 +237,33 @@ Deno.serve(async (req) => {
         )
       if (fixProfileErr) {
         console.warn('[create-developer] Upsert developer profiles:', fixProfileErr)
+      }
+
+      // Assurer que la paroisse SYSTEM existe et que le developer y est membre.
+      try {
+        const { data: existingMembership, error: membershipError } = await supabaseAdmin
+          .from('parish_members')
+          .select('parish_id')
+          .eq('user_id', developerId)
+          .eq('parish_id', systemParishId)
+          .limit(1)
+          .maybeSingle()
+
+        if (membershipError) {
+          console.warn('[create-developer] Parish membership check failed:', membershipError)
+        } else if (!existingMembership) {
+          const { error: insertMembershipErr } = await supabaseAdmin
+            .from('parish_members')
+            .insert({ parish_id: systemParishId, user_id: developerId, role: 'developer' })
+
+          if (insertMembershipErr) {
+            console.warn('[create-developer] Parish membership insert failed:', insertMembershipErr)
+          } else {
+            console.log('[create-developer] ✅ Developer ajouté à la paroisse SYSTEM')
+          }
+        }
+      } catch (e) {
+        console.warn('[create-developer] Impossible de vérifier/ajouter la membership SYSTEM:', e)
       }
     }
 

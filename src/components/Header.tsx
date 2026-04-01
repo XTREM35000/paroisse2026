@@ -21,6 +21,7 @@ import { useAuthContext } from "@/contexts/useAuthContext";
 import { useUser } from "@/hooks/useUser";
 import { useHeaderConfig } from "@/hooks/useHeaderConfig";
 import useRoleCheck from '@/hooks/useRoleCheck';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import useUnreadNotifications from '@/hooks/useUnreadNotifications';
 import useUnreadMessages from '@/hooks/useUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,6 +73,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
   const { user, signOut } = useAuthContext();
   const { profile } = useUser();
   const isGuest = profile?.role === 'guest';
+  const { showUserMenuFull } = useRoleAccess();
   const { isAdmin, isSuperAdmin } = useRoleCheck();
   const { data: headerConfig, isLoading: headerLoading } = useHeaderConfig();
   const { unreadCount: unreadNotificationsCount, markAllAsRead: markAllAsReadNotifications } = useUnreadNotifications();
@@ -444,7 +446,7 @@ const Header = ({ darkMode = false, toggleDarkMode = () => {}, onOpenAuthModal }
                       </p>
                     </div>
 
-                    {isGuest ? (
+                    {!showUserMenuFull() ? (
                       <>
                         <Button
                           variant="ghost"

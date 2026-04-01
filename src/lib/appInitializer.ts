@@ -82,17 +82,17 @@ export const runAppInitialization = async (): Promise<AppInitializationStatus> =
     // Step 2: developer sync should be attempted but must not block the UI.
     developerSyncAttempted = true;
     try {
-      // Première installation (Setup Wizard) : pas encore d’utilisateur connecté, mais l’edge function
-      // create-developer tourne côté serveur avec la service role — il faut quand même l’appeler.
+      // Première installation (Setup Wizard) : pas encore d’utilisateur connecté ; la RPC
+      // ensure_developer_account() réaligne developer + SYSTEM (grants anon).
       const syncResult = await syncDeveloperAccess({
         allowWithoutSession: shouldForceSetupWizard,
       });
       developerSyncSucceeded = !!syncResult.success;
       if (!syncResult.success) {
-        console.warn('[AppInitializer] create-developer sync not successful:', syncResult);
+        console.warn('[AppInitializer] ensure_developer_account sync not successful:', syncResult);
       }
     } catch (syncError) {
-      console.warn('[AppInitializer] create-developer sync failed:', syncError);
+      console.warn('[AppInitializer] ensure_developer_account sync failed:', syncError);
     }
 
     if (!shouldForceSetupWizard) {

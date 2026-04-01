@@ -2352,7 +2352,14 @@ const getPageName = (key: string): string => {
 
                   const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
                   if (signInErr) {
-                    setDevBootstrapError(signInErr.message || 'Connexion impossible (vérifiez email / mot de passe).');
+                    const base =
+                      signInErr.message ||
+                      'Connexion impossible (vérifiez email / mot de passe).';
+                    const extra =
+                      /invalid login|invalid grant|400/i.test(base + (signInErr as { code?: string }).code)
+                        ? ' Si la base vient d’être migrée, appliquez les migrations (aud/role = authenticated sur auth.users pour le compte developer) ou exécutez 20260403120000_fix_developer_auth_aud_role.sql.'
+                        : '';
+                    setDevBootstrapError(base + extra);
                     return;
                   }
 
@@ -2365,7 +2372,7 @@ const getPageName = (key: string): string => {
                   markCompleted();
                   setShowDevBootstrap(false);
                   handleClose();
-                  window.location.assign('/admin');
+                  window.location.assign('/developer/admin');
                 } catch (e: unknown) {
                   const details =
                     e instanceof Error

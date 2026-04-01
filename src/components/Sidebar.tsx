@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useParoisse } from '@/contexts/ParoisseContext';
 
 export const MENU_GROUPS = [
@@ -139,9 +140,10 @@ export interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
-  const { profile, isAdmin, hasRole, isModerator, isSuperAdmin } = useRoleCheck();
+  const { isAdmin, hasRole, isModerator, isSuperAdmin } = useRoleCheck();
+  const { showSidebar } = useRoleAccess();
 
-  if (profile?.role === 'guest') return null;
+  if (!showSidebar()) return null;
   const { setSelectorOpen } = useParoisse();
   const navRef = useRef<HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
