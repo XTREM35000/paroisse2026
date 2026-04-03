@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUpWithEmail = async (
     email: string,
     password: string,
-    metadata?: { full_name?: string; phone?: string; role?: string }
+    metadata?: { full_name?: string; phone?: string; role?: string; username?: string }
   ) => {
     setLoading(true);
     try {

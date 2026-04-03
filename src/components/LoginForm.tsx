@@ -51,7 +51,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
         const { data: profileData, error: profilesError } = await supabase
           .from('profiles')
           .select('email')
-          .eq('username', t)
+          .ilike('username', t)
           .maybeSingle();
 
         if (profilesError) {
@@ -376,7 +376,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword }) =>
           <Input
             type="text"
             value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Normaliser : si ce n'est pas un email (pas de @), minuscules
+              if (!value.includes('@')) {
+                setIdentifier(value.toLowerCase().replace(/[^a-z0-9._@]/g, ''));
+              } else {
+                setIdentifier(value);
+              }
+            }}
             placeholder="ex. moi@mail.com ou developpeur2026"
             autoComplete="username"
             required
