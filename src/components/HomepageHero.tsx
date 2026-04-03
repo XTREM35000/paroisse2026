@@ -5,6 +5,17 @@ import { useUser } from '@/hooks/useUser';
 import type { HomepageSection } from '@/types/homepage';
 import { Link } from 'react-router-dom';
 
+const goldDonateButtonClass =
+  'bg-gold hover:bg-gold-light text-secondary-foreground font-semibold shadow-glow';
+
+function GoldDonateButton({ size = 'lg' }: { size?: 'sm' | 'lg' }) {
+  return (
+    <Button asChild size={size} className={goldDonateButtonClass}>
+      <Link to="/donate">Faire un don sécurisé</Link>
+    </Button>
+  );
+}
+
 interface HomepageHeroProps {
   data?: HomepageSection | null;
   isLoading?: boolean;
@@ -36,6 +47,9 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
           <p className="text-muted-foreground mt-2">
             Le contenu principal n'a pas encore été configuré. Revenez bientôt ou configurez la page d'accueil.
           </p>
+          <div className="mt-6 flex flex-wrap gap-4 justify-center">
+            <GoldDonateButton size="lg" />
+          </div>
           {isAdmin && (
             <div className="mt-4">
               <Button asChild>
@@ -111,48 +125,53 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
             </motion.p>
           )}
 
-          {data.button_text && data.button_link && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-            >
-              {(() => {
-                const rawText = String(data.button_text ?? '');
-                const rawLink = String(data.button_link ?? '');
-                const normalizedLink = rawLink.replace(/\/$/, '');
-                const shouldOverrideToDonate =
-                  normalizedLink === '/events' ||
-                  normalizedLink === '/evenements' ||
-                  rawText.toLowerCase().includes('voir tous les événements') ||
-                  rawText.toLowerCase().includes('voir tous les evenements');
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="flex flex-wrap gap-4 justify-center items-center"
+          >
+            {(() => {
+              const rawText = String(data.button_text ?? '');
+              const rawLink = String(data.button_link ?? '');
+              const normalizedLink = rawLink.replace(/\/$/, '');
+              const shouldOverrideToDonate =
+                normalizedLink === '/events' ||
+                normalizedLink === '/evenements' ||
+                rawText.toLowerCase().includes('voir tous les événements') ||
+                rawText.toLowerCase().includes('voir tous les evenements');
 
-                const href = shouldOverrideToDonate ? '/donate' : rawLink;
-                const text = shouldOverrideToDonate ? 'Faire un don sécurisé' : rawText;
-                const isExternal = /^https?:\/\//i.test(href);
-                const isInternal = href.startsWith('/');
+              const cmsPointsToDonate =
+                shouldOverrideToDonate || normalizedLink === '/donate';
 
-                return (
-                  <Button
-                    asChild
-                    size="sm"
-                    className={[
-                      "rounded-lg px-4 md:px-8 py-2 md:py-3 text-sm md:text-lg font-semibold md:size-lg",
-                      shouldOverrideToDonate ? "cta-donate-3d" : "",
-                    ].filter(Boolean).join(" ")}
-                  >
-                    {isExternal ? (
-                      <a href={href}>{text}</a>
-                    ) : isInternal ? (
-                      <Link to={href}>{text}</Link>
-                    ) : (
-                      <a href={href}>{text}</a>
-                    )}
-                  </Button>
-                );
-              })()}
-            </motion.div>
-          )}
+              const showCmsButton = !!(data.button_text && data.button_link);
+              const href = shouldOverrideToDonate ? '/donate' : rawLink;
+              const text = shouldOverrideToDonate ? 'Faire un don sécurisé' : rawText;
+              const isExternal = /^https?:\/\//i.test(href);
+              const isInternal = href.startsWith('/');
+
+              return (
+                <>
+                  {showCmsButton && !cmsPointsToDonate && (
+                    <Button
+                      asChild
+                      size="sm"
+                      className="rounded-lg px-4 md:px-8 py-2 md:py-3 text-sm md:text-lg font-semibold md:size-lg"
+                    >
+                      {isExternal ? (
+                        <a href={href}>{text}</a>
+                      ) : isInternal ? (
+                        <Link to={href}>{text}</Link>
+                      ) : (
+                        <a href={href}>{text}</a>
+                      )}
+                    </Button>
+                  )}
+                  <GoldDonateButton size="lg" />
+                </>
+              );
+            })()}
+          </motion.div>
         </motion.div>
       </div>
     </motion.section>

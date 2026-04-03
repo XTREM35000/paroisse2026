@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
   Bell,
   Search,
   X,
@@ -148,10 +150,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const { setSelectorOpen } = useParoisse();
   const navRef = useRef<HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [openSection, setOpenSection] = useState<string | null>('🙏 VIE SPIRITUELLE');
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    () => new Set([VIE_SPIRITUELLE_GROUP_TITLE])
+  );
+
+  const visibleGroupTitles = MENU_GROUPS.filter(
+    (g) => !(g.adminOnly && !isAdmin)
+  ).map((g) => g.title);
 
   const toggleSection = (title: string) => {
-    setOpenSection((prev) => (prev === title ? null : title));
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  };
+
+  const expandAllGroups = () => {
+    setOpenSections(new Set(visibleGroupTitles));
+  };
+
+  const collapseAllExceptVieSpirituelle = () => {
+    setOpenSections(new Set([VIE_SPIRITUELLE_GROUP_TITLE]));
   };
 
   // Filter menu items across all groups based on search query
@@ -278,13 +299,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
               </button>
             )}
           </div>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={expandAllGroups}
+              className="flex flex-1 min-w-0 items-center justify-center gap-1.5 rounded-lg bg-green-50 px-2 py-2 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-950/60"
+              title="Déplier tous les groupes du menu"
+            >
+              <ChevronsDown className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="truncate">Tout déplier</span>
+            </button>
+            <button
+              type="button"
+              onClick={collapseAllExceptVieSpirituelle}
+              className="flex flex-1 min-w-0 items-center justify-center gap-1.5 rounded-lg bg-orange-50 px-2 py-2 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 dark:bg-orange-950/40 dark:text-orange-400 dark:hover:bg-orange-950/60"
+              title="Replier tous les groupes sauf Vie spirituelle"
+            >
+              <ChevronsUp className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="truncate">Tout replier</span>
+            </button>
+          </div>
         </div>
       )}
 
       <nav className="px-2 py-4">
         {getFilteredGroups().map((group) => {
           if (group.adminOnly && !isAdmin) return null;
-          const isOpen = searchQuery.trim() ? true : openSection === group.title;
+          const isOpen = searchQuery.trim() ? true : openSections.has(group.title);
           const SectionIcon = (group.items?.[0]?.icon || Home) as LucideIcon;
           return (
             <div key={group.title} className="mb-4">
