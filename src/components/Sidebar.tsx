@@ -137,6 +137,8 @@ export const MENU_GROUPS = [
   },
 ];
 
+const VIE_SPIRITUELLE_GROUP_TITLE = '🙏 VIE SPIRITUELLE';
+
 export interface SidebarProps {
   isCollapsed: boolean;
   onToggle: (collapsed: boolean) => void;
