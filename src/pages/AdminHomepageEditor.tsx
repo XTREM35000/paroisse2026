@@ -17,7 +17,7 @@ const AdminHomepageEditor = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { sections, isLoading: contentLoading } = useHomepageContent();
-  
+
   const [loading, setLoading] = useState(false);
   const [heroData, setHeroData] = useState({
     title: "",
@@ -27,28 +27,28 @@ const AdminHomepageEditor = () => {
     button_link: "",
     image_url: "",
   });
-  
+
   const [galleryConfig, setGalleryConfig] = useState({
     limit: 4,
     order: "recent" as "recent" | "popular",
   });
-  
+
   const [videosConfig, setVideosConfig] = useState({
     limit: 4,
     order: "recent" as "recent" | "popular",
   });
-  
+
   const [eventsConfig, setEventsConfig] = useState({
     limit: 2,
     upcoming_only: true,
   });
-  
+
   const [massTimes, setMassTimes] = useState({
     sunday: ["9h00", "11h00", "18h30"],
     weekdays: ["8h00", "18h30"],
     saturday: ["9h00", "18h00 (anticipée)"],
   });
-  
+
   const [contact, setContact] = useState({
     address: "",
     email: "",
@@ -56,13 +56,13 @@ const AdminHomepageEditor = () => {
     super_admin_email: "",
     super_admin_phone: "",
   });
-  
+
   const [activeTab, setActiveTab] = useState("hero");
 
   // Header config state
   const { data: headerConfig, isLoading: headerConfigLoading } = useHeaderConfig();
   const { mutate: updateHeaderConfig, isPending: isSavingHeader } = useUpdateHeaderConfig();
-  
+
   const [headerData, setHeaderData] = useState({
     logo_url: "",
     logo_alt_text: "Logo Paroisse",
@@ -106,8 +106,8 @@ const AdminHomepageEditor = () => {
 
       if (gallerySection && gallerySection.content) {
         try {
-          const parsed = typeof gallerySection.content === "string" 
-            ? JSON.parse(gallerySection.content) 
+          const parsed = typeof gallerySection.content === "string"
+            ? JSON.parse(gallerySection.content)
             : gallerySection.content;
           setGalleryConfig(parsed);
         } catch (e) {
@@ -117,8 +117,8 @@ const AdminHomepageEditor = () => {
 
       if (videosSection && videosSection.content) {
         try {
-          const parsed = typeof videosSection.content === "string" 
-            ? JSON.parse(videosSection.content) 
+          const parsed = typeof videosSection.content === "string"
+            ? JSON.parse(videosSection.content)
             : videosSection.content;
           setVideosConfig(parsed);
         } catch (e) {
@@ -128,8 +128,8 @@ const AdminHomepageEditor = () => {
 
       if (eventsSection && eventsSection.content) {
         try {
-          const parsed = typeof eventsSection.content === "string" 
-            ? JSON.parse(eventsSection.content) 
+          const parsed = typeof eventsSection.content === "string"
+            ? JSON.parse(eventsSection.content)
             : eventsSection.content;
           setEventsConfig(parsed);
         } catch (e) {
@@ -139,8 +139,8 @@ const AdminHomepageEditor = () => {
 
       if (massTSection && massTSection.content) {
         try {
-          const parsed = typeof massTSection.content === "string" 
-            ? JSON.parse(massTSection.content) 
+          const parsed = typeof massTSection.content === "string"
+            ? JSON.parse(massTSection.content)
             : massTSection.content;
           setMassTimes(parsed);
         } catch (e) {
@@ -150,8 +150,8 @@ const AdminHomepageEditor = () => {
 
       if (contactSection && contactSection.content) {
         try {
-          const parsed = typeof contactSection.content === "string" 
-            ? JSON.parse(contactSection.content) 
+          const parsed = typeof contactSection.content === "string"
+            ? JSON.parse(contactSection.content)
             : contactSection.content;
           setContact(parsed);
         } catch (e) {
@@ -204,14 +204,14 @@ const AdminHomepageEditor = () => {
     setLoading(true);
     try {
       const payload = {
-          title: heroData.title,
-          subtitle: heroData.subtitle,
-          content: heroData.content,
-          button_text: heroData.button_text,
-          button_link: heroData.button_link,
-          image_url: heroData.image_url,
-          updated_at: new Date().toISOString(),
-          updated_by: user.id,
+        title: heroData.title,
+        subtitle: heroData.subtitle,
+        content: heroData.content,
+        button_text: heroData.button_text,
+        button_link: heroData.button_link,
+        image_url: heroData.image_url,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id,
       };
 
       const { data, error } = await supabase
@@ -233,8 +233,8 @@ const AdminHomepageEditor = () => {
       toast({ title: "Succès", description: "Section héro mise à jour" });
     } catch (error) {
       console.error("Error saving hero:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de mettre à jour la section héro",
         variant: "destructive"
       });
@@ -264,8 +264,8 @@ const AdminHomepageEditor = () => {
       toast({ title: "Succès", description: "Configuration galerie mise à jour" });
     } catch (error) {
       console.error("Error saving gallery config:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de mettre à jour la configuration",
         variant: "destructive"
       });
@@ -295,8 +295,8 @@ const AdminHomepageEditor = () => {
       toast({ title: "Succès", description: "Configuration vidéos mise à jour" });
     } catch (error) {
       console.error("Error saving videos config:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de mettre à jour la configuration",
         variant: "destructive"
       });
@@ -326,8 +326,8 @@ const AdminHomepageEditor = () => {
       toast({ title: "Succès", description: "Configuration événements mise à jour" });
     } catch (error) {
       console.error("Error saving events config:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de mettre à jour la configuration",
         variant: "destructive"
       });
@@ -357,8 +357,8 @@ const AdminHomepageEditor = () => {
       toast({ title: "Succès", description: "Horaires des messes mis à jour" });
     } catch (error) {
       console.error("Error saving mass times:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de mettre à jour les horaires",
         variant: "destructive"
       });
@@ -388,8 +388,8 @@ const AdminHomepageEditor = () => {
       }
     } catch (error) {
       console.error("Error uploading logo:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de télécharger le logo",
         variant: "destructive"
       });
@@ -449,8 +449,8 @@ const AdminHomepageEditor = () => {
       });
     } catch (error) {
       console.error("Error saving header:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de sauvegarder la configuration du header",
         variant: "destructive"
       });
@@ -478,8 +478,8 @@ const AdminHomepageEditor = () => {
       toast({ title: "Succès", description: "Informations de contact mises à jour" });
     } catch (error) {
       console.error("Error saving contact:", error);
-      toast({ 
-        title: "Erreur", 
+      toast({
+        title: "Erreur",
         description: "Impossible de mettre à jour les contacts",
         variant: "destructive"
       });
@@ -523,23 +523,22 @@ const AdminHomepageEditor = () => {
 
           {/* Tabs */}
           <div className="flex gap-2 border-b border-border overflow-x-auto pb-3">
-              {[
-                { id: "header", label: "En‑tête (logo & menu)" },
-                { id: "hero", label: "Section héro (SEO)" },
-                { id: "gallery", label: "Bloc Galerie" },
-                { id: "videos", label: "Bloc Vidéos" },
-                { id: "events", label: "Bloc Événements" },
-                { id: "mass-times", label: "Horaires des messes" },
-                { id: "contact", label: "Contact & infos pratiques" },
-              ].map((tab) => (
+            {[
+              { id: "header", label: "En‑tête (logo & menu)" },
+              { id: "hero", label: "Section héro (SEO)" },
+              { id: "gallery", label: "Bloc Galerie" },
+              { id: "videos", label: "Bloc Vidéos" },
+              { id: "events", label: "Bloc Événements" },
+              { id: "mass-times", label: "Horaires des messes" },
+              { id: "contact", label: "Contact & infos pratiques" },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
+                className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
                     ? "text-primary border-b-2 border-primary -mb-4 pb-4"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -976,7 +975,7 @@ const AdminHomepageEditor = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Lunes - Viernes</label>
+                  <label className="block text-sm font-medium mb-2">Lundi - Vendredi</label>
                   <div className="space-y-2">
                     {massTimes.weekdays.map((time, idx) => (
                       <div key={idx} className="flex gap-2">
