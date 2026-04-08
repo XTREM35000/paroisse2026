@@ -58,6 +58,8 @@ interface HeroBannerProps {
   pageKey?: string;
   /** Conservé pour compatibilité API ; la persistance passe par le modal admin / Supabase */
   onBgSave?: (url: string) => Promise<void> | void;
+  /** Transition visuelle du carrousel interne */
+  transitionType?: 'fade' | 'slide';
 }
 
 function shouldShowHeroEditorButton(pathname: string): boolean {
@@ -78,6 +80,7 @@ const HeroBanner = ({
   description,
   bucket,
   pageKey: pageKeyProp,
+  transitionType = 'fade',
 }: HeroBannerProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,12 +123,35 @@ const HeroBanner = ({
   return (
     <section className="relative min-h-[300px] md:min-h-[360px] lg:min-h-[420px] h-[38vh] md:h-[42vh] lg:h-[50vh] flex items-center overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0">
-        {bg ? (
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
+        {resolvedUrls && resolvedUrls.length > 1 ? (
+          resolvedUrls.map((src, idx) => {
+            const active = idx === slideIdx;
+            const slideLike = transitionType === 'slide';
+            return (
+              <motion.img
+                key={`${src}-${idx}`}
+                src={src}
+                alt="Arrière-plan de la bannière"
+                className="absolute inset-0 block w-full h-full object-fill object-center"
+                initial={false}
+                animate={{
+                  opacity: active ? 1 : 0,
+                  scale: 1,
+                }}
+                transition={{ duration: slideLike ? 0.5 : 0.6, ease: 'easeInOut' }}
+                loading="eager"
+                decoding="sync"
+                width={1920}
+                height={1080}
+              />
+            );
+          })
+        ) : bg ? (
           <img
             src={bg}
             alt="Arrière-plan de la bannière"
-            className="w-full h-full object-cover object-center"
+            className="absolute inset-0 block w-full h-full object-fill object-center"
             loading="eager"
             decoding="sync"
             width={1920}

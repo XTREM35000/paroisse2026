@@ -118,7 +118,7 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
           <img
             src={slides[0]}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 block w-full h-full object-fill object-center"
           />
           <div className="absolute inset-0 bg-black/50" />
         </>
@@ -134,13 +134,13 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
                   key={`${src}-${idx}`}
                   src={src}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 block w-full h-full object-fill object-center"
                   initial={false}
                   animate={{
                     opacity: active ? 1 : 0,
-                    x: isSlideTransition ? (active ? 0 : idx < slideIndex ? -32 : 32) : 0,
+                    scale: 1,
                   }}
-                  transition={{ duration: isSlideTransition ? 0.45 : 0.6, ease: 'easeInOut' }}
+                  transition={{ duration: isSlideTransition ? 0.5 : 0.6, ease: 'easeInOut' }}
                 />
               );
             })}
