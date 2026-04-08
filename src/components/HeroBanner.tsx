@@ -105,12 +105,13 @@ const HeroBanner = ({
 
   useEffect(() => {
     setSlideIdx(0);
-  }, [resolvedUrls?.join('|')]);
+  }, [resolvedUrls?.slice(1).join('|')]);
 
   useEffect(() => {
-    if (!resolvedUrls || resolvedUrls.length <= 1) return;
+    if (!resolvedUrls || resolvedUrls.length <= 2) return;
+    const fgLen = resolvedUrls.length - 1;
     const id = window.setInterval(() => {
-      setSlideIdx((i) => (i + 1) % resolvedUrls.length);
+      setSlideIdx((i) => (i + 1) % fgLen);
     }, 6000);
     return () => window.clearInterval(id);
   }, [resolvedUrls]);
@@ -119,59 +120,74 @@ const HeroBanner = ({
     resolvedUrls && resolvedUrls.length > 0
       ? resolvedUrls[slideIdx % resolvedUrls.length]!
       : undefined;
+  const backgroundImageUrl =
+    resolvedUrls && resolvedUrls.length > 0 ? resolvedUrls[0] : bg;
+  const foregroundSlides = resolvedUrls && resolvedUrls.length > 1 ? resolvedUrls.slice(1) : [];
 
   return (
     <section className="relative min-h-[300px] md:min-h-[360px] lg:min-h-[420px] h-[38vh] md:h-[42vh] lg:h-[50vh] flex items-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
-        {resolvedUrls && resolvedUrls.length > 1 ? (
-          resolvedUrls.map((src, idx) => {
-            const active = idx === slideIdx;
-            const slideLike = transitionType === 'slide';
-            return (
-              <motion.img
-                key={`${src}-${idx}`}
-                src={src}
-                alt="Arrière-plan de la bannière"
-                className="absolute inset-0 block w-full h-full object-fill object-center"
-                initial={false}
-                animate={{
-                  opacity: active ? 1 : 0,
-                  scale: 1,
-                }}
-                transition={{ duration: slideLike ? 0.5 : 0.6, ease: 'easeInOut' }}
-                loading="eager"
-                decoding="sync"
-                width={1920}
-                height={1080}
-              />
-            );
-          })
-        ) : bg ? (
-          <img
-            src={bg}
-            alt="Arrière-plan de la bannière"
-            className="absolute inset-0 block w-full h-full object-fill object-center"
-            loading="eager"
-            decoding="sync"
-            width={1920}
-            height={1080}
+        {backgroundImageUrl ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-105 blur-sm"
+            style={{ backgroundImage: `url(${backgroundImageUrl})` }}
           />
         ) : (
           <div className="w-full h-full gradient-hero" />
         )}
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden px-4 py-4 md:px-8 md:py-8">
+          {foregroundSlides.length > 0 ? (
+            foregroundSlides.map((src, idx) => {
+              const active = idx === slideIdx;
+              const slideLike = transitionType === 'slide';
+              return (
+                <motion.div
+                  key={`${src}-${idx}`}
+                  className="absolute w-full h-full flex items-center justify-center"
+                  initial={false}
+                  animate={{
+                    opacity: active ? 1 : 0,
+                    scale: 1,
+                  }}
+                  transition={{ duration: slideLike ? 0.5 : 0.6, ease: 'easeInOut' }}
+                >
+                  <img
+                    src={src}
+                    alt="Arrière-plan de la bannière"
+                    className="block max-w-full max-h-full w-auto h-auto object-contain object-center rounded-xl border-2 border-gold/80 shadow-[0_0_0_1px_rgba(255,215,0,0.25),0_12px_36px_rgba(0,0,0,0.45)]"
+                    loading="eager"
+                    decoding="sync"
+                    width={1920}
+                    height={1080}
+                  />
+                </motion.div>
+              );
+            })
+          ) : bg ? (
+            <img
+              src={bg}
+              alt="Arrière-plan de la bannière"
+              className="block max-w-full max-h-full w-auto h-auto object-contain object-center rounded-xl border-2 border-gold/80 shadow-[0_0_0_1px_rgba(255,215,0,0.25),0_12px_36px_rgba(0,0,0,0.45)]"
+              loading="eager"
+              decoding="sync"
+              width={1920}
+              height={1080}
+            />
+          ) : null}
+        </div>
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/40 via-foreground/30 to-foreground/10" />
         <div className="absolute inset-0 cross-pattern opacity-10" />
       </div>
 
-      {resolvedUrls && resolvedUrls.length > 1 ? (
+      {foregroundSlides.length > 1 ? (
         <>
           <Button
             type="button"
             size="icon"
             variant="secondary"
             className="absolute left-2 top-1/2 z-30 -translate-y-1/2 h-10 w-10 rounded-full shadow-md opacity-90 hover:opacity-100"
-            onClick={() => setSlideIdx((i) => (i - 1 + resolvedUrls.length) % resolvedUrls.length)}
+            onClick={() => setSlideIdx((i) => (i - 1 + foregroundSlides.length) % foregroundSlides.length)}
             aria-label="Image précédente"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -181,7 +197,7 @@ const HeroBanner = ({
             size="icon"
             variant="secondary"
             className="absolute right-2 top-1/2 z-30 -translate-y-1/2 h-10 w-10 rounded-full shadow-md opacity-90 hover:opacity-100"
-            onClick={() => setSlideIdx((i) => (i + 1) % resolvedUrls.length)}
+            onClick={() => setSlideIdx((i) => (i + 1) % foregroundSlides.length)}
             aria-label="Image suivante"
           >
             <ChevronRight className="h-5 w-5" />

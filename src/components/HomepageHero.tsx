@@ -53,18 +53,20 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
   const dwellMs = normalizeDisplayDurationSeconds(homeBanner?.display_duration) * 1000;
 
   const [slideIndex, setSlideIndex] = useState(0);
+  const backgroundImageUrl = slides[0];
+  const foregroundSlides = slides.length > 1 ? slides.slice(1) : [];
 
   useEffect(() => {
     setSlideIndex(0);
-  }, [slides.join('|')]);
+  }, [foregroundSlides.join('|')]);
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (foregroundSlides.length <= 1) return;
     const id = window.setInterval(() => {
-      setSlideIndex((i) => (i + 1) % slides.length);
+      setSlideIndex((i) => (i + 1) % foregroundSlides.length);
     }, dwellMs);
     return () => window.clearInterval(id);
-  }, [slides.length, dwellMs]);
+  }, [foregroundSlides.length, dwellMs]);
 
   if (isLoading) {
     return (
@@ -113,37 +115,36 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
       transition={{ duration: 0.6 }}
       className="relative min-h-[300px] md:min-h-[360px] lg:min-h-[420px] py-6 md:py-8 lg:py-10 bg-gradient-to-b from-primary/10 to-background overflow-hidden"
     >
-      {showImageLayer && slides.length === 1 && (
+      {showImageLayer && (
         <>
-          <img
-            src={slides[0]}
-            alt=""
-            className="absolute inset-0 block w-full h-full object-fill object-center"
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-105 blur-sm"
+            style={{ backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : undefined }}
           />
-          <div className="absolute inset-0 bg-black/50" />
-        </>
-      )}
-
-      {showImageLayer && slides.length > 1 && (
-        <>
-          <div className="absolute inset-0">
-            {slides.map((src, idx) => {
-              const active = idx === slideIndex;
-              return (
-                <motion.img
-                  key={`${src}-${idx}`}
-                  src={src}
-                  alt=""
-                  className="absolute inset-0 block w-full h-full object-fill object-center"
-                  initial={false}
-                  animate={{
-                    opacity: active ? 1 : 0,
-                    scale: 1,
-                  }}
-                  transition={{ duration: isSlideTransition ? 0.5 : 0.6, ease: 'easeInOut' }}
-                />
-              );
-            })}
+          <div className="absolute inset-0 flex items-center justify-center overflow-hidden px-4 py-4 md:px-8 md:py-8">
+            {foregroundSlides.length > 0
+              ? foregroundSlides.map((src, idx) => {
+                  const active = idx === slideIndex;
+                  return (
+                    <motion.div
+                      key={`${src}-${idx}`}
+                      className="absolute w-full h-full flex items-center justify-center"
+                      initial={false}
+                      animate={{
+                        opacity: active ? 1 : 0,
+                        scale: 1,
+                      }}
+                      transition={{ duration: isSlideTransition ? 0.5 : 0.6, ease: 'easeInOut' }}
+                    >
+                      <img
+                        src={src}
+                        alt=""
+                        className="block max-w-full max-h-full w-auto h-auto object-contain object-center rounded-xl border-2 border-gold/80 shadow-[0_0_0_1px_rgba(255,215,0,0.25),0_12px_36px_rgba(0,0,0,0.45)]"
+                      />
+                    </motion.div>
+                  );
+                })
+              : null}
           </div>
           <div className="absolute inset-0 bg-black/50" />
         </>
