@@ -2,10 +2,12 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ImageOff } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/hooks/useAuth';
 import usePageHero from '@/hooks/usePageHero';
 import type { HomepageSection } from '@/types/homepage';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   getHomepageSlideshowImageUrls,
   normalizeDisplayDurationSeconds,
@@ -31,6 +33,8 @@ interface HomepageHeroProps {
 }
 
 const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { profile } = useUser();
   const isAdmin = !!(
     profile &&
@@ -148,6 +152,26 @@ const HomepageHero = ({ data, isLoading }: HomepageHeroProps) => {
           </div>
           <div className="absolute inset-0 bg-black/50" />
         </>
+      )}
+
+      {user && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          onClick={() => navigate('/profile')}
+          className="absolute top-3 left-3 md:top-4 md:left-4 z-20 rounded-full p-0.5 bg-gradient-to-r from-amber-400 to-yellow-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer"
+          title="Voir mon profil"
+        >
+          <Avatar className="h-16 w-16 md:h-20 md:w-20 border-2 border-white/25">
+            <AvatarImage src={profile?.avatar_url || undefined} alt="" />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                user.email?.charAt(0)?.toUpperCase() ||
+                'U'}
+            </AvatarFallback>
+          </Avatar>
+        </motion.button>
       )}
 
       <div className="container mx-auto px-4 relative z-10">
