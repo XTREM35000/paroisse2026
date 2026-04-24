@@ -2,8 +2,22 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from './useUser';
 
+function isMissingLastSeenColumn(error: unknown): boolean {
+  const e = error as { message?: string; code?: string; details?: string } | null;
+  const msg = String(e?.message ?? '');
+  const code = String(e?.code ?? '');
+  if (code === '42703') return true;
+  if (code === 'PGRST204') return true;
+  if (msg.includes('does not exist') && msg.includes('last_seen_at')) return true;
+  if (msg.includes('Could not find') && msg.includes('last_seen_at')) return true;
+  if (msg.includes('schema cache') && msg.includes('last_seen_at')) return true;
+  return false;
+}
+
 export function usePresence(userId?: string | null) {
   const { profile } = useUser();
+  /** Supabase réutilise les topics identiques : plusieurs PresenceDot pour le même user cassent sans suffixe unique. */
+  const channelInstanceIdRef = useRef<string>('');
   const [lastSeen, setLastSeen] = useState<Date | null>(null);
   const intervalRef = useRef<number | null>(null);
   // null = unknown, true = column exists, false = column missing
@@ -20,8 +34,7 @@ export function usePresence(userId?: string | null) {
       const { data, error } = await supabase.from('profiles').select('last_seen_at').eq('id', userId).maybeSingle() as any;
 
       if (error) {
-        // PostgREST 42703 -> column does not exist
-        if (String(error?.message || '').includes('does not exist') || String(error?.code || '') === '42703') {
+        if (isMissingLastSeenColumn(error)) {
           lastSeenColumnAvailable.current = false;
           console.warn('usePresence: last_seen_at column missing, disabling presence checks');
           return;
@@ -52,7 +65,7 @@ export function usePresence(userId?: string | null) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from('profiles').update({ last_seen_at: new Date().toISOString() } as any).eq('id', userId);
       if (error) {
-        if (String(error?.message || '').includes('does not exist') || String(error?.code || '') === '42703') {
+        if (isMissingLastSeenColumn(error)) {
           lastSeenColumnAvailable.current = false;
           console.warn('usePresence: last_seen_at column missing, disabling presence updates');
           return;
@@ -73,8 +86,16 @@ export function usePresence(userId?: string | null) {
     fetchLastSeen();
     if (!userId) return;
 
+    if (!channelInstanceIdRef.current) {
+      channelInstanceIdRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+    const channelTopic = `presence:profile:${userId}:${channelInstanceIdRef.current}`;
+
     const channel = supabase
-      .channel(`presence:profile:${userId}`)
+      .channel(channelTopic)
       // NOTE: payload typing from Realtime is not strongly defined; allow any here
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, (payload: any) => {
@@ -109,7 +130,7 @@ export function usePresence(userId?: string | null) {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchLastSeen, markActive, profile]);
+  }, [userId, fetchLastSeen, markActive, profile?.id]);
 
   const isOnline = lastSeen !== null && (Date.now() - lastSeen.getTime()) < 2 * 60 * 1000; // 2 minutes
 
