@@ -131,6 +131,7 @@ export async function upsertOfficiant(
     paroisse_id: row.paroisse_id,
     name: row.name,
     title: row.title ?? null,
+    description: row.description ?? null,
     bio: row.bio ?? null,
     photo_url: row.photo_url ?? null,
     is_active: row.is_active ?? true,

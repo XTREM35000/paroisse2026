@@ -9,6 +9,7 @@ export interface OfficiantRow {
   paroisse_id: string | null;
   name: string;
   title: string | null;
+  description?: string | null;
   bio?: string | null;
   photo_url?: string | null;
   phone?: string | null;

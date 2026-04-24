@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Trash2 } from 'lucide-react';
 import type { OfficiantRow } from '@/types/culte';
+import { getOfficiantTitleDescription, useOfficiantTitles } from '@/hooks/useOfficiantTitles';
 import {
   deleteOfficiant,
   fetchDailyOfficiant,
@@ -29,8 +30,10 @@ type OfficiantsAdminProps = {
 export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { ensureTitles, titles: canonicalTitles } = useOfficiantTitles(paroisseId);
 
   const [officiants, setOfficiants] = useState<OfficiantRow[]>([]);
+  const [titleFilter, setTitleFilter] = useState<string>('__all');
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [selectedDate, setSelectedDate] = useState<string>(today);
@@ -40,6 +43,7 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
     id: '' as string,
     name: '',
     title: '',
+    description: '',
     bio: '',
     photo_url: '',
     is_active: true,
@@ -51,12 +55,17 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
       id: '',
       name: '',
       title: '',
+      description: '',
       bio: '',
       photo_url: '',
       is_active: true,
       sort_order: 0,
     });
   };
+
+  useEffect(() => {
+    void ensureTitles();
+  }, [ensureTitles]);
 
   const refresh = async () => {
     setLoading(true);
@@ -84,12 +93,29 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
       id: o.id,
       name: o.name,
       title: o.title ?? '',
+      description: o.description ?? '',
       bio: o.bio ?? '',
       photo_url: o.photo_url ?? '',
       is_active: o.is_active,
       sort_order: o.sort_order ?? o.display_order ?? 0,
     });
   };
+
+  const titleOptions = useMemo(() => {
+    const existingTitles = officiants
+      .map((o) => o.title)
+      .filter((t): t is string => Boolean(t && t.trim()))
+      .map((t) => t.trim());
+    const extraCurrent = form.title?.trim() ? [form.title.trim()] : [];
+    const all = Array.from(new Set([...canonicalTitles, ...existingTitles, ...extraCurrent]));
+    return all;
+  }, [canonicalTitles, officiants, form.title]);
+
+  const filteredOfficiants = useMemo(() => {
+    if (titleFilter === '__all') return officiants;
+    if (titleFilter === '__none') return officiants.filter((o) => !o.title);
+    return officiants.filter((o) => (o.title ?? '') === titleFilter);
+  }, [officiants, titleFilter]);
 
   const handleSaveOfficiant = async () => {
     if (!form.name.trim()) {
@@ -103,6 +129,7 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
         id: form.id || undefined,
         name: form.name.trim(),
         title: form.title.trim() || null,
+        description: form.description.trim() || null,
         bio: form.bio.trim() || null,
         photo_url: form.photo_url.trim() || null,
         is_active: form.is_active,
@@ -160,8 +187,24 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
             <div className="space-y-3">
               <div>
                 <h3 className="text-sm font-semibold mb-3">Liste des officiants</h3>
+                <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                  <Select value={titleFilter} onValueChange={setTitleFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filtrer par titre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all">Tous les titres</SelectItem>
+                      <SelectItem value="__none">Sans titre</SelectItem>
+                      {titleOptions.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 max-h-[380px] overflow-y-auto pr-2">
-                  {officiants.map((o) => (
+                  {filteredOfficiants.map((o) => (
                     <div key={o.id} className="flex items-start justify-between gap-3 rounded-lg border p-3 bg-background/50">
                       <div className="min-w-0">
                         <div className="font-medium truncate">{o.name}</div>
@@ -179,7 +222,7 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
                       </div>
                     </div>
                   ))}
-                  {officiants.length === 0 ? (
+                  {filteredOfficiants.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Aucun officiant.</div>
                   ) : null}
                 </div>
@@ -191,7 +234,40 @@ export default function OfficiantsAdmin({ paroisseId }: OfficiantsAdminProps) {
                 <h3 className="text-sm font-semibold mb-3">{form.id ? 'Modifier un officiant' : 'Ajouter un officiant'}</h3>
                 <div className="grid gap-3">
                   <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Nom" />
-                  <Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Titre (optionnel)" />
+                  <Select
+                    value={form.title || '__none'}
+                    onValueChange={(v) => {
+                      const nextTitle = v === '__none' ? '' : v;
+                      setForm((p) => {
+                        const prevSuggestion = p.title ? getOfficiantTitleDescription(p.title) : null;
+                        const nextSuggestion = nextTitle ? getOfficiantTitleDescription(nextTitle) : null;
+                        const shouldAutofill = !p.description.trim() || (prevSuggestion && p.description.trim() === prevSuggestion.trim());
+                        return {
+                          ...p,
+                          title: nextTitle,
+                          description: shouldAutofill ? (nextSuggestion ?? p.description) : p.description,
+                        };
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Titre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— Aucun —</SelectItem>
+                      {titleOptions.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    value={form.description}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    placeholder="Description (pré-remplie automatiquement selon le titre, modifiable)"
+                    rows={3}
+                  />
                   <Input value={form.photo_url} onChange={(e) => setForm((p) => ({ ...p, photo_url: e.target.value }))} placeholder="URL photo (optionnel)" />
                   <Textarea value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} placeholder="Bio (optionnel)" rows={3} />
 

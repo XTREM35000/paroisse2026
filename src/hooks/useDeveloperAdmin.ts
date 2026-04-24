@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ensureOfficiantTitles } from '@/hooks/useOfficiantTitles';
 
 export interface Parish {
   id: string;
@@ -132,6 +133,9 @@ export function useDeveloperAdmin() {
         .single();
 
       if (insertError) throw insertError;
+
+      // Ensure default officiant titles exist for the new paroisse (silent if blocked by RLS).
+      void ensureOfficiantTitles((newParish as { id?: string | null } | null)?.id ?? null);
 
       setParishes((prev) => [{ ...newParish, members_count: 0, content_count: 0 } as Parish, ...prev]);
       toast({

@@ -4,10 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { getOfficiantTitleDescription, useOfficiantTitles } from '@/hooks/useOfficiantTitles';
 
 interface OfficiantManagerModalProps {
   open: boolean;
@@ -20,16 +29,20 @@ type Officiant = {
   full_name?: string | null;
   name?: string | null;
   title?: string | null;
+  description?: string | null;
   grade?: string | null;
+  bio?: string | null;
   phone?: string | null;
   email?: string | null;
   is_active?: boolean | null;
+  paroisse_id?: string | null;
 };
 
 type OfficiantForm = {
   full_name: string;
   title: string;
-  grade: string;
+  description: string;
+  bio: string;
   phone: string;
   email: string;
   is_active: boolean;
@@ -38,7 +51,8 @@ type OfficiantForm = {
 const emptyForm: OfficiantForm = {
   full_name: '',
   title: '',
-  grade: '',
+  description: '',
+  bio: '',
   phone: '',
   email: '',
   is_active: true,
@@ -46,6 +60,8 @@ const emptyForm: OfficiantForm = {
 
 export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantManagerModalProps) {
   const { profile, refreshProfile } = useAuth();
+  const paroisseId = profile?.paroisse_id ?? null;
+  const { ensureTitles, titles: canonicalTitles } = useOfficiantTitles(paroisseId);
   const [isLoading, setIsLoading] = useState(false);
   const [officiants, setOfficiants] = useState<Officiant[]>([]);
   const [selectedOfficiant, setSelectedOfficiant] = useState<Officiant | null>(null);
@@ -58,13 +74,27 @@ export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantMa
   );
 
   const loadOfficiants = async () => {
-    const { data } = await supabase.from('officiants').select('*').order('created_at', { ascending: false });
+    let q = supabase.from('officiants').select('*').order('created_at', { ascending: false });
+    if (paroisseId) q = q.eq('paroisse_id', paroisseId);
+    const { data } = await q;
     setOfficiants((data as Officiant[]) || []);
   };
 
   useEffect(() => {
-    if (open) void loadOfficiants();
-  }, [open]);
+    if (!open) return;
+    void ensureTitles();
+    void loadOfficiants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, paroisseId]);
+
+  const titleOptions = useMemo(() => {
+    const existingTitles = officiants
+      .map((o) => o.title)
+      .filter((t): t is string => Boolean(t && t.trim()))
+      .map((t) => t.trim());
+    const extraCurrent = formData.title?.trim() ? [formData.title.trim()] : [];
+    return Array.from(new Set([...canonicalTitles, ...existingTitles, ...extraCurrent]));
+  }, [canonicalTitles, officiants, formData.title]);
 
   const handleSave = async () => {
     if (!formData.full_name?.trim()) {
@@ -77,8 +107,11 @@ export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantMa
       const payload = {
         name: formData.full_name,
         title: formData.title || null,
-        bio: formData.grade || null,
-        paroisse_id: profile?.paroisse_id ?? null,
+        description: formData.description || null,
+        bio: formData.bio || null,
+        paroisse_id: paroisseId,
+        phone: formData.phone || null,
+        email: formData.email || null,
         is_active: Boolean(formData.is_active),
       };
       if (isEditing && selectedOfficiant?.id) {
@@ -188,7 +221,7 @@ export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantMa
                 <div className="flex justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-medium truncate">{o.full_name || o.name || 'Sans nom'}</div>
-                    <div className="text-xs opacity-75 truncate">{o.title || '—'} {o.grade || ''}</div>
+                    <div className="text-xs opacity-75 truncate">{o.title || '—'}</div>
                   </div>
                   <div className="flex gap-1">
                     <button
@@ -199,7 +232,8 @@ export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantMa
                         setFormData({
                           full_name: o.full_name || o.name || '',
                           title: o.title || '',
-                          grade: o.grade || '',
+                          description: o.description || '',
+                          bio: o.bio || o.grade || '',
                           phone: o.phone || '',
                           email: o.email || '',
                           is_active: o.is_active ?? true,
@@ -248,26 +282,72 @@ export function OfficiantManagerModal({ open, onClose, onComplete }: OfficiantMa
                 </div>
                 <div>
                   <Label>Titre</Label>
-                  <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                  <Select
+                    value={formData.title || '__none'}
+                    onValueChange={(v) => {
+                      const nextTitle = v === '__none' ? '' : v;
+                      setFormData((p) => {
+                        const prevSuggestion = p.title ? getOfficiantTitleDescription(p.title) : null;
+                        const nextSuggestion = nextTitle ? getOfficiantTitleDescription(nextTitle) : null;
+                        const shouldAutofill =
+                          !p.description.trim() ||
+                          (prevSuggestion && p.description.trim() === prevSuggestion.trim());
+                        return {
+                          ...p,
+                          title: nextTitle,
+                          description: shouldAutofill ? (nextSuggestion ?? p.description) : p.description,
+                        };
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir un titre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— Aucun —</SelectItem>
+                      {titleOptions.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label>Grade</Label>
-                  <Input value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Telephone</Label>
+                  <Label>Téléphone</Label>
                   <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <Label>Email</Label>
                   <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <Label>Description (suggestion modifiable)</Label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Description (pré-remplie automatiquement selon le titre)"
+                    rows={3}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>Bio (libre)</Label>
+                  <Textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Bio libre (ne remplace pas la description)"
+                    rows={4}
+                  />
                 </div>
               </div>
             </div>
           ) : selectedOfficiant ? (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">{selectedName}</h2>
-              <p className="text-muted-foreground">{selectedOfficiant.title || '—'} {selectedOfficiant.grade || ''}</p>
+              <p className="text-muted-foreground">{selectedOfficiant.title || '—'}</p>
+              {selectedOfficiant.description ? (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedOfficiant.description}</p>
+              ) : null}
               <div className="text-sm space-y-1">
                 <p>Telephone: {selectedOfficiant.phone || '—'}</p>
                 <p>Email: {selectedOfficiant.email || '—'}</p>
