@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useReligiousFeasts } from '@/hooks/useReligiousFeasts';
 
 export default function AdminReligiousFeasts() {
-  const { feasts, refresh } = useReligiousFeasts();
+  const { feasts, refresh, refetch, loading, error } = useReligiousFeasts();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -68,6 +68,25 @@ export default function AdminReligiousFeasts() {
     <div className="container mx-auto px-4 py-8 space-y-6">
       <h1 className="text-2xl font-bold">Admin - Fetes religieuses</h1>
 
+      {error === 'TABLE_MISSING' ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-amber-700">
+            La table `religious_feasts` est absente. Exécutez la migration puis rafraîchissez.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button variant="outline" onClick={() => void refetch()}>
+              Rafraîchir
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {error && error !== 'TABLE_MISSING' ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid gap-3 md:grid-cols-2">
         <Input placeholder="Nom de la fete" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
         <Input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
@@ -77,7 +96,9 @@ export default function AdminReligiousFeasts() {
       <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
       <Textarea placeholder="Priere" value={form.prayer_text} onChange={(e) => setForm((p) => ({ ...p, prayer_text: e.target.value }))} />
       <Textarea placeholder="Reflexion" value={form.reflection_text} onChange={(e) => setForm((p) => ({ ...p, reflection_text: e.target.value }))} />
-      <Button onClick={save} disabled={saving}>{saving ? 'Enregistrement...' : 'Ajouter la fete'}</Button>
+      <Button onClick={save} disabled={saving || loading || error === 'TABLE_MISSING'}>
+        {saving ? 'Enregistrement...' : 'Ajouter la fete'}
+      </Button>
 
       <div className="space-y-2">
         {feasts.map((f) => (

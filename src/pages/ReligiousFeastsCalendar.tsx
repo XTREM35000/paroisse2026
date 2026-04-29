@@ -5,7 +5,7 @@ import { useReligiousFeasts } from '@/hooks/useReligiousFeasts';
 import { buildMonthFeastsIcs, downloadIcsFile } from '@/lib/religiousFeastsIcs';
 
 export default function ReligiousFeastsCalendar() {
-  const { feasts, loading, error, monthDate, setMonthDate } = useReligiousFeasts();
+  const { feasts, loading, error, monthDate, setMonthDate, refetch } = useReligiousFeasts();
 
   const goMonth = (offset: number) => {
     const next = new Date(monthDate);
@@ -22,6 +22,19 @@ export default function ReligiousFeastsCalendar() {
     const ics = buildMonthFeastsIcs(feasts, origin);
     downloadIcsFile(`fetes-religieuses-${monthSlug}.ics`, ics);
   };
+
+  if (error === 'TABLE_MISSING') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-6 text-center">
+          <p className="text-amber-700">Configuration des fêtes religieuses en cours...</p>
+          <Button variant="outline" className="mt-4" onClick={() => void refetch()}>
+            Rafraîchir
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">

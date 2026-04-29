@@ -120,9 +120,10 @@ const queryClient = new QueryClient({
 });
 
 const AppInner = () => {
-  const { paroisse, paroissesList, setParoisse, isLoading, isSelectorOpen, setSelectorOpen } = useParoisse();
+  const { paroisse, paroissesList, setParoisse, isLoading, isSelectorOpen, setSelectorOpen, reloadParoisses } = useParoisse();
   const { user, role, loading: authLoading } = useAuthContext();
   const [showSetupWizardAuto, setShowSetupWizardAuto] = useState(false);
+  const [showSetupWizardFromSelector, setShowSetupWizardFromSelector] = useState(false);
   const [firstLaunchCheckDone, setFirstLaunchCheckDone] = useState(false);
   // Flag pour bloquer la réouverture du wizard après finalisation (persisté pour éviter la boucle OTP)
   const [isSetupFinalized, setIsSetupFinalized] = useState(() => {
@@ -149,6 +150,10 @@ const AppInner = () => {
     setSelectorOpen(false);
     setParoisseGateDone(true);
   }, [setSelectorOpen]);
+
+  const handleOpenCreateParishWizard = useCallback(() => {
+    setShowSetupWizardFromSelector(true);
+  }, []);
 
   /** Developer : contexte tenant requis pour la plupart des pages — sélectionner une paroisse par défaut si rien en stockage. */
   useEffect(() => {
@@ -183,7 +188,6 @@ const AppInner = () => {
     }
 
     if (paroisse) {
-      setSelectorOpen(false);
       setParoisseGateDone(true);
       return;
     }
@@ -245,8 +249,14 @@ const AppInner = () => {
         <RedirectHandler />
         {paroisseGateDone ? <WelcomeModal autoCloseDelayMs={5000} /> : null}
         <SetupWizardModal
-          open={showSetupWizardAuto && !isSetupFinalized}
+          open={(showSetupWizardAuto && !isSetupFinalized) || showSetupWizardFromSelector}
           onClose={() => {
+            if (showSetupWizardFromSelector) {
+              setShowSetupWizardFromSelector(false);
+              setSelectorOpen(true);
+              return;
+            }
+
             setShowSetupWizardAuto(false);
             handleParoisseSelectorClose();
             if (firstLaunchCheckDone) {
@@ -255,6 +265,12 @@ const AppInner = () => {
           }}
           onSetupCompleted={() => {
             console.info('[App] onSetupCompleted - wizard à fermer');
+            setShowSetupWizardFromSelector(false);
+            setSelectorOpen(false);
+            setParoisseGateDone(true);
+
+            void reloadParoisses();
+
             try {
               sessionStorage.setItem(SETUP_WIZARD_FINALIZED_SESSION_KEY, '1');
             } catch {
@@ -548,7 +564,11 @@ const AppInner = () => {
         </Routes>
 
         {/* Dans le Router pour que ParoisseSelector puisse utiliser useNavigate() */}
-        <ParoisseSelector open={isSelectorOpen && !isDeveloperAdminRoute} onClose={handleParoisseSelectorClose} />
+        <ParoisseSelector
+          open={isSelectorOpen && !isDeveloperAdminRoute}
+          onClose={handleParoisseSelectorClose}
+          onCreateParish={handleOpenCreateParishWizard}
+        />
       </BrowserRouter>
     </div>
   );

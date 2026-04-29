@@ -1,7 +1,6 @@
 import { Building2, Check, Plus, X } from 'lucide-react';
 import React, { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useParoisse, type Paroisse } from '@/contexts/ParoisseContext';
 import { useAuthContext } from '@/contexts/useAuthContext';
@@ -9,14 +8,14 @@ import { useAuthContext } from '@/contexts/useAuthContext';
 interface ParoisseSelectorProps {
   open: boolean;
   onClose: () => void;
+  onCreateParish?: () => void;
 }
 
 /**
  * Modal paroisse : createPortal sur document.body (z-index élevé), sans conteneur retiré à la main.
  * Évite les bugs du Dialog Radix contrôlé (fermeture immédiate / overlay sans panneau).
  */
-export const ParoisseSelector: React.FC<ParoisseSelectorProps> = ({ open, onClose }) => {
-  const navigate = useNavigate();
+export const ParoisseSelector: React.FC<ParoisseSelectorProps> = ({ open, onClose, onCreateParish }) => {
   const { paroissesList, setParoisse, paroisse: currentParoisse } = useParoisse();
   const { role } = useAuthContext();
 
@@ -85,21 +84,6 @@ export const ParoisseSelector: React.FC<ParoisseSelectorProps> = ({ open, onClos
           </p>
         </div>
 
-        {isSuperAdmin && (
-          <Button
-            type="button"
-            variant="default"
-            className="mt-4 w-full gap-2 paroisse-btn-3d bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
-            onClick={() => {
-              onClose();
-              navigate('/admin/paroisses');
-            }}
-          >
-            <Plus className="h-4 w-4 shrink-0" />
-            Nouvelle paroisse
-          </Button>
-        )}
-
         <div className="mt-4 space-y-2">
           {(paroissesList || []).length === 0 && (
             <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
@@ -135,6 +119,21 @@ export const ParoisseSelector: React.FC<ParoisseSelectorProps> = ({ open, onClos
             </button>
           ))}
         </div>
+
+        {isSuperAdmin && (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 w-full gap-2"
+            onClick={() => {
+              onClose();
+              onCreateParish?.();
+            }}
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            Créer une nouvelle paroisse
+          </Button>
+        )}
       </div>
     </div>,
     document.body,

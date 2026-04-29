@@ -25,11 +25,25 @@ export function useReligiousFeasts(initialDate = new Date()) {
         .eq('is_active', true)
         .order('date', { ascending: true });
 
-      if (qError) throw qError;
+      if (qError) {
+        const isMissingTable =
+          qError.code === '42P01' ||
+          qError.message?.toLowerCase().includes('relation') ||
+          qError.message?.toLowerCase().includes('not found');
+
+        if (isMissingTable) {
+          setFeasts([]);
+          setError('TABLE_MISSING');
+          return;
+        }
+
+        throw qError;
+      }
       setFeasts((data ?? []) as ReligiousFeast[]);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Erreur chargement des fetes.';
       setError(message);
+      setFeasts([]);
     } finally {
       setLoading(false);
     }
@@ -46,5 +60,6 @@ export function useReligiousFeasts(initialDate = new Date()) {
     monthDate,
     setMonthDate,
     refresh: loadFeasts,
+    refetch: loadFeasts,
   };
 }
