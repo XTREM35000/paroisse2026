@@ -32,6 +32,7 @@ import type { LucideIcon } from 'lucide-react';
 import useRoleCheck from '@/hooks/useRoleCheck';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useParoisse } from '@/contexts/ParoisseContext';
+import { SidebarObsPanel } from '@/components/sidebar/SidebarObsPanel';
 
 export const MENU_GROUPS = [
   {
@@ -451,6 +452,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
           );
         })}
       </nav>
+
+      {/* OBS panel (only when expanded) */}
+      {!isCollapsed && <SidebarObsPanel />}
 
       {/* Bottom action: switch paroisse */}
       <div className="sticky bottom-0 bg-card/95 backdrop-blur border-t border-border/50 px-2 py-3">

@@ -34,6 +34,7 @@ import {
 import { ProviderManager, streamManager } from '@/lib/providers';
 import type { ProviderType } from '@/lib/providers/types';
 import HeroBanner from '@/components/HeroBanner';
+import { ObsMultiStreamConfig } from '@/components/live/ObsMultiStreamConfig';
 
 const AdminLiveEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -397,6 +398,14 @@ const AdminLiveEditor: React.FC = () => {
             </div>
           )}
         </div>
+
+        {liveStreams.some((s) => s.is_active) && (
+          <ObsMultiStreamConfig
+            liveStreamId={liveStreams.find((s) => s.is_active)!.id}
+            streamTitle={liveStreams.find((s) => s.is_active)!.title}
+            isActive
+          />
+        )}
 
         <AlertDialog open={deleteStreamId !== null} onOpenChange={(o) => { if (!o) setDeleteStreamId(null); }}>
           <AlertDialogContent>

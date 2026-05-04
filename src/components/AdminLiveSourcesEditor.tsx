@@ -180,11 +180,11 @@ export default function AdminLiveSourcesEditor({
               onChange={(e) =>
                 setNewProvider(
                   e.target.value as
-                    | 'youtube'
-                    | 'facebook'
-                    | 'instagram'
-                    | 'tiktok'
-                    | 'custom'
+                  | 'youtube'
+                  | 'facebook'
+                  | 'instagram'
+                  | 'tiktok'
+                  | 'custom'
                 )
               }
               className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground"
